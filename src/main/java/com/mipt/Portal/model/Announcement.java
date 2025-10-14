@@ -1,12 +1,10 @@
-package com.yourcompany.yourproject.model;
+package com.mipt.Portal.model;
 
 import javax.persistence.*;
 import java.util.Date;
 
-@Entity
 public class Announcement {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+
   private Long id;
 
   private String title;
@@ -17,7 +15,6 @@ public class Announcement {
   private Date updateDate;
   private String status;
 
-  @ManyToOne
   private User user;
 
   // Write getters and setters
