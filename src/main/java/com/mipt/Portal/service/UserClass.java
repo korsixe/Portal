@@ -1,4 +1,4 @@
-package com.mipt.Portal.model;
+package com.mipt.Portal.service;
 
 public class UserClass implements User {
 
@@ -49,12 +49,12 @@ public class UserClass implements User {
   }
 
   @Override
-  public String getAdress() {
+  public String getAddress() {
     return address;
   }
 
   @Override
-  public void setAdress(String adress) {
+  public void setAddress(String adress) {
     this.address = adress;
   }
 
@@ -129,5 +129,13 @@ public class UserClass implements User {
   @Override
   public boolean hasEnoughCoins(int amount) {
     return coins >= amount;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("USER: " + name + ", EMAIL: "
+            + email + "\n" + "ADDRESS: " + getAddress() + " STUDY PROGRAMM: "
+            + studyProgram + "\nCOURSE: " + getCourse() + " RATING: " + getRating()
+            + " COINS: " + getCoins());
   }
 }

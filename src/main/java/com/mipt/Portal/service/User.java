@@ -1,4 +1,4 @@
-package com.mipt.Portal.model;
+package com.mipt.Portal.service;
 
 public interface User {
 
@@ -14,9 +14,9 @@ public interface User {
 
   void setPassword(String password);
 
-  String getAdress();
+  String getAddress();
 
-  void setAdress(String adress);
+  void setAddress(String adress);
 
   String getStudyProgram();
 
