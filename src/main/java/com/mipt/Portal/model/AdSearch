@@ -1,0 +1,4 @@
+public interface AdSearch {
+    Ad findAdById(String adId); // поиск объявления по идентификатору
+    List<Ad> searchAds(String query); // поиск по запросу
+}
