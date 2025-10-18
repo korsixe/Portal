@@ -7,12 +7,12 @@ public class Ad {
 
   private String title;                // Заголовок
   private String description;          // Описание
-  private String category;             // Категория
+  private String category;             // Категория - когда подвяжем БД, будет через int
   private String condition;            // Состояние
   private boolean negotiablePrice;     // Цена договорная
   private int price;                   // Цена
   private String location;             // Местоположение
-  private int idUser;                  // Пока храним id user
+  private int idUser;                  // Пока храним id user, чтобы знать как связываться
   private String status;               // Активно, Архив, Черновик
 
   // Конструктор
@@ -39,7 +39,8 @@ public class Ad {
         ", Договорная цена? " + negotiablePrice +
         ", Цена: " + price + " руб." +
         ", Местоположение: " + location +
-        ", Создатель " + idUser;
+        ", Создатель " + idUser +
+        ", Состояние " + status;
   }
 
 
