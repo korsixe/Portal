@@ -1,4 +1,4 @@
-package com.mipt.portal.Ad;
+package main.java.com.mipt.portal.Ad;
 
 public interface IAdManager {
 
