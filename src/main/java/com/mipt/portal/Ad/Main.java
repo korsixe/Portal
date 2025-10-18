@@ -1,10 +1,8 @@
 package com.mipt.portal.Ad;
 
-// файлик для проверки
 public class Main {
-
   public static void main(String[] args) {
     AdManager adManager = new AdManager();
-    adManager.createAd(0);
+    adManager.createAd(0); // создаст объявление с idUser = 0
   }
 }
