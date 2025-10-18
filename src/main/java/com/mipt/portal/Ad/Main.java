@@ -1,4 +1,4 @@
-package main.java.com.mipt.portal.Ad;
+package com.mipt.portal.Ad;
 
 // файлик для проверки
 public class Main {

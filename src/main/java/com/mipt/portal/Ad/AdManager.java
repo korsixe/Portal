@@ -1,4 +1,4 @@
-package main.java.com.mipt.portal.Ad;
+package сom.mipt.portal.Ad;
 
 import java.util.ArrayList;
 import java.util.Arrays;
