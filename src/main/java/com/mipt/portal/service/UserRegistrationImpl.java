@@ -1,0 +1,131 @@
+package com.mipt.portal.service;
+
+import java.util.List;
+import java.util.Scanner;
+
+public class UserRegistrationImpl implements UserRegistration {
+
+  public static void main(String[] args) {
+    UserRegistrationImpl registration = new UserRegistrationImpl();
+    Scanner scanner = new Scanner(System.in);
+    System.out.println("=== PORTAL REGISTRATION ===\n");
+    System.out.print("Введите Вашу физтех-почту: ");
+    String email = scanner.nextLine();
+    System.out.print("Введите Ваш никнейм: ");
+    String name = scanner.nextLine();
+    System.out.println("Длина пароля не менее 8 символов, он может содержать: \n" +
+            "1) прописные буквы \n" +
+            "2) заглавные буквы \n" +
+            "3) цифры \n" +
+            "4) специальные символы: !?@#$%%&*_-");
+    String password = scanner.nextLine();
+    User user = registration.register(email, name, password);
+    System.out.println(user);
+
+    if (user != null) {
+      System.out.println("\n\uD83C\uDF89 Спасибо за регистрацию!");
+    }
+  }
+
+  @Override
+  public User register(String email, String name, String password) {
+
+    if (!correctEmail(email) || !correctName(name) || !correctPassword(password) || !isPasswordStrong(password) || isEmailExists(email)) {
+      return null;
+    }
+    System.out.println("Подтвердите пароль: ");
+    Scanner scanner = new Scanner(System.in);
+    String passwordAgain = scanner.nextLine();
+
+    if (!passwordAgain.equals(password)) {
+      System.out.println("Неверный пароль.");
+      return null;
+    }
+
+    User newUser = new User(email, name, password);
+    // DataBase.addUser(newUser);
+    System.out.println("\nПользователь зарегистрирован!\n");
+    return newUser;
+  }
+
+  @Override
+  public boolean correctEmail(String email) {
+    if (email == null || email.length() < 5) {
+      System.out.println("Почта обязательна.");
+      return false;
+    }
+    String emailPattern = "^[a-z0-9][a-z0-9._-]*[a-z0-9]@phystech\\.edu$";
+
+    if (!email.matches(emailPattern)) {
+      System.out.println("Неправильный формат почты. Пример физтех-почты: ivanov.ii@phystech.edu");
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public boolean correctName(String name) {
+    if (name == null || name.isEmpty()) {
+      System.out.println("Имя обязательно!");
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public boolean correctPassword(String password) {
+    if (password == null || password.length() < 8 || password.length() > 30) {
+      if (password.length() > 30) {
+        System.out.println("Длина пароля не более 30 символов!");
+      } else {
+        System.out.println("Длина пароля не менее 8 символов!");
+      }
+
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public boolean isEmailExists(String email) {
+    // return DataBase.containsEmail(email);
+    return false;
+  }
+
+  @Override
+  public boolean isPasswordStrong(String password) {
+    double hasLower = 0, hasUpper = 0,
+            hasDigit = 0, hasSpecialChar = 0, goodSize = 0;
+    List<String> strengthCriteria = List.of("!", "?", "@", "#", "$",
+            "%", "%", "&", "*", "_", "-");
+    for (char i : password.toCharArray()) {
+      if (Character.isLowerCase(i)) {
+        hasLower = 1;
+      }
+      if (Character.isUpperCase(i)) {
+        hasUpper = 2;
+      }
+      if (Character.isDigit(i)) {
+        hasDigit = 1.5;
+      }
+      if (strengthCriteria.contains(i)) {
+        hasSpecialChar = 4;
+      }
+    }
+
+    if (password.length() > 10) {
+      goodSize = 1.5;
+    }
+
+    double strength = hasLower + hasUpper + hasDigit + hasSpecialChar + goodSize;
+
+    System.out.println("Сложность вашего пароля: " + strength +" Минимальная сложность: 4");
+    if (strength >= 4) {
+      return true;
+    }
+    return false;
+  }
+}
