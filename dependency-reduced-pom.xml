@@ -21,7 +21,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.mipt.Portal</mainClass>
+                  <mainClass>com.mipt.anastasiashabunina</mainClass>
                 </transformer>
               </transformers>
             </configuration>
