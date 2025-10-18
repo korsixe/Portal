@@ -1,4 +1,4 @@
-package main.java.com.mipt.portal.database;
+package com.mipt.portal.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
