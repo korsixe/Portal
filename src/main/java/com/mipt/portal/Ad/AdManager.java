@@ -1,9 +1,15 @@
-package com.mipt.portal.Ad;
+package main.java.com.mipt.portal.Ad;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
+
 
 public class AdManager implements IAdManager {
 
   @Override
-  public void createAd(int idUser) {
+  public Ad createAd(int idUser) {
     Scanner scanner = new Scanner(System.in);
 
     System.out.println("Введите заголовок объявления:");
@@ -90,8 +96,9 @@ public class AdManager implements IAdManager {
   }
 
   @Override
-  public void editAd(int adId) {
+  public Ad editAd(Ad ad) {
     // Логика редактирования объявления
+    return ad;
   }
 
   @Override

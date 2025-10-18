@@ -1,4 +1,4 @@
-package com.mipt.portal.Ad;
+package main.java.com.mipt.portal.Ad;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +29,47 @@ public class Ad implements IAd {
     this.price = price;
     this.location = location;
     this.idUser = idUser;
+    this.status = status;
+  }
+
+  // Сеттеры
+  public void setTitle(String title) {
+    this.title = title;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public void setCategory(String category) {
+    this.category = category;
+  }
+
+  public void setCondition(String condition) {
+    this.condition = condition;
+  }
+
+  public void setNegotiablePrice(boolean negotiablePrice) {
+    this.negotiablePrice = negotiablePrice;
+  }
+
+  public void setPrice(int price) {
+    if (price >= 0) {
+      this.price = price;
+    } else {
+      throw new IllegalArgumentException("Цена не может быть отрицательной.");
+    }
+  }
+
+  public void setLocation(String location) {
+    this.location = location;
+  }
+
+  public void setIdUser(int idUser) {
+    this.idUser = idUser;
+  }
+
+  public void setStatus(String status) {
     this.status = status;
   }
 
@@ -88,10 +129,5 @@ public class Ad implements IAd {
         ", Местоположение: " + location +
         ", Создатель " + idUser +
         ", Состояние " + status;
-  }
-
-
-  public static void main(String[] args) {
-    createNewAd(0);
   }
 }
