@@ -1,4 +1,4 @@
-package main.java.com.mipt.portal.Ad;
+package com.mipt.portal.Ad;
 
 public interface IAd { // Интерфейс для получения данных объявления
 
