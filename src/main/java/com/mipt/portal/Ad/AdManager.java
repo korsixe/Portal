@@ -1,3 +1,5 @@
+package com.mipt.portal.Ad;
+
 public class AdManager implements IAdManager {
 
   @Override
