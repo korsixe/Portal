@@ -9,7 +9,7 @@ import java.util.Scanner;
 public class AdManager implements IAdManager {
 
   @Override
-  public Ad createAd(int idUser) {
+  public Ad createAd(String idUser) {
     Scanner scanner = new Scanner(System.in);
 
     System.out.println("Введите заголовок объявления:");

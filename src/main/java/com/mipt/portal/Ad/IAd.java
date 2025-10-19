@@ -16,7 +16,7 @@ public interface IAd { // Интерфейс для получения данн�
 
   String getLocation();
 
-  int getIdUser();
+  String getIdUser();
 
   String getStatus();
 
