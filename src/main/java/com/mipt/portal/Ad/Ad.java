@@ -14,13 +14,13 @@ public class Ad implements IAd {
   private boolean negotiablePrice;     // Цена договорная
   private int price;                   // Цена
   private String location;             // Местоположение
-  private int idUser;                  // Пока храним id user, чтобы знать как связываться
+  private String idUser;               // Храним почту
   private String status;               // Активно, Архив, Черновик
 
   // Конструктор
   public Ad(String title, String description, String category, String condition,
       boolean negotiablePrice,
-      int price, String location, int idUser, String status) {
+      int price, String location, String idUser, String status) {
     this.title = title;
     this.description = description;
     this.category = category;
@@ -65,7 +65,7 @@ public class Ad implements IAd {
     this.location = location;
   }
 
-  public void setIdUser(int idUser) {
+  public void setIdUser(String idUser) {
     this.idUser = idUser;
   }
 
@@ -109,7 +109,7 @@ public class Ad implements IAd {
   }
 
   @Override
-  public int getIdUser() {
+  public String getIdUser() {
     return idUser;
   }
 
@@ -127,7 +127,7 @@ public class Ad implements IAd {
         ", Договорная цена? " + negotiablePrice +
         ", Цена: " + price + " руб." +
         ", Местоположение: " + location +
-        ", Создатель " + idUser +
-        ", Состояние " + status;
+        ", Создатель: " + idUser +
+        ", Состояние: " + status;
   }
 }
