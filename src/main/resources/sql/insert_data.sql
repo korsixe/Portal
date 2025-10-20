@@ -1,3 +1,5 @@
+-- Накидаем возможных пользователь и объявлений
+
 -- Вставка пользователей
 INSERT INTO Users (email, name, password, address, study_program, course, rating, coins) VALUES
                                                                                              ('ivanov@example.com', 'Иван Иванов', 'password123', 'г. Москва, ул. Первомайская, д.10', 'Программирование', 2, 4.5, 150),
