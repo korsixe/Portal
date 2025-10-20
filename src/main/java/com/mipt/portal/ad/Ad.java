@@ -10,7 +10,7 @@ public class Ad implements IAd {
   private String title;                // Заголовок
   private String description;          // Описание
   private Category category;           // Категория - используем enum
-  private String condition;            // Состояние
+  private Condition condition;            // Состояние
   private int price;                   // Цена - если цена "-1" - договорная, если "0" - бесплатно, ">0" - цена
   private String location;             // Местоположение
   private String email;               // Храним почту
