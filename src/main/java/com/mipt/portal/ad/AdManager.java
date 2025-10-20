@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-
 public class AdManager implements IAdManager {
 
   @Override
@@ -18,8 +17,12 @@ public class AdManager implements IAdManager {
     System.out.println("Введите описание объявления:");
     String description = scanner.nextLine();
 
-    System.out.println("Введите категорию объявления:");
-    String category = scanner.nextLine();
+    // Выбор категории из enum
+    System.out.println("Выберите категорию объявления:");
+    Category.displayCategories();
+    int categoryChoice = scanner.nextInt();
+    scanner.nextLine(); // очистка буфера
+    Category category = Category.getByNumber(categoryChoice);
 
     System.out.println("Введите местоположение объявления:"); //Предварительно храним в строках
     String location = scanner.nextLine();
