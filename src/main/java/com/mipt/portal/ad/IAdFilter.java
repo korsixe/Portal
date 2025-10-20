@@ -1,4 +1,4 @@
-package com.mipt.portal.Ad;
+package com.mipt.portal.ad;
 
 import java.util.List;
 
