@@ -107,8 +107,8 @@ public class DatabaseManager {
   // Показать все объявления
   public static void selectAllAds() {
     String sql = """
-            SELECT ads.*, users.name as user_name
-            FROM ads
+            SELECT ads.*, users.name as user_name 
+            FROM ads 
             JOIN users ON ads.user_id = users.id
             ORDER BY ads.created_at DESC
         """;
@@ -134,8 +134,8 @@ public class DatabaseManager {
   // Поиск объявлений по ключевому слову
   public static void searchAds(String keyword) {
     String sql = """
-            SELECT ads.*, users.name as user_name
-            FROM ads
+            SELECT ads.*, users.name as user_name 
+            FROM ads 
             JOIN users ON ads.user_id = users.id
             WHERE ads.title LIKE ? OR ads.description LIKE ?
             ORDER BY ads.created_at DESC
