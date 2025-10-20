@@ -9,7 +9,7 @@ public class Ad implements IAd {
 
   private String title;                // Заголовок
   private String description;          // Описание
-  private String category;             // Категория - когда подвяжем БД, будет через int
+  private Category category;           // Категория - используем enum
   private String condition;            // Состояние
   private int price;                   // Цена - если цена "-1" - договорная, если "0" - бесплатно, ">0" - цена
   private String location;             // Местоположение
@@ -17,7 +17,7 @@ public class Ad implements IAd {
   private String status;               // Активно, Архив, Черновик
 
   // Конструктор
-  public Ad(String title, String description, String category, String condition, int price,
+  public Ad(String title, String description, Category category, String condition, int price,
       String location, String email, String status) {
     this.title = title;
     this.description = description;
@@ -38,7 +38,7 @@ public class Ad implements IAd {
     this.description = description;
   }
 
-  public void setCategory(String category) {
+  public void setCategory(Category category) {
     this.category = category;
   }
 
@@ -74,7 +74,7 @@ public class Ad implements IAd {
   }
 
   @Override
-  public String getCategory() {
+  public Category getCategory() {
     return category;
   }
 
@@ -107,11 +107,20 @@ public class Ad implements IAd {
   public String toString() {
     return "Заголовок: " + title +
         ", Описание: " + description +
-        ", Категория: " + category +
+        ", Категория: " + category.getDisplayName() +
         ", Состояние: " + condition +
-        ", Цена: " + price + " руб." +
+        ", Цена: " + formatPrice() +
         ", Местоположение: " + location +
         ", Создатель: " + email +
         ", Состояние: " + status;
+  }
+  private String formatPrice() {
+    if (price == -1) {
+      return "договорная";
+    } else if (price == 0) {
+      return "бесплатно";
+    } else {
+      return price + " руб.";
+    }
   }
 }
