@@ -54,11 +54,7 @@ public class Ad implements IAd {
   }
 
   public void setPrice(int price) {
-    if (price >= 0) {
-      this.price = price;
-    } else {
-      throw new IllegalArgumentException("Цена не может быть отрицательной.");
-    }
+    this.price = price;
   }
 
   public void setLocation(String location) {
