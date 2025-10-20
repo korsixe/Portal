@@ -87,7 +87,6 @@ public class AdManager implements IAdManager {
 
     }
     */
-
     scanner.close();
     System.out.println("Объявление добавлено!");
     System.out.println(ad.toString());
