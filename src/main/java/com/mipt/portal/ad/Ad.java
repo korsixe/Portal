@@ -20,6 +20,7 @@ public class Ad implements IAd {
   private String status;               // Активно, Архив, Черновик
   private LocalDate createdAt;         // дата создания объявления
   private LocalDate updatedAt;         // дата последнего обновления
+  private int viewCount;               // счетчик просмотров
 
   // Конструктор
   public Ad(String title, String description, Category category, Condition condition,
@@ -34,6 +35,7 @@ public class Ad implements IAd {
     this.status = status;
     this.createdAt = LocalDate.now();
     this.updatedAt = LocalDate.now();
+    this.viewCount = 0;
   }
 
   // Сеттеры
@@ -71,6 +73,15 @@ public class Ad implements IAd {
 
   public void setUpdatedAt(LocalDate updatedAt) {
     this.updatedAt = updatedAt;
+  }
+
+  public void setViewCount(int viewCount) {
+    this.viewCount = viewCount;
+  }
+
+  @Override
+  public void incrementViewCount() {
+    this.viewCount++;
   }
 
   @Override
@@ -124,6 +135,11 @@ public class Ad implements IAd {
   }
 
   @Override
+  public int getViewCount() {
+    return viewCount;
+  }
+
+  @Override
   public String toString() {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -135,6 +151,7 @@ public class Ad implements IAd {
         ", Местоположение: " + location +
         ", Создатель: " + email +
         ", Статус: " + status +
+        ", Просмотров: " + viewCount +
         ", Создано: " + (createdAt != null ? createdAt.format(formatter) : "не указано") +
         ", Обновлено: " + (updatedAt != null ? updatedAt.format(formatter) : "не указано");
   }

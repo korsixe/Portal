@@ -27,4 +27,8 @@ public interface IAd { // Интерфейс для получения данн�
   LocalDate getCreatedAt();
 
   LocalDate getUpdatedAt();
+
+  int getViewCount();
+
+  void incrementViewCount();
 }

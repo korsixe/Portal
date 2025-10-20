@@ -20,4 +20,6 @@ public interface IAdFilter {
   List<Ad> filterByDateAfter(List<Ad> ads, LocalDate date);
 
   List<Ad> filterByDateBefore(List<Ad> ads, LocalDate date);
+
+  List<Ad> sortByPopularity(List<Ad> ads);
 }

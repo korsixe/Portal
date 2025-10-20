@@ -89,4 +89,12 @@ public class AdFilter implements IAdFilter {
     }
     return filteredAds;
   }
+
+  // Сортировка по популярности (по убыванию просмотров)
+  @Override
+  public List<Ad> sortByPopularity(List<Ad> ads) {
+    List<Ad> sortedAds = new ArrayList<>(ads);
+    sortedAds.sort((ad1, ad2) -> Integer.compare(ad2.getViewCount(), ad1.getViewCount()));
+    return sortedAds;
+  }
 }
