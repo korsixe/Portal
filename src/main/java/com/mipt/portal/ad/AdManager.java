@@ -58,18 +58,14 @@ public class AdManager implements IAdManager {
     System.out.println("Введите местоположение объявления:");
     String location = scanner.nextLine();
 
-    List<String> chooseCondition = new ArrayList<>(Arrays.asList("б/у", "Новое", "Не работает"));
-    System.out.println("Введите состояние объявления: ");
-    for (int i = 0; i < chooseCondition.size(); ++i) {
-      System.out.println((i + 1) + " " + chooseCondition.get(i));
-    }
-
-    int type = readIntInRange(scanner, "Ваш выбор: ", 1, chooseCondition.size());
-    String condition = chooseCondition.get(type - 1);
+    System.out.println("Выберите состояние товара:");
+    Condition.displayConditions();
+    int conditionChoice = readIntInRange(scanner, "Ваш выбор: ", 1, Condition.values().length);
+    Condition condition = Condition.getByNumber(conditionChoice);
 
     int price = -1;
     System.out.println("Цена договорная? Введите число: 1 - Да, 2 - Нет");
-    type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
+    int type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
     if (type == 2) {
       price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0, 1000000000);
@@ -207,17 +203,14 @@ public class AdManager implements IAdManager {
   }
 
   private void editCondition(Scanner scanner, Ad ad) {
-    System.out.println("Текущее состояние: " + ad.getCondition());
-    List<String> chooseCondition = new ArrayList<>(Arrays.asList("б/у", "Новое", "Не работает"));
+    System.out.println("Текущее состояние: " + ad.getCondition().getDisplayName());
     System.out.println("Выберите новое состояние:");
-    for (int i = 0; i < chooseCondition.size(); ++i) {
-      System.out.println((i + 1) + " " + chooseCondition.get(i));
-    }
+    Condition.displayConditions();
 
-    int conditionChoice = readIntInRange(scanner, "Ваш выбор: ", 1, chooseCondition.size());
-    String newCondition = chooseCondition.get(conditionChoice - 1);
+    int conditionChoice = readIntInRange(scanner, "Ваш выбор: ", 1, Condition.values().length);
+    Condition newCondition = Condition.getByNumber(conditionChoice);
     ad.setCondition(newCondition);
-    System.out.println("Состояние изменено на: " + newCondition);
+    System.out.println("Состояние изменено на: " + newCondition.getDisplayName());
   }
 
   private void editPrice(Scanner scanner, Ad ad) {

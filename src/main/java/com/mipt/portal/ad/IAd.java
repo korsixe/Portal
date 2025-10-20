@@ -8,7 +8,7 @@ public interface IAd { // Интерфейс для получения данн�
 
   Category getCategory();
 
-  String getCondition();
+  Condition getCondition();
 
   int getPrice();
 

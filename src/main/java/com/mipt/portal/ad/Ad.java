@@ -17,7 +17,7 @@ public class Ad implements IAd {
   private String status;               // Активно, Архив, Черновик
 
   // Конструктор
-  public Ad(String title, String description, Category category, String condition, int price,
+  public Ad(String title, String description, Category category, Condition condition, int price,
       String location, String email, String status) {
     this.title = title;
     this.description = description;
@@ -42,7 +42,7 @@ public class Ad implements IAd {
     this.category = category;
   }
 
-  public void setCondition(String condition) {
+  public void setCondition(Condition condition) {
     this.condition = condition;
   }
 
@@ -79,7 +79,7 @@ public class Ad implements IAd {
   }
 
   @Override
-  public String getCondition() {
+  public Condition getCondition() {
     return condition;
   }
 
@@ -108,7 +108,7 @@ public class Ad implements IAd {
     return "Заголовок: " + title +
         ", Описание: " + description +
         ", Категория: " + category.getDisplayName() +
-        ", Состояние: " + condition +
+        ", Состояние: " + condition.getDisplayName() +
         ", Цена: " + formatPrice() +
         ", Местоположение: " + location +
         ", Создатель: " + email +

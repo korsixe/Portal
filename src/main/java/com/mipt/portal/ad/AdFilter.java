@@ -39,10 +39,10 @@ public class AdFilter implements IAdFilter {
   }
 
   @Override
-  public List<Ad> filterByCondition(List<Ad> ads, String condition) {
+  public List<Ad> filterByCondition(List<Ad> ads, Condition condition) {
     List<Ad> filteredAds = new ArrayList<>();
     for (Ad ad : ads) {
-      if (ad.getCondition().equalsIgnoreCase(condition)) {
+      if (ad.getCondition() == condition) {
         filteredAds.add(ad);
       }
     }
