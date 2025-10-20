@@ -17,10 +17,10 @@ public class AdFilter implements IAdFilter {
   }
 
   @Override
-  public List<Ad> filterByCategory(List<Ad> ads, String category) {
+  public List<Ad> filterByCategory(List<Ad> ads, Category category) {
     List<Ad> filteredAds = new ArrayList<>();
     for (Ad ad : ads) {
-      if (ad.getCategory().equalsIgnoreCase(category)) {
+      if (ad.getCategory() == category) {
         filteredAds.add(ad);
       }
     }
