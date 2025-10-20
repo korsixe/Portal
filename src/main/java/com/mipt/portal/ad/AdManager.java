@@ -8,14 +8,38 @@ import java.io.*;
 
 public class AdManager implements IAdManager {
 
+  // Функция для безопасного ввода числа
+  private int readInt(Scanner scanner, String prompt) {
+    while (true) {
+      System.out.print(prompt);
+      if (scanner.hasNextInt()) {
+        return scanner.nextInt();
+      } else {
+        System.out.println("Ошибка: введите целое число!");
+        scanner.next(); // очищаем некорректный ввод
+      }
+    }
+  }
+
+  // Функция для безопасного ввода числа в диапазоне
+  private int readIntInRange(Scanner scanner, String prompt, int min, int max) {
+    while (true) {
+      int value = readInt(scanner, prompt);
+      if (value >= min && value <= max) {
+        return value;
+      } else {
+        System.out.println("Ошибка: число должно быть от " + min + " до " + max + "!");
+      }
+    }
+  }
+
   @Override
   public Ad createAd(String email) {
     Scanner scanner = null;
     try {
-      // Устанавливаем правильную кодировку для Scanner
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
     } catch (UnsupportedEncodingException e) {
-      scanner = new Scanner(System.in); // fallback
+      scanner = new Scanner(System.in);
     }
 
     System.out.println("Введите заголовок объявления:");
@@ -27,7 +51,7 @@ public class AdManager implements IAdManager {
     // Выбор категории из enum
     System.out.println("Выберите категорию объявления:");
     Category.displayCategories();
-    int categoryChoice = scanner.nextInt();
+    int categoryChoice = readIntInRange(scanner, "Ваш выбор: ", 1, Category.values().length);
     scanner.nextLine(); // очистка буфера
     Category category = Category.getByNumber(categoryChoice);
 
@@ -39,45 +63,20 @@ public class AdManager implements IAdManager {
     for (int i = 0; i < chooseCondition.size(); ++i) {
       System.out.println((i + 1) + " " + chooseCondition.get(i));
     }
-    int type = scanner.nextInt();
 
-    while (type < 1 || chooseCondition.size() < type) {
-      System.out.println("Введеный тип не корректен, попробуйте снова");
-      System.out.println("Введите состояние объявления: ");
-      for (int i = 0; i < chooseCondition.size(); ++i) {
-        System.out.println((i + 1) + " " + chooseCondition.get(i));
-      }
-      type = scanner.nextInt();
-    }
+    int type = readIntInRange(scanner, "Ваш выбор: ", 1, chooseCondition.size());
     String condition = chooseCondition.get(type - 1);
 
     int price = -1;
     System.out.println("Цена договорная? Введите число: 1 - Да, 2 - Нет");
-    type = scanner.nextInt();
-    while (type != 1 && type != 2) {
-      System.out.println("Вы написали неверное число.\n");
-      System.out.println("Цена договорная? Введите число: 1 - Да, 2 - Нет");
-      type = scanner.nextInt();
-    }
+    type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
     if (type == 2) {
-      System.out.println("Введите стоимость товара, цена от 0 до 1000000000");
-      price = scanner.nextInt();
-      while (price < 0 || price > 1000000000) {
-        System.out.println("Введите стоимость товара, цена от 0 до 1000000000");
-        price = scanner.nextInt();
-      }
+      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0, 1000000000);
     }
 
-    System.out.println(
-        "Объявление почти готово. Если хотите опубликовать, выведите 1. Если хотите оставить черновиком, выведите 2");
-    type = scanner.nextInt();
-    while (type != 1 && type != 2) {
-      System.out.println("Вы написали неверное число.\n");
-      System.out.println(
-          "Объявление почти готово. Если хотите опубликовать, выведите 1. Если хотите оставить черновиком, выведите 2");
-      type = scanner.nextInt();
-    }
+    System.out.println("Объявление почти готово. Если хотите опубликовать, выведите 1. Если хотите оставить черновиком, выведите 2");
+    type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
     String status = "Активно";
     if (type == 2) {
@@ -85,7 +84,7 @@ public class AdManager implements IAdManager {
     }
 
     Ad ad = new Ad(title, description, category, condition, price, location, email, status);
-    // а тут взяли и в БД добавили
+
     scanner.close();
     System.out.println("Объявление добавлено!");
     System.out.println(ad.toString());
@@ -95,15 +94,18 @@ public class AdManager implements IAdManager {
 
   @Override
   public Ad editAd(Ad ad) {
+    // Логика редактирования объявления
     return ad;
   }
 
   @Override
   public void deleteAd(int adId) {
+    // Логика удаления объявления
   }
 
   @Override
   public Ad getAd(int adId) {
+    // Логика получения объявления
     return null;
   }
 }
