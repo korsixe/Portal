@@ -2,7 +2,7 @@ package com.mipt.portal.ad;
 
 import java.util.ArrayList;
 import java.util.List;
-
+// объединение фильтров с помощью bitset?
 public class AdFilter implements IAdFilter {
 
   @Override
