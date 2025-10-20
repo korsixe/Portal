@@ -6,7 +6,7 @@ public interface IAdFilter {
 
   List<Ad> filterByTitle(List<Ad> ads, String title);
 
-  List<Ad> filterByCategory(List<Ad> ads, String category);
+  List<Ad> filterByCategory(List<Ad> ads, Category category);
 
   List<Ad> filterByPrice(List<Ad> ads, int minPrice, int maxPrice);
 
