@@ -6,7 +6,7 @@ public interface IAd { // Интерфейс для получения данн�
 
   String getDescription();
 
-  String getCategory();
+  Category getCategory();
 
   String getCondition();
 
