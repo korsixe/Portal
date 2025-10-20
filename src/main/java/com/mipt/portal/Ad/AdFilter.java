@@ -48,15 +48,4 @@ public class AdFilter implements IAdFilter {
     }
     return filteredAds;
   }
-
-  @Override
-  public List<Ad> filterByNegotiablePrice(List<Ad> ads, boolean negotiable) {
-    List<Ad> filteredAds = new ArrayList<>();
-    for (Ad ad : ads) {
-      if (ad.isNegotiablePrice() == negotiable) {
-        filteredAds.add(ad);
-      }
-    }
-    return filteredAds;
-  }
 }

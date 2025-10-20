@@ -11,24 +11,21 @@ public class Ad implements IAd {
   private String description;          // Описание
   private String category;             // Категория - когда подвяжем БД, будет через int
   private String condition;            // Состояние
-  private boolean negotiablePrice;     // Цена договорная
-  private int price;                   // Цена
+  private int price;                   // Цена - если цена "-1" - договорная, если "0" - бесплатно, ">0" - цена
   private String location;             // Местоположение
-  private String idUser;               // Храним почту
+  private String email;               // Храним почту
   private String status;               // Активно, Архив, Черновик
 
   // Конструктор
-  public Ad(String title, String description, String category, String condition,
-      boolean negotiablePrice,
-      int price, String location, String idUser, String status) {
+  public Ad(String title, String description, String category, String condition, int price,
+      String location, String email, String status) {
     this.title = title;
     this.description = description;
     this.category = category;
     this.condition = condition;
-    this.negotiablePrice = negotiablePrice;
     this.price = price;
     this.location = location;
-    this.idUser = idUser;
+    this.email = email;
     this.status = status;
   }
 
@@ -49,9 +46,6 @@ public class Ad implements IAd {
     this.condition = condition;
   }
 
-  public void setNegotiablePrice(boolean negotiablePrice) {
-    this.negotiablePrice = negotiablePrice;
-  }
 
   public void setPrice(int price) {
     this.price = price;
@@ -61,8 +55,8 @@ public class Ad implements IAd {
     this.location = location;
   }
 
-  public void setIdUser(String idUser) {
-    this.idUser = idUser;
+  public void setIdUser(String email) {
+    this.email = email;
   }
 
   public void setStatus(String status) {
@@ -90,11 +84,6 @@ public class Ad implements IAd {
   }
 
   @Override
-  public boolean isNegotiablePrice() {
-    return negotiablePrice;
-  }
-
-  @Override
   public int getPrice() {
     return price;
   }
@@ -105,8 +94,8 @@ public class Ad implements IAd {
   }
 
   @Override
-  public String getIdUser() {
-    return idUser;
+  public String getEmail() {
+    return email;
   }
 
   @Override
@@ -120,10 +109,9 @@ public class Ad implements IAd {
         ", Описание: " + description +
         ", Категория: " + category +
         ", Состояние: " + condition +
-        ", Договорная цена? " + negotiablePrice +
         ", Цена: " + price + " руб." +
         ", Местоположение: " + location +
-        ", Создатель: " + idUser +
+        ", Создатель: " + email +
         ", Состояние: " + status;
   }
 }

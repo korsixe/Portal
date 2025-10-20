@@ -9,7 +9,7 @@ import java.util.Scanner;
 public class AdManager implements IAdManager {
 
   @Override
-  public Ad createAd(String idUser) {
+  public Ad createAd(String email) {
     Scanner scanner = new Scanner(System.in);
 
     System.out.println("Введите заголовок объявления:");
@@ -42,8 +42,7 @@ public class AdManager implements IAdManager {
     }
     String condition = chooseCondition.get(type - 1);
 
-    boolean negotiablePrice = true;
-    int price = 0;
+    int price = -1;
     System.out.println("Цена договорная? Введите число: 1 - Да, 2 - Нет");
     type = scanner.nextInt();                     // Можно поломать, если вводить не число :(
     while (type != 1 && type != 2) {
@@ -53,7 +52,6 @@ public class AdManager implements IAdManager {
     }
 
     if (type == 2) {
-      negotiablePrice = false;
       System.out.println("Введите стоимость товара, цена от 0 до 1000000000");
       price = scanner.nextInt();                     // Можно поломать, если вводить не число :(
       while (price < 0 || price > 1000000000) {
@@ -77,8 +75,7 @@ public class AdManager implements IAdManager {
       status = "Черновик";
     }
 
-    Ad ad = new Ad(title, description, category, condition, negotiablePrice, price, location,
-        idUser, status);
+    Ad ad = new Ad(title, description, category, condition, price, location, email, status);
 
     /* добавляем объявление в БД
     if (type == 1) {

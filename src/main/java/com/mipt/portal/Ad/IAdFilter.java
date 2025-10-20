@@ -11,6 +11,4 @@ public interface IAdFilter {
   List<Ad> filterByPrice(List<Ad> ads, int minPrice, int maxPrice);
 
   List<Ad> filterByCondition(List<Ad> ads, String condition);
-
-  List<Ad> filterByNegotiablePrice(List<Ad> ads, boolean negotiable);
 }

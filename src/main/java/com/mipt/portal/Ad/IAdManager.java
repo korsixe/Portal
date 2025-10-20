@@ -2,7 +2,7 @@ package com.mipt.portal.Ad;
 
 public interface IAdManager {
 
-  Ad createAd(int idUser); //  Создать объявление
+  Ad createAd(String email); //  Создать объявление
 
   Ad editAd(Ad ad); // Изменить объявление
 

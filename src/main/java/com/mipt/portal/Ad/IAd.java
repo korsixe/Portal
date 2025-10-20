@@ -10,13 +10,11 @@ public interface IAd { // Интерфейс для получения данн�
 
   String getCondition();
 
-  boolean isNegotiablePrice();
-
   int getPrice();
 
   String getLocation();
 
-  String getIdUser();
+  String getEmail();
 
   String getStatus();
 
