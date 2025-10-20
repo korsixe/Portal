@@ -33,6 +33,6 @@ public enum Category {
     if (number > 0 && number <= values().length) {
       return values()[number - 1];
     }
-    return null;
+    return OTHER;
   }
 }
