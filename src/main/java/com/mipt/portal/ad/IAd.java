@@ -1,5 +1,9 @@
 package com.mipt.portal.ad;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
 public interface IAd { // Интерфейс для получения данных объявления
 
   String getTitle();
@@ -19,4 +23,8 @@ public interface IAd { // Интерфейс для получения данн�
   String getStatus();
 
   String toString();
+
+  LocalDate getCreatedAt();
+
+  LocalDate getUpdatedAt();
 }

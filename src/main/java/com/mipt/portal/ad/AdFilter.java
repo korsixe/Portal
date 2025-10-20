@@ -1,8 +1,12 @@
 package com.mipt.portal.ad;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.List;
-// объединение фильтров с помощью bitset?
+
+
 public class AdFilter implements IAdFilter {
 
   @Override
@@ -43,6 +47,43 @@ public class AdFilter implements IAdFilter {
     List<Ad> filteredAds = new ArrayList<>();
     for (Ad ad : ads) {
       if (ad.getCondition() == condition) {
+        filteredAds.add(ad);
+      }
+    }
+    return filteredAds;
+  }
+
+  // Фильтрация объявлений за последние N дней
+  @Override
+  public List<Ad> filterByLastDays(List<Ad> ads, int days) {
+    LocalDate cutoffDate = LocalDate.now().minusDays(days);
+    List<Ad> filteredAds = new ArrayList<>();
+    for (Ad ad : ads) {
+      if (ad.getCreatedAt() != null && !ad.getCreatedAt().isBefore(cutoffDate)) {
+        filteredAds.add(ad);
+      }
+    }
+    return filteredAds;
+  }
+
+  // Фильтрация объявлений новее определенной даты
+  @Override
+  public List<Ad> filterByDateAfter(List<Ad> ads, LocalDate date) {
+    List<Ad> filteredAds = new ArrayList<>();
+    for (Ad ad : ads) {
+      if (ad.getCreatedAt() != null && !ad.getCreatedAt().isBefore(date)) {
+        filteredAds.add(ad);
+      }
+    }
+    return filteredAds;
+  }
+
+  // Фильтрация объявлений старше определенной даты
+  @Override
+  public List<Ad> filterByDateBefore(List<Ad> ads, LocalDate date) {
+    List<Ad> filteredAds = new ArrayList<>();
+    for (Ad ad : ads) {
+      if (ad.getCreatedAt() != null && ad.getCreatedAt().isBefore(date)) {
         filteredAds.add(ad);
       }
     }

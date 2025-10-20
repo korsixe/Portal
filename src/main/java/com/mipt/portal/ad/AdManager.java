@@ -1,5 +1,9 @@
 package com.mipt.portal.ad;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -68,10 +72,12 @@ public class AdManager implements IAdManager {
     int type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
     if (type == 2) {
-      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0, 1000000000);
+      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0,
+          1000000000);
     }
 
-    System.out.println("Объявление почти готово. Если хотите опубликовать, выведите 1. Если хотите оставить черновиком, выведите 2");
+    System.out.println(
+        "Объявление почти готово. Если хотите опубликовать, выведите 1. Если хотите оставить черновиком, выведите 2");
     type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
     String status = "Активно";
@@ -116,6 +122,7 @@ public class AdManager implements IAdManager {
 
       int choice = readIntInRange(scanner, "Ваш выбор: ", 0, 7);
 
+
       switch (choice) {
         case 1:
           editTitle(scanner, ad);
@@ -144,6 +151,10 @@ public class AdManager implements IAdManager {
           break;
       }
 
+      if (choice > 0) {
+        ad.setUpdatedAt(LocalDate.now());
+      }
+
       if (continueEditing) {
         System.out.println("\nТекущие данные после изменений:");
         System.out.println(ad.toString());
@@ -152,6 +163,7 @@ public class AdManager implements IAdManager {
 
     return ad;
   }
+
 
   private void editTitle(Scanner scanner, Ad ad) {
     System.out.println("Текущий заголовок: " + ad.getTitle());
@@ -234,7 +246,8 @@ public class AdManager implements IAdManager {
         System.out.println("Цена установлена: бесплатно");
         break;
       case 3:
-        int newPrice = readIntInRange(scanner, "Введите цену (от 1 до 1000000000): ", 1, 1000000000);
+        int newPrice = readIntInRange(scanner, "Введите цену (от 1 до 1000000000): ", 1,
+            1000000000);
         ad.setPrice(newPrice);
         System.out.println("Цена установлена: " + newPrice + " руб.");
         break;
