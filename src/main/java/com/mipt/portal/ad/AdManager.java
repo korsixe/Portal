@@ -279,4 +279,10 @@ public class AdManager implements IAdManager {
     // Логика получения объявления
     return null;
   }
+
+  @Override
+  public List<Ad> getAds(String email) {
+    // Логика получения объявлений пользователя
+    return null;
+  }
 }
