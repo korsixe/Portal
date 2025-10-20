@@ -1,27 +1,25 @@
 -- Создание таблицы пользователей
-CREATE TABLE IF NOT EXISTS users (
-                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                     name TEXT NOT NULL,
-                                     email TEXT NOT NULL UNIQUE,
-                                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE Users (
+                       email TEXT NOT NULL UNIQUE,              -- Электронная почта (уникальная)
+                       name TEXT NOT NULL,                       -- Имя пользователя
+                       password TEXT NOT NULL,                   -- Пароль
+                       address TEXT,                             -- Адрес (может быть пустым)
+                       study_program TEXT,                       -- Учебная программа
+                       course INTEGER,                           -- Курс
+                       rating REAL DEFAULT 0.0,                  -- Рейтинг (по умолчанию 0.0)
+                       coins INTEGER DEFAULT 0                   -- Количество монет (по умолчанию 0)
 );
 
 -- Создание таблицы объявлений
-CREATE TABLE IF NOT EXISTS ads (
-                                   id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                   title TEXT NOT NULL,
-                                   description TEXT,
-                                   price DECIMAL(10, 2) NOT NULL,
-                                   user_id INTEGER NOT NULL,
-                                   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                                   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+CREATE TABLE Ads (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный идентификатор объявления
+                     title TEXT NOT NULL,                       -- Заголовок
+                     description TEXT,                          -- Описание
+                     category INTEGER,                          -- Категория
+                     condition TEXT,                            -- Состояние
+                     price INTEGER NOT NULL,                    -- Цена
+                     location TEXT,                             -- Местоположение
+                     email TEXT NOT NULL,                       -- Электронная почта
+                     status TEXT NOT NULL,                      -- Статус (Активно, Архив, Черновик)
+                     FOREIGN KEY (email) REFERENCES Users(email) -- Связь с таблицей Users
 );
-
--- Создание индексов для ускорения поиска
-CREATE INDEX IF NOT EXISTS idx_ads_title ON ads (title);
-CREATE INDEX IF NOT EXISTS idx_ads_price ON ads (price);
-CREATE INDEX IF NOT EXISTS idx_ads_created_at ON ads (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
-
--- Индекс для полнотекстового поиска (если понадобится)
-CREATE INDEX IF NOT EXISTS idx_ads_search ON ads (title, description);
