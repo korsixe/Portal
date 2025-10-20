@@ -84,7 +84,7 @@ public class AdManager implements IAdManager {
     }
 
     Ad ad = new Ad(title, description, category, condition, price, location, email, status);
-
+    // и тут в БД добавили
     scanner.close();
     System.out.println("Объявление добавлено!");
     System.out.println(ad.toString());
