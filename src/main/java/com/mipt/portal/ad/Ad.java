@@ -10,15 +10,17 @@ public class Ad implements IAd {
   private String title;                // Заголовок
   private String description;          // Описание
   private Category category;           // Категория - используем enum
-  private Condition condition;            // Состояние
+  private Condition condition;         // Состояние
   private int price;                   // Цена - если цена "-1" - договорная, если "0" - бесплатно, ">0" - цена
   private String location;             // Местоположение
-  private String email;               // Храним почту
+  private String email;                // Храним почту
   private String status;               // Активно, Архив, Черновик
+  private LocalDate createdAt;         // дата создания объявления
+  private LocalDate updatedAt;         // дата последнего обновления
 
   // Конструктор
-  public Ad(String title, String description, Category category, Condition condition, int price,
-      String location, String email, String status) {
+  public Ad(String title, String description, Category category, Condition condition,
+      int price, String location, String email, String status) {
     this.title = title;
     this.description = description;
     this.category = category;
@@ -27,6 +29,8 @@ public class Ad implements IAd {
     this.location = location;
     this.email = email;
     this.status = status;
+    this.createdAt = LocalDate.now();
+    this.updatedAt = LocalDate.now();
   }
 
   // Сеттеры
@@ -46,7 +50,6 @@ public class Ad implements IAd {
     this.condition = condition;
   }
 
-
   public void setPrice(int price) {
     this.price = price;
   }
@@ -61,6 +64,10 @@ public class Ad implements IAd {
 
   public void setStatus(String status) {
     this.status = status;
+  }
+
+  public void setUpdatedAt(LocalDate updatedAt) {
+    this.updatedAt = updatedAt;
   }
 
   @Override
@@ -104,7 +111,19 @@ public class Ad implements IAd {
   }
 
   @Override
+  public LocalDate getCreatedAt() {
+    return createdAt;
+  }
+
+  @Override
+  public LocalDate getUpdatedAt() {
+    return updatedAt;
+  }
+
+  @Override
   public String toString() {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
     return "Заголовок: " + title +
         ", Описание: " + description +
         ", Категория: " + category.getDisplayName() +
@@ -112,8 +131,11 @@ public class Ad implements IAd {
         ", Цена: " + formatPrice() +
         ", Местоположение: " + location +
         ", Создатель: " + email +
-        ", Состояние: " + status;
+        ", Статус: " + status +
+        ", Создано: " + (createdAt != null ? createdAt.format(formatter) : "не указано") +
+        ", Обновлено: " + (updatedAt != null ? updatedAt.format(formatter) : "не указано");
   }
+
   private String formatPrice() {
     if (price == -1) {
       return "договорная";
