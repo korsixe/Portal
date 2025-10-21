@@ -14,14 +14,17 @@ CREATE TABLE Users (
 
 -- Создание таблицы объявлений
 CREATE TABLE Ads (
-                     id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный идентификатор объявления
-                     title TEXT NOT NULL,                       -- Заголовок
-                     description TEXT,                          -- Описание
-                     category INTEGER,                          -- Категория
-                     condition TEXT,                            -- Состояние
-                     price INTEGER NOT NULL,                    -- Цена
-                     location TEXT,                             -- Местоположение
-                     email TEXT NOT NULL,                       -- Электронная почта
-                     status TEXT NOT NULL,                      -- Статус (Активно, Архив, Черновик)
-                     FOREIGN KEY (email) REFERENCES Users(email) -- Связь с таблицей Users
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    category INTEGER NOT NULL,                      -- Категория (храним как число: 0=ELECTRONICS, 1=CLOTHING, и т.д.)
+    condition INTEGER NOT NULL,                     -- Состояние (храним как число: 0=USED, 1=NEW, 2=BROKEN)
+    price INTEGER NOT NULL,
+    location TEXT,
+    email TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    view_count INTEGER DEFAULT 0,
+    FOREIGN KEY (email) REFERENCES Users(email)
 );
