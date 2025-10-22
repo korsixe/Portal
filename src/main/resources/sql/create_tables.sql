@@ -1,7 +1,7 @@
 -- Условно создали таблицу, но я пока не понимаю, как создать и использовать ее
 
 -- Создание таблицы пользователей
-CREATE TABLE Users (
+CREATE TABLE user (
                        email TEXT NOT NULL UNIQUE,              -- Электронная почта (уникальная)
                        name TEXT NOT NULL,                       -- Имя пользователя
                        password TEXT NOT NULL,                   -- Пароль
@@ -13,7 +13,7 @@ CREATE TABLE Users (
 );
 
 -- Создание таблицы объявлений
-CREATE TABLE Ads (
+CREATE TABLE IF NOT EXISTS ad (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT,
@@ -27,5 +27,5 @@ CREATE TABLE Ads (
     updated_at TEXT NOT NULL,
     view_count INTEGER DEFAULT 0,
     photo_urls TEXT,
-    FOREIGN KEY (email) REFERENCES Users(email)
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
