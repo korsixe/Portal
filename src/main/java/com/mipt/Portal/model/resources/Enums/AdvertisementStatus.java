@@ -1,9 +1,7 @@
-package com.mipt.Portal.model;
+package com.mipt.Portal.model.resources.Enums;
 
 public enum AdvertisementStatus {
   UNDER_MODERATION,
-  ACTIVE,
   HIDDEN,
-  ARCHIVED,
   DELETED
 }

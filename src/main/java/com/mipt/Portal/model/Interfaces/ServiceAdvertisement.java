@@ -1,4 +1,4 @@
-package com.mipt.Portal.model;
+package com.mipt.Portal.model.Interfaces;
 
 public interface ServiceAdvertisement extends Advertisement {
 

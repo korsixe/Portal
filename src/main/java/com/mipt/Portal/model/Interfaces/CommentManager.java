@@ -1,4 +1,4 @@
-package com.mipt.Portal.model;
+package com.mipt.Portal.model.Interfaces;
 
 import java.time.LocalDateTime;
 

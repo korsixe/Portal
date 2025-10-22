@@ -1,4 +1,6 @@
-package com.mipt.Portal.model;
+package com.mipt.Portal.model.Interfaces;
+
+import com.mipt.Portal.model.resources.Enums.PricePeriod;
 
 import java.time.LocalDateTime;
 
@@ -20,7 +22,6 @@ public interface AdvertisementEditor {
   void editPrice(Double newPrice);
   void editPricePeriod(PricePeriod newPricePeriod);
 
-  void editLocation(Location newLocation);
 
   void hideAdvertisement();
   void showAdvertisement();

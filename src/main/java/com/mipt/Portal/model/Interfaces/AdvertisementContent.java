@@ -1,10 +1,15 @@
-package com.mipt.Portal.model;
+package com.mipt.Portal.model.Interfaces;
 
+
+import com.mipt.Portal.model.resources.Enums.AdvertisementStatus;
+import com.mipt.Portal.model.resources.Enums.AdvertisementType;
+import com.mipt.Portal.model.resources.Enums.Category;
+import com.mipt.Portal.model.resources.Enums.PricePeriod;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface Advertisement {
+public interface AdvertisementContent {
   Long getId();
   void setId(Long id);
 
@@ -29,14 +34,11 @@ public interface Advertisement {
   Category getCategory();
   void setCategory(Category category);
 
-  Location getLocation();
-  void setLocation(Location location);
 
   List<Media> getMedia();
   void setMedia(List<Media> media);
 
-  List<Tag> getTags();
-  void setTags(List<Tag> tags);
+
 
   AdvertisementStatus getStatus();
   void setStatus(AdvertisementStatus status);
@@ -53,11 +55,10 @@ public interface Advertisement {
   void addMedia(Media media);
   void removeMedia(Media media);
 
-  void addTag(Tag tag);
-  void removeTag(Tag tag);
 
-  void incrementViewCount();
+  void ViewsCount();
 
-  Boolean isActive();
-  Boolean canBeEditedBy(User user);
+  Boolean isValidContent();
+  Boolean hasMaxMedia();
+  Boolean hasMaxTags();
 }
