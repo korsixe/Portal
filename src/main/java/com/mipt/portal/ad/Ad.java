@@ -20,7 +20,7 @@ public class Ad implements IAd {
   private LocalDate createdAt;         // дата создания объявления
   private LocalDate updatedAt;         // дата последнего обновления
   private int viewCount;               // счетчик просмотров
-  private List<String> photoUrl;       // ссылки на фото
+  private List<String> photoUrl;       // ссылки на фото (переделать в JSON массив???)
 
   // Конструктор
   public Ad(String title, String description, Category category, Condition condition,

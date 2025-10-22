@@ -26,5 +26,6 @@ CREATE TABLE Ads (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     view_count INTEGER DEFAULT 0,
+    photo_urls TEXT,
     FOREIGN KEY (email) REFERENCES Users(email)
 );
