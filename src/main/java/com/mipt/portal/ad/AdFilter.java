@@ -1,6 +1,6 @@
 package com.mipt.portal.ad;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.ArrayList;
@@ -56,10 +56,10 @@ public class AdFilter implements IAdFilter {
   // Фильтрация объявлений за последние N дней
   @Override
   public List<Ad> filterByLastDays(List<Ad> ads, int days) {
-    LocalDate cutoffDate = LocalDate.now().minusDays(days);
+    Instant cutoffInstant = Instant.now().minusSeconds(days * 24 * 60 * 60L);
     List<Ad> filteredAds = new ArrayList<>();
     for (Ad ad : ads) {
-      if (ad.getCreatedAt() != null && !ad.getCreatedAt().isBefore(cutoffDate)) {
+      if (ad.getCreatedAt() != null && !ad.getCreatedAt().isBefore(cutoffInstant)) {
         filteredAds.add(ad);
       }
     }
@@ -68,7 +68,7 @@ public class AdFilter implements IAdFilter {
 
   // Фильтрация объявлений новее определенной даты
   @Override
-  public List<Ad> filterByDateAfter(List<Ad> ads, LocalDate date) {
+  public List<Ad> filterByDateAfter(List<Ad> ads, Instant date) {
     List<Ad> filteredAds = new ArrayList<>();
     for (Ad ad : ads) {
       if (ad.getCreatedAt() != null && !ad.getCreatedAt().isBefore(date)) {
@@ -80,7 +80,7 @@ public class AdFilter implements IAdFilter {
 
   // Фильтрация объявлений старше определенной даты
   @Override
-  public List<Ad> filterByDateBefore(List<Ad> ads, LocalDate date) {
+  public List<Ad> filterByDateBefore(List<Ad> ads, Instant date) {
     List<Ad> filteredAds = new ArrayList<>();
     for (Ad ad : ads) {
       if (ad.getCreatedAt() != null && ad.getCreatedAt().isBefore(date)) {

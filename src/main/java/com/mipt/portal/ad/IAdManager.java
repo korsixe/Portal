@@ -4,13 +4,13 @@ import java.util.List;
 
 public interface IAdManager {
 
-  Ad createAd(String email); //  Создать объявление
+  Ad createAd(long userId); //  Создать объявление
 
   Ad editAd(Ad ad); // Изменить объявление
 
-  void deleteAd(int adId); // Удалить объявление
+  Ad deleteAd(long adId); // Удалить объявление
 
-  Ad getAd(int adId); // Получить объявление
+  Ad getAd(long adId); // Получить объявление
 
-  List<Ad> getAds(String email); // Получить все объявления пользователя
+  List<Ad> getAds(long user); // Получить все объявления пользователя
 }

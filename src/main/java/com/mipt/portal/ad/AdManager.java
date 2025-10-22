@@ -1,6 +1,6 @@
 package com.mipt.portal.ad;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -12,33 +12,8 @@ import java.io.*;
 
 public class AdManager implements IAdManager {
 
-  // Функция для безопасного ввода числа
-  private int readInt(Scanner scanner, String prompt) {
-    while (true) {
-      System.out.print(prompt);
-      if (scanner.hasNextInt()) {
-        return scanner.nextInt();
-      } else {
-        System.out.println("Ошибка: введите целое число!");
-        scanner.next(); // очищаем некорректный ввод
-      }
-    }
-  }
-
-  // Функция для безопасного ввода числа в диапазоне
-  private int readIntInRange(Scanner scanner, String prompt, int min, int max) {
-    while (true) {
-      int value = readInt(scanner, prompt);
-      if (value >= min && value <= max) {
-        return value;
-      } else {
-        System.out.println("Ошибка: число должно быть от " + min + " до " + max + "!");
-      }
-    }
-  }
-
   @Override
-  public Ad createAd(String email) {
+  public Ad createAd(long userId) {
     Scanner scanner = null;
     try {
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
@@ -85,7 +60,7 @@ public class AdManager implements IAdManager {
       status = "Черновик";
     }
 
-    Ad ad = new Ad(title, description, category, condition, price, location, email, status);
+    Ad ad = new Ad(title, description, category, condition, price, location, userId, status);
     // и тут в БД добавили
 
     System.out.println("Объявление добавлено!");
@@ -152,7 +127,7 @@ public class AdManager implements IAdManager {
       }
 
       if (choice > 0) {
-        ad.setUpdatedAt(LocalDate.now());
+        ad.setUpdatedAt(Instant.now());
       }
 
       if (continueEditing) {
@@ -276,19 +251,46 @@ public class AdManager implements IAdManager {
 
 
   @Override
-  public void deleteAd(int adId) {
+  public Ad deleteAd(long adId) {
     // Логика удаления объявления
+    return null;
   }
 
   @Override
-  public Ad getAd(int adId) {
+  public Ad getAd(long adId) {
     // Логика получения объявления
     return null;
   }
 
   @Override
-  public List<Ad> getAds(String email) {
+  public List<Ad> getAds(long userId) {
     // Логика получения объявлений пользователя
     return null;
+  }
+
+
+  // Функция для безопасного ввода числа
+  private int readInt(Scanner scanner, String prompt) {
+    while (true) {
+      System.out.print(prompt);
+      if (scanner.hasNextInt()) {
+        return scanner.nextInt();
+      } else {
+        System.out.println("Ошибка: введите целое число!");
+        scanner.next(); // очищаем некорректный ввод
+      }
+    }
+  }
+
+  // Функция для безопасного ввода числа в диапазоне
+  private int readIntInRange(Scanner scanner, String prompt, int min, int max) {
+    while (true) {
+      int value = readInt(scanner, prompt);
+      if (value >= min && value <= max) {
+        return value;
+      } else {
+        System.out.println("Ошибка: число должно быть от " + min + " до " + max + "!");
+      }
+    }
   }
 }
