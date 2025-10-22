@@ -6,7 +6,6 @@ import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 public class Ad implements IAd {
 
@@ -21,6 +20,7 @@ public class Ad implements IAd {
   private LocalDate createdAt;         // дата создания объявления
   private LocalDate updatedAt;         // дата последнего обновления
   private int viewCount;               // счетчик просмотров
+  private List<String> photoUrl;       // ссылки на фото
 
   // Конструктор
   public Ad(String title, String description, Category category, Condition condition,
