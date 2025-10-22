@@ -117,11 +117,11 @@ public class User {
 
   @Override
   public String toString() {
-    return String.format("\uD83D\uDC64 Имя: " + name + " \n" +
-            "\uD83D\uDCE7 Email: " + email + "\n" +
-            "\uD83D\uDCE7 Адрес: " + address + "\n" +
-            "\uD83C\uDF93 Программа обучени, курс: " + sturyProgram + " " +  course + " курс\n" +
-            "\u2B50 Рейтинг: " + rating + "\n" +
-            "\uD83E\uDE99 Физтех-коины: " + coins);
+    return String.format("Имя: " + name + " \n" +
+            "Email: " + email + "\n" +
+            "Адрес: " + address + "\n" +
+            "Программа обучени, курс: " + sturyProgram + " " +  course + " курс\n" +
+            "Рейтинг: " + rating + "\n" +
+            "Физтех-коины: " + coins);
   }
 }
