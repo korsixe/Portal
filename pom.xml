@@ -19,9 +19,6 @@
     <junit.version>5.9.2</junit.version>
   </properties>
 
-  <modules>
-    <module>mavenModule</module>
-  </modules>
 
   <dependencyManagement>
     <dependencies>
