@@ -79,6 +79,10 @@ public class Ad implements IAd {
     this.viewCount = viewCount;
   }
 
+  public void setPhotoUrl(List<String> photoUrl) {
+    this.photoUrl = photoUrl;
+  }
+
   @Override
   public void incrementViewCount() {
     this.viewCount++;
@@ -132,6 +136,11 @@ public class Ad implements IAd {
   @Override
   public LocalDate getUpdatedAt() {
     return updatedAt;
+  }
+
+  @Override
+  public List<String> getPhotoUrl() {
+    return photoUrl;
   }
 
   @Override

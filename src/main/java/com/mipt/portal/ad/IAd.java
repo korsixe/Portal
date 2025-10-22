@@ -3,6 +3,7 @@ package com.mipt.portal.ad;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.List;
 
 public interface IAd { // Интерфейс для получения данных объявления
 
@@ -31,4 +32,6 @@ public interface IAd { // Интерфейс для получения данн�
   int getViewCount();
 
   void incrementViewCount();
+
+  List<String> getPhotoUrl();
 }
