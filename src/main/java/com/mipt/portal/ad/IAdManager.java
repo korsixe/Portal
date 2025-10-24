@@ -12,5 +12,5 @@ public interface IAdManager {
 
   Ad getAd(long adId); // Получить объявление
 
-  List<Ad> getAds(long user); // Получить все объявления пользователя
+  List<Ad> getAds(long userId); // Получить все объявления пользователя
 }

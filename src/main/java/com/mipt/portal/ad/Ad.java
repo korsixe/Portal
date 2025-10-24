@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Ad {
 
-  private long adId;                   // id объявления
+  private long id;                   // id объявления
   private String title;                // Заголовок
   private String description;          // Описание
   private Category category;           // Категория - используем enum
