@@ -12,7 +12,7 @@ public class DatabaseManager {
     // Уберите static из методов
     public void createTables() {
       try {
-        String sql = readSqlFile("create_tables.sql");
+        String sql = readSqlFile("sql/create_tables.sql");
         // ваш код выполнения SQL
       } catch (Exception e) {
         e.printStackTrace();
