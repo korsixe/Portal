@@ -3,9 +3,10 @@ package com.mipt.portal.service;
 public class User {
   private String email;
   private String name;
+  private long id;
   private String password;
   private String address;
-  private String sturyProgram;
+  private String studyProgram;
   private int course;
   private double rating;
   private int coins;
@@ -17,6 +18,7 @@ public class User {
     this.name = name;
     this.password = password;
     this.course = 1;
+    //this.id = DataBase.createId(email);
   }
 
   public static void main(String[] args) {
@@ -56,11 +58,11 @@ public class User {
   }
 
   public String getStudyProgram() {
-    return sturyProgram;
+    return studyProgram;
   }
 
   public void setStudyProgram(String studyProgram) {
-    this.sturyProgram = studyProgram;
+    this.studyProgram = studyProgram;
   }
 
   public int getCourse() {
@@ -120,7 +122,7 @@ public class User {
     return String.format("Имя: " + name + " \n" +
             "Email: " + email + "\n" +
             "Адрес: " + address + "\n" +
-            "Программа обучени, курс: " + sturyProgram + " " +  course + " курс\n" +
+            "Программа обучени, курс: " + studyProgram + " " +  course + " курс\n" +
             "Рейтинг: " + rating + "\n" +
             "Физтех-коины: " + coins);
   }
