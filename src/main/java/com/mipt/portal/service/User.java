@@ -1,5 +1,6 @@
 package com.mipt.portal.service;
 
+import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 @Getter
@@ -15,6 +16,7 @@ public class User {
   private int course;
   private double rating;
   private int coins;
+  private ArrayList<Long> adList;
 
   public User() {}
 
@@ -23,6 +25,7 @@ public class User {
     this.name = name;
     this.password = password;
     this.course = 1;
+    this.adList = adList;
     //this.id = DataBase.createId(email);
   }
 
