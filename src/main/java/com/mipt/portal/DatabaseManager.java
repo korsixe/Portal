@@ -9,11 +9,10 @@ import java.io.IOException;
 
 public class DatabaseManager {
 
-    // Уберите static из методов
     public void createTables() {
       try {
         String sql = readSqlFile("sql/create_tables.sql");
-        // ваш код выполнения SQL
+        // код выполнения SQL
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -22,7 +21,7 @@ public class DatabaseManager {
     public void insertData() {
       try {
         String sql = readSqlFile("insert_data.sql");
-        // ваш код выполнения SQL
+        // код выполнения SQL
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -30,14 +29,12 @@ public class DatabaseManager {
 
     private String readSqlFile(String filename) {
       try {
-        // Пробуем загрузить как ресурс из classpath
         InputStream inputStream = getClass().getClassLoader().getResourceAsStream(filename);
 
         if (inputStream != null) {
           return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         }
 
-        // Если не нашли как ресурс, пробуем файловую систему
         Path path = Paths.get("~Portal/src/main/resources/sql/" + filename);
         if (Files.exists(path)) {
           return Files.readString(path);

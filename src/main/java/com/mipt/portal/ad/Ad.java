@@ -8,6 +8,11 @@ import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 
 public class Ad {
 
@@ -25,6 +30,7 @@ public class Ad {
   private int viewCount;               // счетчик просмотров
   private List<File> photoUrl;         // ссылки на фото (переделать в JSON массив???)
 
+
   // Конструктор
   public Ad(String title, String description, Category category, Condition condition,
       int price, String location, long userId, String status) {
@@ -41,101 +47,8 @@ public class Ad {
     this.viewCount = 0;
   }
 
-  // Сеттеры
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public void setCategory(Category category) {
-    this.category = category;
-  }
-
-  public void setCondition(Condition condition) {
-    this.condition = condition;
-  }
-
-  public void setPrice(int price) {
-    this.price = price;
-  }
-
-  public void setLocation(String location) {
-    this.location = location;
-  }
-
-  public void setIdUser(long userId) {
-    this.userId = userId;
-  }
-
-  public void setStatus(String status) {
-    this.status = status;
-  }
-
-  public void setUpdatedAt(Instant updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public void setViewCount(int viewCount) {
-    this.viewCount = viewCount;
-  }
-
-  public void setPhotoUrl(List<File> photoUrl) {
-    this.photoUrl = photoUrl;
-  }
-
   public void incrementViewCount() {
     this.viewCount++;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public Category getCategory() {
-    return category;
-  }
-
-  public Condition getCondition() {
-    return condition;
-  }
-
-  public int getPrice() {
-    return price;
-  }
-
-  public String getLocation() {
-    return location;
-  }
-
-  public long getUserId() {
-    return userId;
-  }
-
-  public String getStatus() {
-    return status;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public List<File> getPhotoUrl() {
-    return photoUrl;
-  }
-
-  public int getViewCount() {
-    return viewCount;
   }
 
   public String toString() {

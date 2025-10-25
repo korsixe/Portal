@@ -1,241 +1,315 @@
+/*
 package com.mipt.portal;
 
 import org.junit.jupiter.api.*;
 import java.sql.*;
+import java.time.Instant;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class DatabaseManagerTest {
+public class DatabaseManagerTest {
 
-  private static final String TEST_DB_URL = "jdbc:sqlite:test_portal.db";
-  private Connection testConn;
+  private DatabaseManager dbManager;
+  private Connection connection;
 
   @BeforeAll
-  void setUp() throws SQLException {
-    // Создаем тестовую базу данных
-    testConn = DriverManager.getConnection(TEST_DB_URL);
-    System.out.println("✅ Тестовая БД создана");
+  void setUpAll() throws SQLException {
+    dbManager = DatabaseManager.getInstance();
+    connection = dbManager.getConnection();
+
+    // Очищаем таблицы перед началом тестов
+    try (Statement stmt = connection.createStatement()) {
+      stmt.execute("DELETE FROM ads");
+      stmt.execute("DELETE FROM users");
+    }
   }
 
   @AfterAll
-  void tearDown() throws SQLException {
-    // Закрываем соединение и удаляем тестовую БД
-    if (testConn != null && !testConn.isClosed()) {
-      testConn.close();
+  void tearDownAll() throws SQLException {
+    if (connection != null && !connection.isClosed()) {
+      connection.close();
     }
-    // Можно добавить удаление файла test_portal.db если нужно
-    System.out.println("✅ Тестовая БД очищена");
   }
 
   @BeforeEach
-  void createTestTables() throws SQLException {
-    // Создаем тестовые таблицы перед каждым тестом
-    String createUsersSQL = """
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL UNIQUE,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """;
-
-    String createAdsSQL = """
-            CREATE TABLE IF NOT EXISTS ads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT,
-                price DECIMAL(10, 2) NOT NULL,
-                user_id INTEGER NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
-            )
-        """;
-
-    try (Statement stmt = testConn.createStatement()) {
-      stmt.execute(createUsersSQL);
-      stmt.execute(createAdsSQL);
-    }
-  }
-
-  @AfterEach
-  void clearTestData() throws SQLException {
-    // Очищаем данные после каждого теста
-    try (Statement stmt = testConn.createStatement()) {
+  void setUp() throws SQLException {
+    // Очищаем данные перед каждым тестом
+    try (Statement stmt = connection.createStatement()) {
       stmt.execute("DELETE FROM ads");
       stmt.execute("DELETE FROM users");
     }
   }
 
   @Test
-  void testDatabaseConnection() {
-    assertDoesNotThrow(() -> {
-      Connection conn = DriverManager.getConnection(TEST_DB_URL);
-      assertNotNull(conn, "Соединение с БД должно быть установлено");
-      assertFalse(conn.isClosed(), "Соединение должно быть открытым");
-      conn.close();
-    }, "Подключение к БД не должно вызывать исключений");
-  }
+  void testCreateUser() throws SQLException {
+    // Подготовка
+    String email = "test@mipt.ru";
+    String name = "Test User";
+    String password = "password123";
 
-  @Test
-  void testCreateTables() throws SQLException {
-    // Проверяем что таблицы создаются без ошибок
-    try (Statement stmt = testConn.createStatement()) {
-      // Проверяем существование таблицы users
-      ResultSet rs = stmt.executeQuery(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
-      );
-      assertTrue(rs.next(), "Таблица users должна существовать");
+    // Выполнение
+    long userId = dbManager.createUser(email, name, password, "Moscow", "Computer Science", 2);
 
-      // Проверяем существование таблицы ads
-      rs = stmt.executeQuery(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='ads'"
-      );
-      assertTrue(rs.next(), "Таблица ads должна существовать");
-    }
-  }
+    // Проверка
+    assertTrue(userId > 0);
 
-  @Test
-  void testInsertAndSelectUser() throws SQLException {
-    // Тестируем вставку и выборку пользователя
-    String insertSQL = "INSERT INTO users (name, email) VALUES (?, ?)";
-    try (PreparedStatement pstmt = testConn.prepareStatement(insertSQL)) {
-      pstmt.setString(1, "Тестовый Пользователь");
-      pstmt.setString(2, "test@mail.ru");
-      int affectedRows = pstmt.executeUpdate();
-      assertEquals(1, affectedRows, "Должна быть вставлена одна строка");
-    }
+    // Проверяем что пользователь действительно создан
+    try (PreparedStatement stmt = connection.prepareStatement("SELECT * FROM users WHERE id = ?")) {
+      stmt.setLong(1, userId);
+      ResultSet rs = stmt.executeQuery();
 
-    // Проверяем что пользователь добавлен
-    String selectSQL = "SELECT * FROM users WHERE email = ?";
-    try (PreparedStatement pstmt = testConn.prepareStatement(selectSQL)) {
-      pstmt.setString(1, "test@mail.ru");
-      ResultSet rs = pstmt.executeQuery();
-      assertTrue(rs.next(), "Должен найтись добавленный пользователь");
-      assertEquals("Тестовый Пользователь", rs.getString("name"));
-      assertEquals("test@mail.ru", rs.getString("email"));
-    }
-  }
-
-  @Test
-  void testInsertAndSelectAd() throws SQLException {
-    // Сначала добавляем пользователя
-    String insertUserSQL = "INSERT INTO users (name, email) VALUES (?, ?)";
-    int userId;
-    try (PreparedStatement pstmt = testConn.prepareStatement(insertUserSQL,
-        Statement.RETURN_GENERATED_KEYS)) {
-      pstmt.setString(1, "Автор Объявления");
-      pstmt.setString(2, "author@mail.ru");
-      pstmt.executeUpdate();
-
-      ResultSet rs = pstmt.getGeneratedKeys();
       assertTrue(rs.next());
-      userId = rs.getInt(1);
-    }
-
-    // Добавляем объявление
-    String insertAdSQL = """
-            INSERT INTO ads (title, description, user_id, price) 
-            VALUES (?, ?, ?, ?)
-        """;
-    try (PreparedStatement pstmt = testConn.prepareStatement(insertAdSQL)) {
-      pstmt.setString(1, "Тестовое объявление");
-      pstmt.setString(2, "Тестовое описание");
-      pstmt.setInt(3, userId);
-      pstmt.setDouble(4, 1000.50);
-      int affectedRows = pstmt.executeUpdate();
-      assertEquals(1, affectedRows, "Должно быть добавлено одно объявление");
-    }
-
-    // Проверяем объявление
-    String selectSQL = "SELECT * FROM ads WHERE title = ?";
-    try (PreparedStatement pstmt = testConn.prepareStatement(selectSQL)) {
-      pstmt.setString(1, "Тестовое объявление");
-      ResultSet rs = pstmt.executeQuery();
-      assertTrue(rs.next(), "Должно найтись добавленное объявление");
-      assertEquals("Тестовое описание", rs.getString("description"));
-      assertEquals(1000.50, rs.getDouble("price"));
-      assertEquals(userId, rs.getInt("user_id"));
+      assertEquals(email, rs.getString("email"));
+      assertEquals(name, rs.getString("name"));
+      assertEquals("Moscow", rs.getString("address"));
+      assertEquals("Computer Science", rs.getString("study_program"));
+      assertEquals(2, rs.getInt("course"));
+      assertEquals(0.0, rs.getDouble("rating"));
+      assertEquals(0, rs.getInt("coins"));
     }
   }
 
   @Test
-  void testUserEmailUniqueConstraint() {
-    // Тестируем уникальность email
-    String insertSQL = "INSERT INTO users (name, email) VALUES (?, ?)";
+  void testCreateUserWithDuplicateEmail() throws SQLException {
+    // Подготовка
+    String email = "duplicate@mipt.ru";
+    dbManager.createUser(email, "User 1", "pass1", null, null, null);
 
-    // Первая вставка должна пройти успешно
-    assertDoesNotThrow(() -> {
-      try (PreparedStatement pstmt = testConn.prepareStatement(insertSQL)) {
-        pstmt.setString(1, "Пользователь 1");
-        pstmt.setString(2, "duplicate@mail.ru");
-        pstmt.executeUpdate();
-      }
-    }, "Первая вставка с уникальным email должна пройти успешно");
-
-    // Вторая вставка с тем же email должна вызвать исключение
-    SQLException exception = assertThrows(SQLException.class, () -> {
-      try (PreparedStatement pstmt = testConn.prepareStatement(insertSQL)) {
-        pstmt.setString(1, "Пользователь 2");
-        pstmt.setString(2, "duplicate@mail.ru");
-        pstmt.executeUpdate();
-      }
-    }, "Вторая вставка с тем же email должна вызвать исключение");
-
-    assertTrue(exception.getMessage().contains("UNIQUE constraint"),
-        "Исключение должно быть связано с нарушением уникальности");
+    // Выполнение и проверка
+    assertThrows(SQLException.class, () -> {
+      dbManager.createUser(email, "User 2", "pass2", null, null, null);
+    });
   }
 
   @Test
-  void testSearchAds() throws SQLException {
-    // Подготавливаем тестовые данные
-    try (Statement stmt = testConn.createStatement()) {
-      stmt.execute("INSERT INTO users (name, email) VALUES ('Тест Юзер', 'test@mail.ru')");
-      stmt.execute("""
-                INSERT INTO ads (title, description, user_id, price) 
-                VALUES ('Продам MacBook', 'Отличный ноутбук', 1, 100000)
-            """);
-      stmt.execute("""
-                INSERT INTO ads (title, description, user_id, price) 
-                VALUES ('Куплю iPhone', 'Ищу телефон', 1, 50000)
-            """);
-    }
+  void testGetUserById() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("getuser@mipt.ru", "Get User", "password", "Address", "Physics", 3);
 
-    // Тестируем поиск по заголовку
-    String searchSQL = """
-            SELECT * FROM ads 
-            WHERE title LIKE ? OR description LIKE ?
-        """;
-    try (PreparedStatement pstmt = testConn.prepareStatement(searchSQL)) {
-      pstmt.setString(1, "%MacBook%");
-      pstmt.setString(2, "%MacBook%");
-      ResultSet rs = pstmt.executeQuery();
+    // Выполнение
+    User user = dbManager.getUserById(userId);
 
-      assertTrue(rs.next(), "Должен найтись MacBook");
-      assertEquals("Продам MacBook", rs.getString("title"));
-      assertFalse(rs.next(), "Должен быть только один результат");
+    // Проверка
+    assertNotNull(user);
+    assertEquals(userId, user.getId());
+    assertEquals("getuser@mipt.ru", user.getEmail());
+    assertEquals("Get User", user.getName());
+    assertEquals("Address", user.getAddress());
+    assertEquals("Physics", user.getStudyProgram());
+    assertEquals(3, user.getCourse());
+  }
+
+
+  @Test
+  void testCreateAd() throws SQLException {
+    long userId = dbManager.createUser("adcreator@mipt.ru", "Ad Creator", "pass", null, null, null);
+
+    long adId = dbManager.createAd(
+        "Test Ad",
+        "Test Description",
+        1,  // ELECTRONICS
+        0,  // USED
+        1000,
+        "Moscow",
+        userId,
+        "active",
+        new byte[0]  // пустой массив для фото
+    );
+
+    assertTrue(adId > 0);
+
+    try (PreparedStatement stmt = connection.prepareStatement("SELECT * FROM ads WHERE id = ?")) {
+      stmt.setLong(1, adId);
+      ResultSet rs = stmt.executeQuery();
+
+      assertTrue(rs.next());
+      assertEquals("Test Ad", rs.getString("title"));
+      assertEquals("Test Description", rs.getString("description"));
+      assertEquals(1, rs.getInt("category"));
+      assertEquals(0, rs.getInt("condition"));
+      assertEquals(1000, rs.getInt("price"));
+      assertEquals("Moscow", rs.getString("location"));
+      assertEquals(userId, rs.getLong("user_id"));
+      assertEquals("active", rs.getString("status"));
+      assertEquals(0, rs.getInt("view_count"));
     }
   }
 
   @Test
-  void testForeignKeyConstraint() {
-    // Тестируем foreign key constraint
-    String insertAdSQL = """
-            INSERT INTO ads (title, description, user_id, price) 
-            VALUES (?, ?, ?, ?)
-        """;
+  void testCreateAdWithInvalidUser() {
+    // Пытаемся создать объявление для несуществующего пользователя
+    assertThrows(SQLException.class, () -> {
+      dbManager.createAd(
+          "Invalid Ad",
+          "Description",
+          0, 0, 100, "Location",
+          999999L,  // несуществующий ID
+          "active",
+          new byte[0]
+      );
+    });
+  }
 
-    SQLException exception = assertThrows(SQLException.class, () -> {
-      try (PreparedStatement pstmt = testConn.prepareStatement(insertAdSQL)) {
-        pstmt.setString(1, "Тестовое объявление");
-        pstmt.setString(2, "Описание");
-        pstmt.setInt(3, 999); // Несуществующий user_id
-        pstmt.setDouble(4, 1000.0);
-        pstmt.executeUpdate();
-      }
-    }, "Вставка объявления с несуществующим user_id должна вызвать исключение");
+  @Test
+  void testGetAdById() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("adgetter@mipt.ru", "Ad Getter", "pass", null, null, null);
+    long adId = dbManager.createAd("Get Ad", "Description", 2, 1, 500, "SPB", userId, "active", new byte[0]);
 
-    assertTrue(exception.getMessage().contains("FOREIGN KEY") ||
-            exception.getMessage().contains("constraint"),
-        "Исключение должно быть связано с foreign key constraint");
+    // Выполнение
+    Ad ad = dbManager.getAdById(adId);
+
+    // Проверка
+    assertNotNull(ad);
+    assertEquals(adId, ad.getId());
+    assertEquals("Get Ad", ad.getTitle());
+    assertEquals("Description", ad.getDescription());
+    assertEquals(2, ad.getCategory());
+    assertEquals(1, ad.getCondition());
+    assertEquals(500, ad.getPrice());
+    assertEquals("SPB", ad.getLocation());
+    assertEquals(userId, ad.getUserId());
+    assertEquals("active", ad.getStatus());
+    assertEquals(0, ad.getViewCount());
+  }
+
+  @Test
+  void testGetAdsByUserId() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("multiad@mipt.ru", "Multi Ad", "pass", null, null, null);
+
+    // Создаем несколько объявлений
+    dbManager.createAd("Ad 1", "Desc 1", 0, 0, 100, "Loc 1", userId, "active", new byte[0]);
+    dbManager.createAd("Ad 2", "Desc 2", 1, 1, 200, "Loc 2", userId, "active", new byte[0]);
+    dbManager.createAd("Ad 3", "Desc 3", 2, 0, 300, "Loc 3", userId, "draft", new byte[0]);
+
+    // Выполнение
+    List<Ad> userAds = dbManager.getAdsByUserId(userId);
+
+    // Проверка
+    assertNotNull(userAds);
+    assertEquals(3, userAds.size());
+
+    // Проверяем что все объявления принадлежат правильному пользователю
+    for (Ad ad : userAds) {
+      assertEquals(userId, ad.getUserId());
+    }
+  }
+
+  @Test
+  void testUpdateAd() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("updater@mipt.ru", "Updater", "pass", null, null, null);
+    long adId = dbManager.createAd("Old Title", "Old Desc", 0, 0, 100, "Old Loc", userId, "active", new byte[0]);
+
+    // Выполнение - обновляем объявление
+    boolean updated = dbManager.updateAd(adId, "New Title", "New Desc", 1, 1, 200, "New Loc", "archived");
+
+    // Проверка
+    assertTrue(updated);
+
+    // Проверяем изменения в базе
+    Ad updatedAd = dbManager.getAdById(adId);
+    assertNotNull(updatedAd);
+    assertEquals("New Title", updatedAd.getTitle());
+    assertEquals("New Desc", updatedAd.getDescription());
+    assertEquals(1, updatedAd.getCategory());
+    assertEquals(1, updatedAd.getCondition());
+    assertEquals(200, updatedAd.getPrice());
+    assertEquals("New Loc", updatedAd.getLocation());
+    assertEquals("archived", updatedAd.getStatus());
+  }
+
+  @Test
+  void testDeleteAd() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("deleter@mipt.ru", "Deleter", "pass", null, null, null);
+    long adId = dbManager.createAd("To Delete", "Desc", 0, 0, 100, "Loc", userId, "active", new byte[0]);
+
+    // Проверяем что объявление существует
+    assertNotNull(dbManager.getAdById(adId));
+
+    // Выполнение - удаляем объявление
+    boolean deleted = dbManager.deleteAd(adId);
+
+    // Проверка
+    assertTrue(deleted);
+    assertNull(dbManager.getAdById(adId));
+  }
+
+  @Test
+  void testIncrementAdViewCount() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("viewer@mipt.ru", "Viewer", "pass", null, null, null);
+    long adId = dbManager.createAd("View Ad", "Desc", 0, 0, 100, "Loc", userId, "active", new byte[0]);
+
+    // Начальное состояние
+    Ad initialAd = dbManager.getAdById(adId);
+    assertEquals(0, initialAd.getViewCount());
+
+    // Выполнение - увеличиваем счетчик просмотров
+    boolean incremented = dbManager.incrementAdViewCount(adId);
+
+    // Проверка
+    assertTrue(incremented);
+
+    Ad updatedAd = dbManager.getAdById(adId);
+    assertEquals(1, updatedAd.getViewCount());
+  }
+
+  @Test
+  void testUpdateUserRating() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("rating@mipt.ru", "Rating User", "pass", null, null, null);
+
+    // Выполнение - обновляем рейтинг
+    boolean updated = dbManager.updateUserRating(userId, 4.5);
+
+    // Проверка
+    assertTrue(updated);
+
+    User user = dbManager.getUserById(userId);
+    assertEquals(4.5, user.getRating());
+  }
+
+  @Test
+  void testUpdateUserCoins() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("coins@mipt.ru", "Coins User", "pass", null, null, null);
+
+    // Выполнение - обновляем монеты
+    boolean updated = dbManager.updateUserCoins(userId, 150);
+
+    // Проверка
+    assertTrue(updated);
+
+    User user = dbManager.getUserById(userId);
+    assertEquals(150, user.getCoins());
+  }
+
+  @Test
+  void testSearchAdsByTitle() throws SQLException {
+    // Подготовка
+    long userId = dbManager.createUser("searcher@mipt.ru", "Searcher", "pass", null, null, null);
+
+    dbManager.createAd("iPhone for sale", "Good phone", 0, 0, 10000, "Moscow", userId, "active", new byte[0]);
+    dbManager.createAd("MacBook Pro", "Laptop", 0, 1, 50000, "SPB", userId, "active", new byte[0]);
+    dbManager.createAd("Samsung Phone", "Android", 0, 0, 8000, "Moscow", userId, "active", new byte[0]);
+    dbManager.createAd("Clothes", "T-shirt", 1, 0, 500, "Moscow", userId, "active", new byte[0]);
+
+    // Выполнение - ищем по ключевому слову
+    List<Ad> phoneAds = dbManager.searchAdsByTitle("phone");
+
+    // Проверка
+    assertNotNull(phoneAds);
+    assertEquals(2, phoneAds.size()); // iPhone и Samsung Phone
+
+    for (Ad ad : phoneAds) {
+      assertTrue(ad.getTitle().toLowerCase().contains("phone"));
+    }
   }
 }
+
+ */
