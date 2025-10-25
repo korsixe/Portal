@@ -1,5 +1,10 @@
 package com.mipt.portal.service;
 
+import lombok.Getter;
+import lombok.Setter;
+@Getter
+@Setter
+
 public class User {
   private String email;
   private String name;
@@ -21,66 +26,6 @@ public class User {
     //this.id = DataBase.createId(email);
   }
 
-  public static void main(String[] args) {
-
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
-  }
-
-  public String getAddress() {
-    return address;
-  }
-
-  public void setAddress(String address) {
-    this.address = address;
-  }
-
-  public String getStudyProgram() {
-    return studyProgram;
-  }
-
-  public void setStudyProgram(String studyProgram) {
-    this.studyProgram = studyProgram;
-  }
-
-  public int getCourse() {
-    return course;
-  }
-
-  public void setCourse(int course) {
-    this.course = course;
-  }
-
-  public double getRating() {
-    return rating;
-  }
-
-  public void setRating(double rating) {
-    this.rating = rating;
-  }
-
   public void increaseRating(double increment) {
     if (this.rating + increment <= 5) {
       this.rating += increment;
@@ -97,13 +42,6 @@ public class User {
     }
   }
 
-  public int getCoins() {
-    return coins;
-  }
-
-  public void setCoins(int coins) {
-    this.coins = coins;
-  }
 
   public void addCoins(int amount) {
     this.coins += amount;
