@@ -1,6 +1,5 @@
 package com.mipt.portal;
 
-import com.mipt.portal.ad.Ad;
 import com.mipt.portal.ad.AdManager;
 import java.sql.Connection;
 import java.sql.DriverManager;
