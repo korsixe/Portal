@@ -12,7 +12,6 @@ public class DatabaseManager {
     public void createTables() {
       try {
         String sql = readSqlFile("sql/create_tables.sql");
-        // код выполнения SQL
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -20,8 +19,7 @@ public class DatabaseManager {
 
     public void insertData() {
       try {
-        String sql = readSqlFile("insert_data.sql");
-        // код выполнения SQL
+        String sql = readSqlFile("sql/insert_data.sql");
       } catch (Exception e) {
         e.printStackTrace();
       }

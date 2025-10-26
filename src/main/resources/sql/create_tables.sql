@@ -1,4 +1,3 @@
--- Условно создали таблицу, но я пока не понимаю, как создать и использовать ее
 
 -- Создание таблицы пользователей
 CREATE TABLE IF NOT EXISTS users (
@@ -17,11 +16,11 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Создание таблицы объявлений
 CREATE TABLE IF NOT EXISTS ads (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
-    category INTEGER NOT NULL,                      -- Категория (храним как число: 0=ELECTRONICS, 1=CLOTHING, и т.д.)
-    condition INTEGER NOT NULL,                     -- Состояние (храним как число: 0=USED, 1=NEW, 2=BROKEN)
+    category INTEGER NOT NULL,
+    condition INTEGER NOT NULL,
     price INTEGER NOT NULL,
     location TEXT,
     user_id BIGINT NOT NULL,
@@ -29,7 +28,7 @@ CREATE TABLE IF NOT EXISTS ads (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     view_count INTEGER DEFAULT 0,
-    photo_urls BYTEA NOT NULL,
+    photo BYTEA,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
