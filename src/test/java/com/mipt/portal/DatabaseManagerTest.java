@@ -104,10 +104,10 @@ public class DatabaseManagerTest {
 
   @Test
   void testCreateAd() throws SQLException {
-    long userId = dbManager.createUser("adcreator@mipt.ru", "Ad Creator", "pass", null, null, null);
+    long userId = dbManager.createUser("adcreator@mipt.ru", "Announcement Creator", "pass", null, null, null);
 
     long adId = dbManager.createAd(
-        "Test Ad",
+        "Test Announcement",
         "Test Description",
         1,  // ELECTRONICS
         0,  // USED
@@ -125,7 +125,7 @@ public class DatabaseManagerTest {
       ResultSet rs = stmt.executeQuery();
 
       assertTrue(rs.next());
-      assertEquals("Test Ad", rs.getString("title"));
+      assertEquals("Test Announcement", rs.getString("title"));
       assertEquals("Test Description", rs.getString("description"));
       assertEquals(1, rs.getInt("category"));
       assertEquals(0, rs.getInt("condition"));
@@ -142,7 +142,7 @@ public class DatabaseManagerTest {
     // Пытаемся создать объявление для несуществующего пользователя
     assertThrows(SQLException.class, () -> {
       dbManager.createAd(
-          "Invalid Ad",
+          "Invalid Announcement",
           "Description",
           0, 0, 100, "Location",
           999999L,  // несуществующий ID
@@ -155,16 +155,16 @@ public class DatabaseManagerTest {
   @Test
   void testGetAdById() throws SQLException {
     // Подготовка
-    long userId = dbManager.createUser("adgetter@mipt.ru", "Ad Getter", "pass", null, null, null);
-    long adId = dbManager.createAd("Get Ad", "Description", 2, 1, 500, "SPB", userId, "active", new byte[0]);
+    long userId = dbManager.createUser("adgetter@mipt.ru", "Announcement Getter", "pass", null, null, null);
+    long adId = dbManager.createAd("Get Announcement", "Description", 2, 1, 500, "SPB", userId, "active", new byte[0]);
 
     // Выполнение
-    Ad ad = dbManager.getAdById(adId);
+    Announcement ad = dbManager.getAdById(adId);
 
     // Проверка
     assertNotNull(ad);
     assertEquals(adId, ad.getId());
-    assertEquals("Get Ad", ad.getTitle());
+    assertEquals("Get Announcement", ad.getTitle());
     assertEquals("Description", ad.getDescription());
     assertEquals(2, ad.getCategory());
     assertEquals(1, ad.getCondition());
@@ -178,22 +178,22 @@ public class DatabaseManagerTest {
   @Test
   void testGetAdsByUserId() throws SQLException {
     // Подготовка
-    long userId = dbManager.createUser("multiad@mipt.ru", "Multi Ad", "pass", null, null, null);
+    long userId = dbManager.createUser("multiad@mipt.ru", "Multi Announcement", "pass", null, null, null);
 
     // Создаем несколько объявлений
-    dbManager.createAd("Ad 1", "Desc 1", 0, 0, 100, "Loc 1", userId, "active", new byte[0]);
-    dbManager.createAd("Ad 2", "Desc 2", 1, 1, 200, "Loc 2", userId, "active", new byte[0]);
-    dbManager.createAd("Ad 3", "Desc 3", 2, 0, 300, "Loc 3", userId, "draft", new byte[0]);
+    dbManager.createAd("Announcement 1", "Desc 1", 0, 0, 100, "Loc 1", userId, "active", new byte[0]);
+    dbManager.createAd("Announcement 2", "Desc 2", 1, 1, 200, "Loc 2", userId, "active", new byte[0]);
+    dbManager.createAd("Announcement 3", "Desc 3", 2, 0, 300, "Loc 3", userId, "draft", new byte[0]);
 
     // Выполнение
-    List<Ad> userAds = dbManager.getAdsByUserId(userId);
+    List<Announcement> userAds = dbManager.getAdsByUserId(userId);
 
     // Проверка
     assertNotNull(userAds);
     assertEquals(3, userAds.size());
 
     // Проверяем что все объявления принадлежат правильному пользователю
-    for (Ad ad : userAds) {
+    for (Announcement ad : userAds) {
       assertEquals(userId, ad.getUserId());
     }
   }
@@ -211,7 +211,7 @@ public class DatabaseManagerTest {
     assertTrue(updated);
 
     // Проверяем изменения в базе
-    Ad updatedAd = dbManager.getAdById(adId);
+    Announcement updatedAd = dbManager.getAdById(adId);
     assertNotNull(updatedAd);
     assertEquals("New Title", updatedAd.getTitle());
     assertEquals("New Desc", updatedAd.getDescription());
@@ -243,10 +243,10 @@ public class DatabaseManagerTest {
   void testIncrementAdViewCount() throws SQLException {
     // Подготовка
     long userId = dbManager.createUser("viewer@mipt.ru", "Viewer", "pass", null, null, null);
-    long adId = dbManager.createAd("View Ad", "Desc", 0, 0, 100, "Loc", userId, "active", new byte[0]);
+    long adId = dbManager.createAd("View Announcement", "Desc", 0, 0, 100, "Loc", userId, "active", new byte[0]);
 
     // Начальное состояние
-    Ad initialAd = dbManager.getAdById(adId);
+    Announcement initialAd = dbManager.getAdById(adId);
     assertEquals(0, initialAd.getViewCount());
 
     // Выполнение - увеличиваем счетчик просмотров
@@ -255,7 +255,7 @@ public class DatabaseManagerTest {
     // Проверка
     assertTrue(incremented);
 
-    Ad updatedAd = dbManager.getAdById(adId);
+    Announcement updatedAd = dbManager.getAdById(adId);
     assertEquals(1, updatedAd.getViewCount());
   }
 
@@ -300,13 +300,13 @@ public class DatabaseManagerTest {
     dbManager.createAd("Clothes", "T-shirt", 1, 0, 500, "Moscow", userId, "active", new byte[0]);
 
     // Выполнение - ищем по ключевому слову
-    List<Ad> phoneAds = dbManager.searchAdsByTitle("phone");
+    List<Announcement> phoneAds = dbManager.searchAdsByTitle("phone");
 
     // Проверка
     assertNotNull(phoneAds);
     assertEquals(2, phoneAds.size()); // iPhone и Samsung Phone
 
-    for (Ad ad : phoneAds) {
+    for (Announcement ad : phoneAds) {
       assertTrue(ad.getTitle().toLowerCase().contains("phone"));
     }
   }

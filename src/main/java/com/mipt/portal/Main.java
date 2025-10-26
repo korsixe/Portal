@@ -1,7 +1,7 @@
 package com.mipt.portal;
 
-import com.mipt.portal.ad.Ad;
-import com.mipt.portal.ad.AdManager;
+import com.mipt.portal.announcement.Announcement;
+import com.mipt.portal.announcement.AdManager;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -24,7 +24,7 @@ public class Main {
 
       System.out.println("Теперь давайте создадим объявление");
       AdManager adManager = new AdManager(dbManager);
-      Ad cur = adManager.createAd(dbManager.getUserIdByEmail("shabunina.ao@phystech.edu"));
+      Announcement cur = adManager.createAd(dbManager.getUserIdByEmail("shabunina.ao@phystech.edu"));
       cur = adManager.editAd(cur);
       cur = adManager.deleteAd(cur.getId());
     } catch (SQLException e) {

@@ -1,4 +1,4 @@
-package com.mipt.portal.ad;
+package com.mipt.portal.announcement;
 
 import java.io.File;
 import java.time.Instant;
@@ -10,26 +10,29 @@ import lombok.Data;
 
 @Data
 
-public class Ad {
+public class Announcement {
 
-  private long id;                   // id объявления
+  private long id;                     // id объявления
   private String title;                // Заголовок
   private String description;          // Описание
   private Category category;           // Категория - используем enum
-  private Condition condition;         // Состояние
+  private String subcategory;
+  private Condition condition;
   private int price;                   // Цена - если цена "-1" - договорная, если "0" - бесплатно, ">0" - цена
   private String location;             // Местоположение
   private long userId;                 // Храним id пользователя
-  private String status;               // Активно, Архив, Черновик
+  private AdvertisementStatus status;
   private Instant createdAt;           // дата создания объявления
   private Instant updatedAt;           // дата последнего обновления
-  private int viewCount;               // счетчик просмотров
-  private List<File> photo;         // ссылки на фото
+  private Integer viewCount;           // счетчик просмотров
+  private List<File> photos;          // ссылки на фото
+  private List<String> tags;
+  private Integer tagsCount;
 
 
   // Конструкторы
 
-  public Ad(Ad other) {
+  public Announcement(Announcement other) {
     this.id = other.id;
     this.title = other.title;
     this.description = other.description;
@@ -42,11 +45,11 @@ public class Ad {
     this.createdAt = other.createdAt;
     this.updatedAt = other.updatedAt;
     this.viewCount = other.viewCount;
-    this.photo = other.photo != null ? new ArrayList<>(other.photo) : null;
+    this.photos = other.photos != null ? new ArrayList<>(other.photos) : null;
   }
 
 
-  public Ad(String title, String description, Category category, Condition condition,
+  public Announcement(String title, String description, Category category, Condition condition,
       int price, String location, long userId, String status) {
     this.title = title;
     this.description = description;

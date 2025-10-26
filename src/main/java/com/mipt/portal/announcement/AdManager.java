@@ -1,4 +1,4 @@
-package com.mipt.portal.ad;
+package com.mipt.portal.announcement;
 
 import com.mipt.portal.DatabaseManager;
 import java.sql.SQLException;
@@ -15,7 +15,7 @@ public class AdManager implements IAdManager {
   }
 
   @Override
-  public Ad createAd(long userId) {
+  public Announcement createAd(long userId) {
     Scanner scanner = null;
     try {
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
@@ -62,7 +62,7 @@ public class AdManager implements IAdManager {
       status = "Черновик";
     }
 
-    Ad ad = new Ad(title, description, category, condition, price, location, userId, status);
+    Announcement ad = new Announcement(title, description, category, condition, price, location, userId, status);
 
     try {
       long adId = dbManager.saveAd(ad);
@@ -79,7 +79,7 @@ public class AdManager implements IAdManager {
   }
 
   @Override
-  public Ad editAd(Ad ad) throws SQLException {
+  public Announcement editAd(Announcement ad) throws SQLException {
     Scanner scanner = null;
     try {
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
@@ -92,7 +92,7 @@ public class AdManager implements IAdManager {
     System.out.println(ad.toString());
 
     boolean continueEditing = true;
-    Ad originalAd = new Ad(ad);
+    Announcement originalAd = new Announcement(ad);
 
     while (continueEditing) {
       System.out.println("\nЧто вы хотите изменить?");
@@ -147,7 +147,7 @@ public class AdManager implements IAdManager {
   }
 
 
-  private void editTitle(Scanner scanner, Ad ad) {
+  private void editTitle(Scanner scanner, Announcement ad) {
     System.out.println("Текущий заголовок: " + ad.getTitle());
     System.out.print("Введите новый заголовок: ");
     scanner.nextLine(); // очистка буфера
@@ -160,7 +160,7 @@ public class AdManager implements IAdManager {
     }
   }
 
-  private void editDescription(Scanner scanner, Ad ad) {
+  private void editDescription(Scanner scanner, Announcement ad) {
     System.out.println("Текущее описание: " + ad.getDescription());
     System.out.print("Введите новое описание: ");
     scanner.nextLine(); // очистка буфера
@@ -173,7 +173,7 @@ public class AdManager implements IAdManager {
     }
   }
 
-  private void editCategory(Scanner scanner, Ad ad) {
+  private void editCategory(Scanner scanner, Announcement ad) {
     System.out.println("Текущая категория: " + ad.getCategory().getDisplayName());
     System.out.println("Выберите новую категорию:");
     Category.displayCategories();
@@ -183,7 +183,7 @@ public class AdManager implements IAdManager {
     System.out.println("Категория изменена на: " + newCategory.getDisplayName());
   }
 
-  private void editLocation(Scanner scanner, Ad ad) {
+  private void editLocation(Scanner scanner, Announcement ad) {
     System.out.println("Текущее местоположение: " + ad.getLocation());
     System.out.print("Введите новое местоположение: ");
     scanner.nextLine(); // очистка буфера
@@ -196,7 +196,7 @@ public class AdManager implements IAdManager {
     }
   }
 
-  private void editCondition(Scanner scanner, Ad ad) {
+  private void editCondition(Scanner scanner, Announcement ad) {
     System.out.println("Текущее состояние: " + ad.getCondition().getDisplayName());
     System.out.println("Выберите новое состояние:");
     Condition.displayConditions();
@@ -207,7 +207,7 @@ public class AdManager implements IAdManager {
     System.out.println("Состояние изменено на: " + newCondition.getDisplayName());
   }
 
-  private void editPrice(Scanner scanner, Ad ad) {
+  private void editPrice(Scanner scanner, Announcement ad) {
     System.out.println("Текущая цена: " + (ad.getPrice() == -1 ? "договорная" :
         ad.getPrice() == 0 ? "бесплатно" : ad.getPrice() + " руб."));
 
@@ -236,7 +236,7 @@ public class AdManager implements IAdManager {
     }
   }
 
-  private void editStatus(Scanner scanner, Ad ad) {
+  private void editStatus(Scanner scanner, Announcement ad) {
     System.out.println("Текущий статус: " + ad.getStatus());
     System.out.println("Выберите новый статус:");
     System.out.println("1. Активно");
@@ -258,9 +258,9 @@ public class AdManager implements IAdManager {
 
 
   @Override
-  public Ad deleteAd(long adId) {
+  public Announcement deleteAd(long adId) {
     try {
-      Ad ad = dbManager.getAdById(adId);
+      Announcement ad = dbManager.getAdById(adId);
       if (ad == null) {
         System.out.println("❌ Объявление с ID " + adId + " не найдено");
         return null;
@@ -295,9 +295,9 @@ public class AdManager implements IAdManager {
   }
 
   @Override
-  public Ad getAd(long adId) {
+  public Announcement getAd(long adId) {
     try {
-      Ad ad = dbManager.getAdById(adId);
+      Announcement ad = dbManager.getAdById(adId);
       if (ad != null) {
         System.out.println("✅ Объявление найдено:");
         System.out.println(ad.toString());

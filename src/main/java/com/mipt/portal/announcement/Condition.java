@@ -1,4 +1,4 @@
-package com.mipt.portal.ad;
+package com.mipt.portal.announcement;
 
 public enum Condition {
   USED("б/у"),

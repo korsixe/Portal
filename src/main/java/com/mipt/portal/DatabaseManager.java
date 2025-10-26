@@ -1,9 +1,8 @@
 package com.mipt.portal;
 
-import com.mipt.portal.ad.Ad;
-import com.mipt.portal.ad.Category;
-import com.mipt.portal.ad.Condition;
-import java.nio.file.*;
+import com.mipt.portal.announcement.Announcement;
+import com.mipt.portal.announcement.Category;
+import com.mipt.portal.announcement.Condition;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,7 +62,7 @@ public class DatabaseManager implements IDatabaseManager{
   }
 
   @Override
-  public void updateAd(Ad ad) throws SQLException {
+  public void updateAd(Announcement ad) throws SQLException {
     String sql = """
         UPDATE ads 
         SET title = ?, description = ?, category = ?, condition = ?, 
@@ -91,7 +90,7 @@ public class DatabaseManager implements IDatabaseManager{
   }
 
   @Override
-  public Ad getAdById(long adId) throws SQLException {
+  public Announcement getAdById(long adId) throws SQLException {
     String sql = """
         SELECT a.*, u.name as user_name 
         FROM ads a 
@@ -111,7 +110,7 @@ public class DatabaseManager implements IDatabaseManager{
   }
 
   @Override
-  public long saveAd(Ad ad) throws SQLException {
+  public long saveAd(Announcement ad) throws SQLException {
     String sql = """
             INSERT INTO ads (title, description, category, condition, price, location, user_id, status, view_count, photo)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -130,8 +129,8 @@ public class DatabaseManager implements IDatabaseManager{
       statement.setInt(9, ad.getViewCount());
 
 
-      if (ad.getPhoto() != null) {
-        //statement.setBytes(10, ad.getPhoto());
+      if (ad.getPhotos() != null) {
+        //statement.setBytes(10, ad.getPhotos());
       } else {
         statement.setNull(10, Types.BINARY);
       }
@@ -160,8 +159,8 @@ public class DatabaseManager implements IDatabaseManager{
   }
 
 
-  private Ad mapResultSetToAd(ResultSet resultSet) throws SQLException {
-    Ad ad = new Ad(
+  private Announcement mapResultSetToAd(ResultSet resultSet) throws SQLException {
+    Announcement ad = new Announcement(
         resultSet.getString("title"),
         resultSet.getString("description"),
         Category.getByNumber(resultSet.getInt("category")),
