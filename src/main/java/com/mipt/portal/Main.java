@@ -22,8 +22,8 @@ public class Main {
       dbManager.insertData();
 
       System.out.println("Теперь давайте создадим объявление");
-      //AdManager adManager = new AdManager(dbManager);
-      //adManager.createAd(1); // ошибка - такого юзера не существует
+      AdManager adManager = new AdManager(dbManager);
+      adManager.createAd(dbManager.getUserIdByEmail("shabunina.ao@phystech.edu"));
 
     } catch (SQLException e) {
       System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
