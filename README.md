@@ -17,6 +17,8 @@ wget https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
 поднимаем докер
 ```
 docker-compose up -d
+```
+```
 docker ps
 ```
 компилим проектик
