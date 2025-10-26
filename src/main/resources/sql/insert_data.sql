@@ -1,3 +1,6 @@
+DELETE FROM ads;
+DELETE FROM users;
+
 -- Вставляем пользователей (id будет автоматически сгенерирован)
 INSERT INTO users (email, name, password, address, study_program, course, rating, coins) VALUES
                                                                                              ('student1@phystech.edu', 'Алексей Попов', 'pass123', 'Долгопрудный, Институтский пер.', 'Прикладная математика', 2, 4.5, 100),

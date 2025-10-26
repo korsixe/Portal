@@ -1,5 +1,7 @@
 package com.mipt.portal.ad;
 
+import com.mipt.portal.DatabaseManager;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -11,6 +13,11 @@ import java.util.Scanner;
 import java.io.*;
 
 public class AdManager implements IAdManager {
+  private DatabaseManager dbManager;
+
+  public AdManager(DatabaseManager dbManager) {
+    this.dbManager = dbManager;
+  }
 
   @Override
   public Ad createAd(long userId) {
@@ -61,7 +68,13 @@ public class AdManager implements IAdManager {
     }
 
     Ad ad = new Ad(title, description, category, condition, price, location, userId, status);
-    // и тут в БД добавили
+
+    try {
+      long adId = dbManager.saveAd(ad);
+      System.out.println("✅ Объявление создано с ID: " + adId);
+    } catch (SQLException e) {
+      System.err.println("❌ Ошибка сохранения: " + e.getMessage());
+    }
 
     System.out.println("Объявление добавлено!");
     System.out.println(ad.toString());

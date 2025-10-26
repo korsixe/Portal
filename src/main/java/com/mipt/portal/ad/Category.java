@@ -29,6 +29,10 @@ public enum Category {
     }
   }
 
+  public int getIndex() {
+    return this.ordinal();
+  }
+
   public static Category getByNumber(int number) {
     if (number > 0 && number <= values().length) {
       return values()[number - 1];

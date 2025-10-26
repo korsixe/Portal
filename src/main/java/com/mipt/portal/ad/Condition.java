@@ -22,6 +22,10 @@ public enum Condition {
     }
   }
 
+  public int getIndex() {
+    return this.ordinal();
+  }
+
   public static Condition getByNumber(int number) {
     if (number > 0 && number <= values().length) {
       return values()[number - 1];
