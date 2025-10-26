@@ -1,5 +1,6 @@
 package com.mipt.portal;
 
+import com.mipt.portal.ad.Ad;
 import com.mipt.portal.ad.AdManager;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -23,8 +24,9 @@ public class Main {
 
       System.out.println("Теперь давайте создадим объявление");
       AdManager adManager = new AdManager(dbManager);
-      adManager.createAd(dbManager.getUserIdByEmail("shabunina.ao@phystech.edu"));
-
+      Ad cur = adManager.createAd(dbManager.getUserIdByEmail("shabunina.ao@phystech.edu"));
+      //cur = adManager.editAd(cur);
+      cur = adManager.deleteAd(cur.getId());
     } catch (SQLException e) {
       System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
       e.printStackTrace();

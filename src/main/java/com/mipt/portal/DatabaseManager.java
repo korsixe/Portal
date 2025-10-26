@@ -1,6 +1,8 @@
 package com.mipt.portal;
 
 import com.mipt.portal.ad.Ad;
+import com.mipt.portal.ad.Category;
+import com.mipt.portal.ad.Condition;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -58,6 +60,80 @@ public class DatabaseManager {
     }
   }
 
+  public void updateAd(Ad ad) throws SQLException {
+    String sql = """
+        UPDATE ads 
+        SET title = ?, description = ?, category = ?, condition = ?, 
+            price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
+            view_count = ?
+        WHERE id = ?
+    """;
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, ad.getTitle());
+      statement.setString(2, ad.getDescription());
+      statement.setInt(3, ad.getCategory().getIndex());
+      statement.setInt(4, ad.getCondition().getIndex());
+      statement.setInt(5, ad.getPrice());
+      statement.setString(6, ad.getLocation());
+      statement.setString(7, ad.getStatus());
+      statement.setInt(8, ad.getViewCount());
+      statement.setLong(9, ad.getId());
+
+      int affectedRows = statement.executeUpdate();
+      if (affectedRows == 0) {
+        throw new SQLException("Обновление объявления failed, no rows affected.");
+      }
+    }
+  }
+
+  public Ad getAdById(long adId) throws SQLException {
+    String sql = """
+        SELECT a.*, u.name as user_name 
+        FROM ads a 
+        LEFT JOIN users u ON a.user_id = u.id 
+        WHERE a.id = ?
+    """;
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setLong(1, adId);
+      ResultSet resultSet = statement.executeQuery();
+
+      if (resultSet.next()) {
+        return mapResultSetToAd(resultSet);
+      }
+      return null; // объявление не найдено
+    }
+  }
+
+  private Ad mapResultSetToAd(ResultSet resultSet) throws SQLException {
+    Ad ad = new Ad(
+        resultSet.getString("title"),
+        resultSet.getString("description"),
+        Category.getByNumber(resultSet.getInt("category")),
+        Condition.getByNumber(resultSet.getInt("condition")),
+        resultSet.getInt("price"),
+        resultSet.getString("location"),
+        resultSet.getLong("user_id"),
+        resultSet.getString("status")
+    );
+
+    ad.setId(resultSet.getLong("id"));
+    ad.setViewCount(resultSet.getInt("view_count"));
+
+    Timestamp createdAt = resultSet.getTimestamp("created_at");
+    Timestamp updatedAt = resultSet.getTimestamp("updated_at");
+    if (createdAt != null) {
+      ad.setCreatedAt(createdAt.toInstant());
+    }
+    if (updatedAt != null) {
+      ad.setUpdatedAt(updatedAt.toInstant());
+    }
+
+    return ad;
+  }
+
+
   public long saveAd(Ad ad) throws SQLException {
     String sql = """
             INSERT INTO ads (title, description, category, condition, price, location, user_id, status, view_count, photo)
@@ -92,6 +168,16 @@ public class DatabaseManager {
         return generatedId;
       }
       throw new SQLException("Failed to get generated ID");
+    }
+  }
+
+  public boolean deleteAd(long adId) throws SQLException {
+    String sql = "DELETE FROM ads WHERE id = ?";
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setLong(1, adId);
+      int affectedRows = statement.executeUpdate();
+      return affectedRows > 0;
     }
   }
 

@@ -4,9 +4,7 @@ import java.io.File;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
-import java.util.Locale;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +29,25 @@ public class Ad {
   private List<File> photo;         // ссылки на фото (переделать в JSON массив???)
 
 
-  // Конструктор
+  // Конструкторы
+
+  public Ad(Ad other) {
+    this.id = other.id;
+    this.title = other.title;
+    this.description = other.description;
+    this.category = other.category;
+    this.condition = other.condition;
+    this.price = other.price;
+    this.location = other.location;
+    this.userId = other.userId;
+    this.status = other.status;
+    this.createdAt = other.createdAt;
+    this.updatedAt = other.updatedAt;
+    this.viewCount = other.viewCount;
+    this.photo = other.photo != null ? new ArrayList<>(other.photo) : null;
+  }
+
+
   public Ad(String title, String description, Category category, Condition condition,
       int price, String location, long userId, String status) {
     this.title = title;
