@@ -1,9 +1,9 @@
 package com.mipt.Portal.model.Interfaces;
 
-import com.mipt.Portal.model.resources.Enums.AdvertisementStatus;
-import com.mipt.Portal.model.resources.Enums.AdvertisementType;
-import com.mipt.Portal.model.resources.Enums.Category;
-import com.mipt.Portal.model.resources.Enums.PricePeriod;
+import com.mipt.Portal.model.announcement.resources.Enums.AdvertisementStatus;
+import com.mipt.Portal.model.announcement.resources.Enums.AdvertisementType;
+import com.mipt.Portal.model.announcement.resources.Enums.Category;
+import com.mipt.Portal.model.announcement.resources.Enums.PricePeriod;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.mipt.Portal.model.Classes;
+package com.mipt.Portal.model.announcement.Classes;
 
 public class AddMedia {
   public String uploadFile(String file, Long adId) {

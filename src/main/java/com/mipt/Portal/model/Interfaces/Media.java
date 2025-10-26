@@ -1,7 +1,7 @@
 package com.mipt.Portal.model.Interfaces;
 
 
-import com.mipt.Portal.model.resources.Enums.MediaType;
+import com.mipt.Portal.model.announcement.resources.Enums.MediaType;
 
 import java.time.LocalDateTime;
 

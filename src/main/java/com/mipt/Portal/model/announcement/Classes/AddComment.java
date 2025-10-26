@@ -1,6 +1,4 @@
-package com.mipt.Portal.model.Classes;
-
-import com.mipt.Portal.model.DTO.Comment;
+package com.mipt.Portal.model.announcement.Classes;
 
 
 public class AddComment {

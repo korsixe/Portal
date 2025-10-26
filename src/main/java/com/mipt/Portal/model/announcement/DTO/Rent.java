@@ -1,6 +1,6 @@
-package com.mipt.Portal.model.DTO;
+package com.mipt.Portal.model.announcement.DTO;
 
-import com.mipt.Portal.model.resources.Enums.PricePeriod;
+import com.mipt.Portal.model.announcement.resources.Enums.PricePeriod;
 
 public class Rent extends Sale {
   private PricePeriod pricePeriod;

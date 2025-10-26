@@ -1,6 +1,6 @@
 package com.mipt.Portal.model.Interfaces;
 
-import com.mipt.Portal.model.resources.Enums.PricePeriod;
+import com.mipt.Portal.model.announcement.resources.Enums.PricePeriod;
 
 import java.time.LocalDateTime;
 

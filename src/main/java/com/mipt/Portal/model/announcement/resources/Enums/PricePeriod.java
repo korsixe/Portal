@@ -1,4 +1,4 @@
-package com.mipt.Portal.model.resources.Enums;
+package com.mipt.Portal.model.announcement.resources.Enums;
 
 public enum PricePeriod {
   DAY,

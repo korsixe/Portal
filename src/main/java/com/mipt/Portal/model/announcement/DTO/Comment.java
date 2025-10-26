@@ -1,4 +1,4 @@
-package com.mipt.Portal.model.DTO;
+package com.mipt.Portal.model.announcement.DTO;
 
 import java.time.LocalDateTime;
 
