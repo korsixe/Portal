@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.*;
 
-public class DatabaseManager {
+public class DatabaseManager implements IDatabaseManager{
 
   private Connection connection;
 
@@ -20,6 +20,7 @@ public class DatabaseManager {
     this.connection = connection;
   }
 
+  @Override
   public void createTables() {
     try {
       String sql = readSqlFile("sql/create_tables.sql");
@@ -29,7 +30,7 @@ public class DatabaseManager {
     }
   }
 
-
+  @Override
   public void insertData() {
     try {
       String sql = readSqlFile("sql/insert_data.sql");
@@ -46,6 +47,7 @@ public class DatabaseManager {
     }
   }
 
+  @Override
   public Long getUserIdByEmail(String email) throws SQLException {
     String sql = "SELECT id FROM users WHERE email = ?";
 
@@ -60,6 +62,7 @@ public class DatabaseManager {
     }
   }
 
+  @Override
   public void updateAd(Ad ad) throws SQLException {
     String sql = """
         UPDATE ads 
@@ -87,6 +90,7 @@ public class DatabaseManager {
     }
   }
 
+  @Override
   public Ad getAdById(long adId) throws SQLException {
     String sql = """
         SELECT a.*, u.name as user_name 
@@ -106,34 +110,7 @@ public class DatabaseManager {
     }
   }
 
-  private Ad mapResultSetToAd(ResultSet resultSet) throws SQLException {
-    Ad ad = new Ad(
-        resultSet.getString("title"),
-        resultSet.getString("description"),
-        Category.getByNumber(resultSet.getInt("category")),
-        Condition.getByNumber(resultSet.getInt("condition")),
-        resultSet.getInt("price"),
-        resultSet.getString("location"),
-        resultSet.getLong("user_id"),
-        resultSet.getString("status")
-    );
-
-    ad.setId(resultSet.getLong("id"));
-    ad.setViewCount(resultSet.getInt("view_count"));
-
-    Timestamp createdAt = resultSet.getTimestamp("created_at");
-    Timestamp updatedAt = resultSet.getTimestamp("updated_at");
-    if (createdAt != null) {
-      ad.setCreatedAt(createdAt.toInstant());
-    }
-    if (updatedAt != null) {
-      ad.setUpdatedAt(updatedAt.toInstant());
-    }
-
-    return ad;
-  }
-
-
+  @Override
   public long saveAd(Ad ad) throws SQLException {
     String sql = """
             INSERT INTO ads (title, description, category, condition, price, location, user_id, status, view_count, photo)
@@ -171,6 +148,7 @@ public class DatabaseManager {
     }
   }
 
+  @Override
   public boolean deleteAd(long adId) throws SQLException {
     String sql = "DELETE FROM ads WHERE id = ?";
 
@@ -179,6 +157,34 @@ public class DatabaseManager {
       int affectedRows = statement.executeUpdate();
       return affectedRows > 0;
     }
+  }
+
+
+  private Ad mapResultSetToAd(ResultSet resultSet) throws SQLException {
+    Ad ad = new Ad(
+        resultSet.getString("title"),
+        resultSet.getString("description"),
+        Category.getByNumber(resultSet.getInt("category")),
+        Condition.getByNumber(resultSet.getInt("condition")),
+        resultSet.getInt("price"),
+        resultSet.getString("location"),
+        resultSet.getLong("user_id"),
+        resultSet.getString("status")
+    );
+
+    ad.setId(resultSet.getLong("id"));
+    ad.setViewCount(resultSet.getInt("view_count"));
+
+    Timestamp createdAt = resultSet.getTimestamp("created_at");
+    Timestamp updatedAt = resultSet.getTimestamp("updated_at");
+    if (createdAt != null) {
+      ad.setCreatedAt(createdAt.toInstant());
+    }
+    if (updatedAt != null) {
+      ad.setUpdatedAt(updatedAt.toInstant());
+    }
+
+    return ad;
   }
 
   private String readSqlFile(String filename) {

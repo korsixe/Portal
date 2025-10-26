@@ -25,13 +25,11 @@ public class Main {
       System.out.println("Теперь давайте создадим объявление");
       AdManager adManager = new AdManager(dbManager);
       Ad cur = adManager.createAd(dbManager.getUserIdByEmail("shabunina.ao@phystech.edu"));
-      //cur = adManager.editAd(cur);
+      cur = adManager.editAd(cur);
       cur = adManager.deleteAd(cur.getId());
     } catch (SQLException e) {
       System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
       e.printStackTrace();
     }
-
-
   }
 }
