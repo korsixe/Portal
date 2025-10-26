@@ -1,16 +1,17 @@
 -- Условно создали таблицу, но я пока не понимаю, как создать и использовать ее
 
 -- Создание таблицы пользователей
-CREATE TABLE IF NOT EXISTS  users (
-                       id BIGINT PRIMARY KEY,                    -- почему-то не работает SERIAL / BIGSERIAL/IDENTITY/AUTOINCREMENT
-                       email TEXT NOT NULL UNIQUE,               -- Электронная почта (уникальная)
-                       name TEXT NOT NULL,                       -- Имя пользователя
-                       password TEXT NOT NULL,                   -- Пароль
-                       address TEXT,                             -- Адрес (может быть пустым)
-                       study_program TEXT,                       -- Учебная программа
-                       course INTEGER,                           -- Курс
-                       rating REAL DEFAULT 0.0,                  -- Рейтинг (по умолчанию 0.0)
-                       coins INTEGER DEFAULT 0                   -- Количество монет (по умолчанию 0)
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,                    -- Используем BIGSERIAL для автоинкремента
+    email TEXT NOT NULL UNIQUE,                  -- Электронная почта (уникальная)
+    name TEXT NOT NULL,                          -- Имя пользователя
+    password TEXT NOT NULL,                      -- Пароль
+    address TEXT,                                -- Адрес (может быть пустым)
+    study_program TEXT,                          -- Учебная программа
+    course INTEGER,                              -- Курс
+    rating REAL DEFAULT 0.0,                     -- Рейтинг (по умолчанию 0.0)
+    coins INTEGER DEFAULT 0,                     -- Количество монет (по умолчанию 0)
+    ad_list BIGINT[] DEFAULT '{}'                -- Список ID объявлений (массив BIGINT)
 );
 -- а как создать зависимоть для user --> ads
 
