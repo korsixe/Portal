@@ -6,11 +6,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 
 public class Ad {
 
@@ -69,7 +67,7 @@ public class Ad {
 
   public String toString() {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-        .withZone(ZoneId.systemDefault()); // Указываем временную зону для форматирования Instant
+        .withZone(ZoneId.systemDefault());
 
     return "Заголовок: " + title +
         ", Описание: " + description +
