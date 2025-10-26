@@ -24,7 +24,7 @@ public class Ad {
   private Instant createdAt;           // дата создания объявления
   private Instant updatedAt;           // дата последнего обновления
   private int viewCount;               // счетчик просмотров
-  private List<File> photo;         // ссылки на фото (переделать в JSON массив???)
+  private List<File> photo;         // ссылки на фото
 
 
   // Конструкторы
