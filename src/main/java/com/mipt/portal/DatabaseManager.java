@@ -35,6 +35,27 @@ public class DatabaseManager {
     } catch (Exception e) {
       e.printStackTrace();
     }
+
+    try {
+      String sql = readSqlFile("sql/insert_data_ad.sql");
+      executeSql(sql);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public Long getUserIdByEmail(String email) throws SQLException {
+    String sql = "SELECT id FROM users WHERE email = ?";
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, email);
+      ResultSet resultSet = statement.executeQuery();
+
+      if (resultSet.next()) {
+        return resultSet.getLong("id");
+      }
+      return null; // пользователь не найден
+    }
   }
 
   public long saveAd(Ad ad) throws SQLException {
