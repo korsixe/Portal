@@ -4,11 +4,5 @@ import java.util.Objects;
 
 public interface IModerator {
 
-  String getUsername();
-
-  String getEmail();
-
-  String getPassword();
-
   boolean equals(Object o);
 }
