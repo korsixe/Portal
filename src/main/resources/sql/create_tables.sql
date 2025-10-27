@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS ads CASCADE;
 
 -- Создание таблицы пользователей
 CREATE TABLE IF NOT EXISTS users (
@@ -14,12 +15,12 @@ CREATE TABLE IF NOT EXISTS users (
 );
 -- а как создать зависимоть для user --> ads
 
--- Создание таблицы объявлений
 CREATE TABLE IF NOT EXISTS ads (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
     category INTEGER NOT NULL,
+    subcategory TEXT,
     condition INTEGER NOT NULL,
     price INTEGER NOT NULL,
     location TEXT,
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS ads (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     view_count INTEGER DEFAULT 0,
-    photo BYTEA,
+    tags JSONB,
+    tags_count INTEGER DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
-
