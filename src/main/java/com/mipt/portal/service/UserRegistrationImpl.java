@@ -1,109 +1,133 @@
 package com.mipt.portal.service;
 
+import com.mipt.portal.UserManager;
 import java.util.List;
 import java.util.Scanner;
 
 public class UserRegistrationImpl implements UserRegistration {
 
-  @Override
-  public User register(String email, String name, String password) {
+    private final UserManager userManager;
 
-    if (!correctEmail(email) || !correctName(name) || !correctPassword(password) || !isPasswordStrong(password) || isEmailExists(email)) {
-      return null;
-    }
-    System.out.println("Подтвердите пароль: ");
-    Scanner scanner = new Scanner(System.in);
-    String passwordAgain = scanner.nextLine();
-
-    if (!passwordAgain.equals(password)) {
-      System.out.println("Неверный пароль.");
-      return null;
+    public UserRegistrationImpl(UserManager userManager) {
+        this.userManager = userManager;
     }
 
-    User newUser = new User(email, name, password);
-    // DataBase.addUser(newUser);
-    System.out.println("\nПользователь зарегистрирован!\n");
-    return newUser;
-  }
+    @Override
+    public User register(String email, String name, String password) {
 
-  @Override
-  public boolean correctEmail(String email) {
-    if (email == null || email.length() < 5) {
-      System.out.println("Почта обязательна.");
-      return false;
-    }
-    String emailPattern = "^[a-z0-9][a-z0-9._-]*[a-z0-9]@phystech\\.edu$";
+        email = email.trim();
+        password = password.trim();
+        name = name.trim();
 
-    if (!email.matches(emailPattern)) {
-      System.out.println("Неправильный формат почты. Пример физтех-почты: ivanov.ii@phystech.edu");
-      return false;
-    }
+        if (!correctEmail(email) || !correctName(name) || !correctPassword(password) || !isPasswordStrong(password) || isEmailExists(email)) {
+            return null;
+        }
+        System.out.println("Подтвердите пароль: ");
+        Scanner scanner = new Scanner(System.in);
+        String passwordAgain = scanner.nextLine();
 
-    return true;
-  }
+        if (!passwordAgain.equals(password)) {
+            System.out.println("Неверный пароль.");
+            return null;
+        }
 
-  @Override
-  public boolean correctName(String name) {
-    if (name == null || name.isEmpty()) {
-      System.out.println("Имя обязательно!");
-      return false;
-    }
+        User newUser = new User(email, name, password);
 
-    return true;
-  }
+        if(userManager.addUser(newUser)) {
+            System.out.println("\nПользователь зарегистрирован!\n");
+            return newUser;
+        } else {
+            System.out.println("\nОшибка при регистрации пользователя.\n");
+            return null ;
+        }
 
-  @Override
-  public boolean correctPassword(String password) {
-    if (password == null || password.length() < 8 || password.length() > 30) {
-      if (password.length() > 30) {
-        System.out.println("Длина пароля не более 30 символов!");
-      } else {
-        System.out.println("Длина пароля не менее 8 символов!");
-      }
-
-      return false;
     }
 
-    return true;
-  }
+    @Override
+    public boolean correctEmail(String email) {
+        if (email == null || email.length() < 5) {
+            System.out.println("Почта обязательна.");
+            return false;
+        }
+        String emailPattern = "^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]@phystech\\.edu$";
 
-  @Override
-  public boolean isEmailExists(String email) {
-    // return DataBase.containsEmail(email);
-    return false;
-  }
+        if (!email.equals(email.toLowerCase())) {
+            System.out.println("Почта должна быть в нижнем регистре!");
+            return false;
+        }
 
-  @Override
-  public boolean isPasswordStrong(String password) {
-    double hasLower = 0, hasUpper = 0,
-            hasDigit = 0, hasSpecialChar = 0, goodSize = 0;
-    List<String> strengthCriteria = List.of("!", "?", "@", "#", "$",
-            "%", "%", "&", "*", "_", "-");
-    for (char i : password.toCharArray()) {
-      if (Character.isLowerCase(i)) {
-        hasLower = 1;
-      }
-      if (Character.isUpperCase(i)) {
-        hasUpper = 2;
-      }
-      if (Character.isDigit(i)) {
-        hasDigit = 1.5;
-      }
-      if (strengthCriteria.contains(i)) {
-        hasSpecialChar = 4;
-      }
+        if (!email.matches(emailPattern)) {
+            System.out.println("Неправильный формат почты. Пример физтех-почты: ivanov.ii@phystech.edu");
+            return false;
+        }
+
+        return true;
     }
 
-    if (password.length() > 10) {
-      goodSize = 1.5;
+    @Override
+    public boolean correctName(String name) {
+        if (name == null || name.isEmpty()) {
+            System.out.println("Ник обязателен!");
+            return false;
+        } else if (name.contains(" ")) {
+            System.out.println("Ник должен быть без пробелов!");
+            return false;
+        }
+
+        return true;
     }
 
-    double strength = hasLower + hasUpper + hasDigit + hasSpecialChar + goodSize;
+    @Override
+    public boolean correctPassword(String password) {
+        if (password == null || password.length() < 8 || password.length() > 30) {
+            if (password.length() > 30) {
+                System.out.println("Длина пароля не более 30 символов!");
+            } else {
+                System.out.println("Длина пароля не менее 8 символов!");
+            }
 
-    System.out.println("Сложность вашего пароля: " + strength +" Минимальная сложность: 4");
-    if (strength >= 4) {
-      return true;
+            return false;
+        }
+
+        return true;
     }
-    return false;
-  }
+
+    @Override
+    public boolean isEmailExists(String email) {
+        return userManager.isEmailExists(email);
+    }
+
+    @Override
+    public boolean isPasswordStrong(String password) {
+        double hasLower = 0, hasUpper = 0,
+                hasDigit = 0, hasSpecialChar = 0, goodSize = 0;
+        List<String> strengthCriteria = List.of("!", "?", "@", "#", "$",
+                "%", "%", "&", "*", "_", "-");
+        for (char i : password.toCharArray()) {
+            if (Character.isLowerCase(i)) {
+                hasLower = 1;
+            }
+            if (Character.isUpperCase(i)) {
+                hasUpper = 2;
+            }
+            if (Character.isDigit(i)) {
+                hasDigit = 1.5;
+            }
+            if (strengthCriteria.contains(i)) {
+                hasSpecialChar = 4;
+            }
+        }
+
+        if (password.length() > 10) {
+            goodSize = 1.5;
+        }
+
+        double strength = hasLower + hasUpper + hasDigit + hasSpecialChar + goodSize;
+
+        System.out.println("Сложность вашего пароля: " + strength + " Минимальная сложность: 4");
+        if (strength >= 4) {
+            return true;
+        }
+        return false;
+    }
 }
