@@ -5,5 +5,5 @@ public interface UserLogin {
 
   boolean userExists(String email);
 
-  boolean passwordCorrect(String password);
+  boolean passwordCorrect(String password, User user);
 }
