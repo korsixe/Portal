@@ -6,12 +6,11 @@ import com.mipt.portal.announcement.Category;
 import com.mipt.portal.announcement.Condition;
 import org.junit.jupiter.api.*;
 
-import java.sql.*;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class DatabaseManagerTest {
+class AnnouncementTest {
 
   @Test
   void testAnnouncementCreation() {
