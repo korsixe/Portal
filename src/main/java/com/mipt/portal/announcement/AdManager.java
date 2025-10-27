@@ -1,11 +1,6 @@
-package com.mipt.portal.ad;
+package com.mipt.portal.announcement;
 
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.io.*;
@@ -13,7 +8,7 @@ import java.io.*;
 public class AdManager implements IAdManager {
 
   @Override
-  public Ad createAd(long userId) {
+  public Announcement createAd(long userId) {
     Scanner scanner = null;
     try {
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
@@ -47,30 +42,50 @@ public class AdManager implements IAdManager {
     int type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
     if (type == 2) {
-      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0,
-          1000000000);
+      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0, 1000000000);
     }
 
-    System.out.println(
-        "Объявление почти готово. Если хотите опубликовать, выведите 1. Если хотите оставить черновиком, выведите 2");
-    type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
+    // Создаем объявление как черновик
+    Announcement ad = new Announcement(title, description, category, condition, price, location, userId);
 
-    String status = "Активно";
-    if (type == 2) {
-      status = "Черновик";
+    // Предлагаем выбрать действие с объявлением
+    System.out.println("\nВыберите действие с объявлением:");
+    System.out.println("1. Опубликовать (отправить на модерацию)");
+    System.out.println("2. Сохранить как черновик");
+
+    int actionChoice = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
+
+    try {
+      switch (actionChoice) {
+        case 1:
+          ad.sendToModeration();
+          System.out.println("Объявление отправлено на модерацию!");
+          break;
+        case 2:
+          System.out.println("Объявление сохранено как черновик!");
+          break;
+      }
+    } catch (IllegalStateException e) {
+      System.out.println("Ошибка: " + e.getMessage());
+      System.out.println("Объявление сохранено как черновик.");
     }
 
-    Ad ad = new Ad(title, description, category, condition, price, location, userId, status);
-    // и тут в БД добавили
+    // Предлагаем добавить теги
+    System.out.println("\nХотите добавить теги к объявлению? (1 - Да, 2 - Нет)");
+    int addTagsChoice = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
-    System.out.println("Объявление добавлено!");
+    if (addTagsChoice == 1) {
+      //addTagsInteractive(scanner, ad); - Лиза Орлова
+    }
+
+    System.out.println("\nОбъявление успешно создано!");
     System.out.println(ad.toString());
 
     return ad;
   }
 
   @Override
-  public Ad editAd(Ad ad) {
+  public Announcement editAd(Announcement ad) {
     Scanner scanner = null;
     try {
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
@@ -93,10 +108,10 @@ public class AdManager implements IAdManager {
       System.out.println("5. Состояние товара");
       System.out.println("6. Цену");
       System.out.println("7. Статус объявления");
+      System.out.println("8. Теги");
       System.out.println("0. Завершить редактирование");
 
-      int choice = readIntInRange(scanner, "Ваш выбор: ", 0, 7);
-
+      int choice = readIntInRange(scanner, "Ваш выбор: ", 0, 8);
 
       switch (choice) {
         case 1:
@@ -120,6 +135,9 @@ public class AdManager implements IAdManager {
         case 7:
           editStatus(scanner, ad);
           break;
+        case 8:
+          //manageTags(scanner, ad); - редактирование тегов
+          break;
         case 0:
           continueEditing = false;
           System.out.println("Редактирование завершено.");
@@ -139,8 +157,7 @@ public class AdManager implements IAdManager {
     return ad;
   }
 
-
-  private void editTitle(Scanner scanner, Ad ad) {
+  private void editTitle(Scanner scanner, Announcement ad) {
     System.out.println("Текущий заголовок: " + ad.getTitle());
     System.out.print("Введите новый заголовок: ");
     scanner.nextLine(); // очистка буфера
@@ -153,7 +170,7 @@ public class AdManager implements IAdManager {
     }
   }
 
-  private void editDescription(Scanner scanner, Ad ad) {
+  private void editDescription(Scanner scanner, Announcement ad) {
     System.out.println("Текущее описание: " + ad.getDescription());
     System.out.print("Введите новое описание: ");
     scanner.nextLine(); // очистка буфера
@@ -166,7 +183,7 @@ public class AdManager implements IAdManager {
     }
   }
 
-  private void editCategory(Scanner scanner, Ad ad) {
+  private void editCategory(Scanner scanner, Announcement ad) {
     System.out.println("Текущая категория: " + ad.getCategory().getDisplayName());
     System.out.println("Выберите новую категорию:");
     Category.displayCategories();
@@ -176,7 +193,7 @@ public class AdManager implements IAdManager {
     System.out.println("Категория изменена на: " + newCategory.getDisplayName());
   }
 
-  private void editLocation(Scanner scanner, Ad ad) {
+  private void editLocation(Scanner scanner, Announcement ad) {
     System.out.println("Текущее местоположение: " + ad.getLocation());
     System.out.print("Введите новое местоположение: ");
     scanner.nextLine(); // очистка буфера
@@ -189,7 +206,7 @@ public class AdManager implements IAdManager {
     }
   }
 
-  private void editCondition(Scanner scanner, Ad ad) {
+  private void editCondition(Scanner scanner, Announcement ad) {
     System.out.println("Текущее состояние: " + ad.getCondition().getDisplayName());
     System.out.println("Выберите новое состояние:");
     Condition.displayConditions();
@@ -200,7 +217,7 @@ public class AdManager implements IAdManager {
     System.out.println("Состояние изменено на: " + newCondition.getDisplayName());
   }
 
-  private void editPrice(Scanner scanner, Ad ad) {
+  private void editPrice(Scanner scanner, Announcement ad) {
     System.out.println("Текущая цена: " + (ad.getPrice() == -1 ? "договорная" :
         ad.getPrice() == 0 ? "бесплатно" : ad.getPrice() + " руб."));
 
@@ -221,53 +238,81 @@ public class AdManager implements IAdManager {
         System.out.println("Цена установлена: бесплатно");
         break;
       case 3:
-        int newPrice = readIntInRange(scanner, "Введите цену (от 1 до 1000000000): ", 1,
-            1000000000);
+        int newPrice = readIntInRange(scanner, "Введите цену (от 1 до 1000000000): ", 1, 1000000000);
         ad.setPrice(newPrice);
         System.out.println("Цена установлена: " + newPrice + " руб.");
         break;
     }
   }
 
-  private void editStatus(Scanner scanner, Ad ad) {
-    System.out.println("Текущий статус: " + ad.getStatus());
-    System.out.println("Выберите новый статус:");
-    System.out.println("1. Активно");
-    System.out.println("2. Черновик");
+  private void editStatus(Scanner scanner, Announcement ad) {
+    System.out.println("Текущий статус: " + ad.getStatus().getDisplayName());
+    System.out.println("Выберите действие со статусом:");
 
-    int statusChoice = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
+    // Показываем только доступные действия для текущего статуса
+    if (ad.canBeEdited()) {
+      if (ad.getStatus().canBeSentToModeration()) {
+        System.out.println("1. Отправить на модерацию");
+      }
+      if (ad.getStatus().canBeArchived()) {
+        System.out.println("2. Архивировать");
+      }
+      if (ad.getStatus().canBeRestored()) {
+        System.out.println("3. Восстановить (сделать активным)");
+      }
+      System.out.println("4. Сохранить как черновик");
+    }
 
-    switch (statusChoice) {
-      case 1:
-        ad.setStatus("Активно");
-        System.out.println("Статус изменен на: Активно");
-        break;
-      case 2:
-        ad.setStatus("Черновик");
-        System.out.println("Статус изменен на: Черновик");
-        break;
+    System.out.println("0. Отмена");
+
+    int statusChoice = readIntInRange(scanner, "Ваш выбор: ", 0, 4);
+
+    try {
+      switch (statusChoice) {
+        case 1:
+          ad.sendToModeration();
+          System.out.println("Объявление отправлено на модерацию!");
+          break;
+        case 2:
+          ad.archive();
+          System.out.println("Объявление архивировано!");
+          break;
+        case 3:
+          ad.restore();
+          System.out.println("Объявление восстановлено!");
+          break;
+        case 4:
+          ad.saveAsDraft();
+          System.out.println("Объявление сохранено как черновик!");
+          break;
+        case 0:
+          System.out.println("Изменение статуса отменено.");
+          break;
+      }
+    } catch (IllegalStateException e) {
+      System.out.println("Ошибка: " + e.getMessage());
     }
   }
 
 
+
   @Override
-  public Ad deleteAd(long adId) {
+  public Announcement deleteAd(long adId) {
     // Логика удаления объявления
     return null;
   }
 
   @Override
-  public Ad getAd(long adId) {
+  public Announcement getAd(long adId) {
     // Логика получения объявления
     return null;
   }
 
   @Override
-  public List<Ad> getAds(long userId) {
+  public List<Announcement> getAds(long userId) {
     // Логика получения объявлений пользователя
     return null;
   }
-
 
   // Функция для безопасного ввода числа
   private int readInt(Scanner scanner, String prompt) {
