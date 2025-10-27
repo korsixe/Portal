@@ -134,7 +134,7 @@ public class Announcement {
     updatedAt = Instant.now();
   }
 
-  // Методы для работы с тегами
+  // Методы для работы с тегами, жду объединения с другой частью проекта
 
   public void addTag(String tag) {
     if (tags == null) {

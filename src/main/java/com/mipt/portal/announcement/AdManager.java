@@ -50,11 +50,13 @@ public class AdManager implements IAdManager {
     int type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
 
     if (type == 2) {
-      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0, 1000000000);
+      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0,
+          1000000000);
     }
 
     // Создаем объявление как черновик
-    Announcement ad = new Announcement(title, description, category, condition, price, location, userId);
+    Announcement ad = new Announcement(title, description, category, condition, price, location,
+        userId);
 
     // Предлагаем выбрать действие с объявлением
     System.out.println("\nВыберите действие с объявлением:");
@@ -164,7 +166,7 @@ public class AdManager implements IAdManager {
           // Сохраняем изменения в БД
           ad.setUpdatedAt(Instant.now());
           dbManager.updateAd(ad);
-          System.out.println("Изменения сохранены успешно!");
+          System.out.println("✅ Изменения сохранены успешно!");
           return ad;
         case 0:
           System.out.println("Редактирование отменено. Возврат к исходной версии.");
@@ -258,7 +260,8 @@ public class AdManager implements IAdManager {
         System.out.println("Цена установлена: бесплатно");
         break;
       case 3:
-        int newPrice = readIntInRange(scanner, "Введите цену (от 1 до 1000000000): ", 1, 1000000000);
+        int newPrice = readIntInRange(scanner, "Введите цену (от 1 до 1000000000): ", 1,
+            1000000000);
         ad.setPrice(newPrice);
         System.out.println("Цена установлена: " + newPrice + " руб.");
         break;
@@ -310,11 +313,9 @@ public class AdManager implements IAdManager {
           break;
       }
     } catch (IllegalStateException e) {
-      System.out.println("Ошибка: " + e.getMessage());
+      System.out.println("❌ Ошибка: " + e.getMessage());
     }
   }
-
-
 
   @Override
   public Announcement deleteAd(long adId) {
@@ -378,7 +379,7 @@ public class AdManager implements IAdManager {
       if (scanner.hasNextInt()) {
         return scanner.nextInt();
       } else {
-        System.out.println("Ошибка: введите целое число!");
+        System.out.println("❌ Ошибка: введите целое число!");
         scanner.next(); // очищаем некорректный ввод
       }
     }
@@ -391,7 +392,7 @@ public class AdManager implements IAdManager {
       if (value >= min && value <= max) {
         return value;
       } else {
-        System.out.println("Ошибка: число должно быть от " + min + " до " + max + "!");
+        System.out.println("❌ Ошибка: число должно быть от " + min + " до " + max + "!");
       }
     }
   }

@@ -1,315 +1,170 @@
-/*
 package com.mipt.portal;
 
+import com.mipt.portal.announcement.AdvertisementStatus;
+import com.mipt.portal.announcement.Announcement;
+import com.mipt.portal.announcement.Category;
+import com.mipt.portal.announcement.Condition;
 import org.junit.jupiter.api.*;
+
 import java.sql.*;
 import java.time.Instant;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class DatabaseManagerTest {
-
-  private DatabaseManager dbManager;
-  private Connection connection;
-
-  @BeforeAll
-  void setUpAll() throws SQLException {
-    dbManager = DatabaseManager.getInstance();
-    connection = dbManager.getConnection();
-
-    // Очищаем таблицы перед началом тестов
-    try (Statement stmt = connection.createStatement()) {
-      stmt.execute("DELETE FROM ads");
-      stmt.execute("DELETE FROM users");
-    }
-  }
-
-  @AfterAll
-  void tearDownAll() throws SQLException {
-    if (connection != null && !connection.isClosed()) {
-      connection.close();
-    }
-  }
-
-  @BeforeEach
-  void setUp() throws SQLException {
-    // Очищаем данные перед каждым тестом
-    try (Statement stmt = connection.createStatement()) {
-      stmt.execute("DELETE FROM ads");
-      stmt.execute("DELETE FROM users");
-    }
-  }
+class DatabaseManagerTest {
 
   @Test
-  void testCreateUser() throws SQLException {
-    // Подготовка
-    String email = "test@mipt.ru";
-    String name = "Test User";
-    String password = "password123";
-
-    // Выполнение
-    long userId = dbManager.createUser(email, name, password, "Moscow", "Computer Science", 2);
-
-    // Проверка
-    assertTrue(userId > 0);
-
-    // Проверяем что пользователь действительно создан
-    try (PreparedStatement stmt = connection.prepareStatement("SELECT * FROM users WHERE id = ?")) {
-      stmt.setLong(1, userId);
-      ResultSet rs = stmt.executeQuery();
-
-      assertTrue(rs.next());
-      assertEquals(email, rs.getString("email"));
-      assertEquals(name, rs.getString("name"));
-      assertEquals("Moscow", rs.getString("address"));
-      assertEquals("Computer Science", rs.getString("study_program"));
-      assertEquals(2, rs.getInt("course"));
-      assertEquals(0.0, rs.getDouble("rating"));
-      assertEquals(0, rs.getInt("coins"));
-    }
-  }
-
-  @Test
-  void testCreateUserWithDuplicateEmail() throws SQLException {
-    // Подготовка
-    String email = "duplicate@mipt.ru";
-    dbManager.createUser(email, "User 1", "pass1", null, null, null);
-
-    // Выполнение и проверка
-    assertThrows(SQLException.class, () -> {
-      dbManager.createUser(email, "User 2", "pass2", null, null, null);
-    });
-  }
-
-  @Test
-  void testGetUserById() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("getuser@mipt.ru", "Get User", "password", "Address", "Physics", 3);
-
-    // Выполнение
-    User user = dbManager.getUserById(userId);
-
-    // Проверка
-    assertNotNull(user);
-    assertEquals(userId, user.getId());
-    assertEquals("getuser@mipt.ru", user.getEmail());
-    assertEquals("Get User", user.getName());
-    assertEquals("Address", user.getAddress());
-    assertEquals("Physics", user.getStudyProgram());
-    assertEquals(3, user.getCourse());
-  }
-
-
-  @Test
-  void testCreateAd() throws SQLException {
-    long userId = dbManager.createUser("adcreator@mipt.ru", "Announcement Creator", "pass", null, null, null);
-
-    long adId = dbManager.createAd(
-        "Test Announcement",
+  void testAnnouncementCreation() {
+    Announcement ad = new Announcement(
+        "Test Title",
         "Test Description",
-        1,  // ELECTRONICS
-        0,  // USED
+        Category.ELECTRONICS,
+        Condition.USED,
         1000,
-        "Moscow",
-        userId,
-        "active",
-        new byte[0]  // пустой массив для фото
+        "Test Location",
+        1L
     );
 
-    assertTrue(adId > 0);
-
-    try (PreparedStatement stmt = connection.prepareStatement("SELECT * FROM ads WHERE id = ?")) {
-      stmt.setLong(1, adId);
-      ResultSet rs = stmt.executeQuery();
-
-      assertTrue(rs.next());
-      assertEquals("Test Announcement", rs.getString("title"));
-      assertEquals("Test Description", rs.getString("description"));
-      assertEquals(1, rs.getInt("category"));
-      assertEquals(0, rs.getInt("condition"));
-      assertEquals(1000, rs.getInt("price"));
-      assertEquals("Moscow", rs.getString("location"));
-      assertEquals(userId, rs.getLong("user_id"));
-      assertEquals("active", rs.getString("status"));
-      assertEquals(0, rs.getInt("view_count"));
-    }
-  }
-
-  @Test
-  void testCreateAdWithInvalidUser() {
-    // Пытаемся создать объявление для несуществующего пользователя
-    assertThrows(SQLException.class, () -> {
-      dbManager.createAd(
-          "Invalid Announcement",
-          "Description",
-          0, 0, 100, "Location",
-          999999L,  // несуществующий ID
-          "active",
-          new byte[0]
-      );
-    });
-  }
-
-  @Test
-  void testGetAdById() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("adgetter@mipt.ru", "Announcement Getter", "pass", null, null, null);
-    long adId = dbManager.createAd("Get Announcement", "Description", 2, 1, 500, "SPB", userId, "active", new byte[0]);
-
-    // Выполнение
-    Announcement ad = dbManager.getAdById(adId);
-
-    // Проверка
     assertNotNull(ad);
-    assertEquals(adId, ad.getId());
-    assertEquals("Get Announcement", ad.getTitle());
-    assertEquals("Description", ad.getDescription());
-    assertEquals(2, ad.getCategory());
-    assertEquals(1, ad.getCondition());
-    assertEquals(500, ad.getPrice());
-    assertEquals("SPB", ad.getLocation());
-    assertEquals(userId, ad.getUserId());
-    assertEquals("active", ad.getStatus());
+    assertEquals("Test Title", ad.getTitle());
+    assertEquals(Category.ELECTRONICS, ad.getCategory());
+    assertEquals(AdvertisementStatus.DRAFT, ad.getStatus()); // По умолчанию черновик
+  }
+
+  @Test
+  void testAdvertisementStatus() {
+    assertEquals("Черновик", AdvertisementStatus.DRAFT.getDisplayName());
+    assertEquals("Активно", AdvertisementStatus.ACTIVE.getDisplayName());
+    assertEquals("На модерации", AdvertisementStatus.UNDER_MODERATION.getDisplayName());
+    assertEquals("Архив", AdvertisementStatus.ARCHIVED.getDisplayName());
+    assertEquals("Удалено", AdvertisementStatus.DELETED.getDisplayName());
+  }
+
+  @Test
+  void testCategoryEnum() {
+    assertEquals("Электроника", Category.ELECTRONICS.getDisplayName());
+    assertEquals("Одежда", Category.CLOTHING.getDisplayName());
+    assertEquals("Книги", Category.BOOKS.getDisplayName());
+    assertNotNull(Category.getByNumber(1));
+    assertEquals(Category.ELECTRONICS, Category.getByNumber(1));
+    assertEquals(Category.OTHER, Category.getByNumber(11)); // Для неверного номера
+  }
+
+  @Test
+  void testConditionEnum() {
+    assertEquals("Новое", Condition.NEW.getDisplayName());
+    assertEquals("б/у", Condition.USED.getDisplayName());
+    assertNotNull(Condition.getByNumber(1));
+    assertEquals(Condition.NEW, Condition.getByNumber(2));
+  }
+
+  @Test
+  void testAnnouncementPriceFormatting() {
+    Announcement ad1 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, -1, "Loc", 1L);
+    Announcement ad2 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 0, "Loc", 1L);
+    Announcement ad3 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 500, "Loc", 1L);
+
+    assertTrue(ad1.toString().contains("договорная"));
+    assertTrue(ad2.toString().contains("бесплатно"));
+    assertTrue(ad3.toString().contains("500 руб."));
+  }
+
+  @Test
+  void testAnnouncementStatusWorkflow() {
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
+
+    // Изначально черновик
+    assertEquals(AdvertisementStatus.DRAFT, ad.getStatus());
+    assertTrue(ad.isDraft());
+    assertTrue(ad.canBeEdited());
+
+    // Можно отправить на модерацию
+    assertDoesNotThrow(() -> ad.sendToModeration());
+    assertEquals(AdvertisementStatus.UNDER_MODERATION, ad.getStatus());
+    assertTrue(ad.requiresModeration());
+
+    // Можно активировать
+    assertDoesNotThrow(() -> ad.activate());
+    assertEquals(AdvertisementStatus.ACTIVE, ad.getStatus());
+    assertTrue(ad.isActive());
+    assertTrue(ad.isVisibleToPublic());
+
+    // Можно архивировать
+    assertDoesNotThrow(() -> ad.archive());
+    assertEquals(AdvertisementStatus.ARCHIVED, ad.getStatus());
+    assertTrue(ad.canBeEdited()); // Архив еще можно редактировать
+  }
+
+  @Test
+  void testAnnouncementTags() {
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
+
+    // Добавление тегов
+    ad.addTag("тег1");
+    ad.addTag("тег2");
+    ad.addTag("тег3");
+
+    assertTrue(ad.getTags().contains("тег1"));
+    assertTrue(ad.getTags().contains("тег2"));
+    assertTrue(ad.getTags().contains("тег3"));
+    assertEquals(3, ad.getTagsCount());
+
+    // Удаление тега
+    ad.removeTag("тег2");
+    assertFalse(ad.getTags().contains("тег2"));
+    assertEquals(2, ad.getTagsCount());
+
+    // Очистка тегов
+    ad.clearTags();
+    assertTrue(ad.getTags().isEmpty());
+    assertEquals(0, ad.getTagsCount());
+  }
+
+  @Test
+  void testAnnouncementViewCount() {
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
+
     assertEquals(0, ad.getViewCount());
+
+    ad.incrementViewCount();
+    assertEquals(1, ad.getViewCount());
+
+    ad.incrementViewCount();
+    ad.incrementViewCount();
+    assertEquals(3, ad.getViewCount());
   }
 
   @Test
-  void testGetAdsByUserId() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("multiad@mipt.ru", "Multi Announcement", "pass", null, null, null);
+  void testAnnouncementTimestamps() {
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
 
-    // Создаем несколько объявлений
-    dbManager.createAd("Announcement 1", "Desc 1", 0, 0, 100, "Loc 1", userId, "active", new byte[0]);
-    dbManager.createAd("Announcement 2", "Desc 2", 1, 1, 200, "Loc 2", userId, "active", new byte[0]);
-    dbManager.createAd("Announcement 3", "Desc 3", 2, 0, 300, "Loc 3", userId, "draft", new byte[0]);
+    assertNotNull(ad.getCreatedAt());
+    assertNotNull(ad.getUpdatedAt());
+    assertTrue(ad.getCreatedAt().equals(ad.getUpdatedAt()) ||
+        ad.getCreatedAt().isBefore(ad.getUpdatedAt()));
 
-    // Выполнение
-    List<Announcement> userAds = dbManager.getAdsByUserId(userId);
+    // При изменении статуса updatedAt должен обновиться
+    Instant originalUpdatedAt = ad.getUpdatedAt();
+    ad.sendToModeration();
 
-    // Проверка
-    assertNotNull(userAds);
-    assertEquals(3, userAds.size());
-
-    // Проверяем что все объявления принадлежат правильному пользователю
-    for (Announcement ad : userAds) {
-      assertEquals(userId, ad.getUserId());
-    }
+    assertTrue(ad.getUpdatedAt().isAfter(originalUpdatedAt));
   }
 
   @Test
-  void testUpdateAd() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("updater@mipt.ru", "Updater", "pass", null, null, null);
-    long adId = dbManager.createAd("Old Title", "Old Desc", 0, 0, 100, "Old Loc", userId, "active", new byte[0]);
+  void testAnnouncementCopyConstructor() {
+    Announcement original = new Announcement("Original", "Desc", Category.ELECTRONICS, Condition.NEW, 5000, "Moscow", 1L);
+    original.setSubcategory("Ноутбуки");
+    original.addTag("техника");
+    original.incrementViewCount();
 
-    // Выполнение - обновляем объявление
-    boolean updated = dbManager.updateAd(adId, "New Title", "New Desc", 1, 1, 200, "New Loc", "archived");
+    Announcement copy = new Announcement(original);
 
-    // Проверка
-    assertTrue(updated);
-
-    // Проверяем изменения в базе
-    Announcement updatedAd = dbManager.getAdById(adId);
-    assertNotNull(updatedAd);
-    assertEquals("New Title", updatedAd.getTitle());
-    assertEquals("New Desc", updatedAd.getDescription());
-    assertEquals(1, updatedAd.getCategory());
-    assertEquals(1, updatedAd.getCondition());
-    assertEquals(200, updatedAd.getPrice());
-    assertEquals("New Loc", updatedAd.getLocation());
-    assertEquals("archived", updatedAd.getStatus());
-  }
-
-  @Test
-  void testDeleteAd() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("deleter@mipt.ru", "Deleter", "pass", null, null, null);
-    long adId = dbManager.createAd("To Delete", "Desc", 0, 0, 100, "Loc", userId, "active", new byte[0]);
-
-    // Проверяем что объявление существует
-    assertNotNull(dbManager.getAdById(adId));
-
-    // Выполнение - удаляем объявление
-    boolean deleted = dbManager.deleteAd(adId);
-
-    // Проверка
-    assertTrue(deleted);
-    assertNull(dbManager.getAdById(adId));
-  }
-
-  @Test
-  void testIncrementAdViewCount() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("viewer@mipt.ru", "Viewer", "pass", null, null, null);
-    long adId = dbManager.createAd("View Announcement", "Desc", 0, 0, 100, "Loc", userId, "active", new byte[0]);
-
-    // Начальное состояние
-    Announcement initialAd = dbManager.getAdById(adId);
-    assertEquals(0, initialAd.getViewCount());
-
-    // Выполнение - увеличиваем счетчик просмотров
-    boolean incremented = dbManager.incrementAdViewCount(adId);
-
-    // Проверка
-    assertTrue(incremented);
-
-    Announcement updatedAd = dbManager.getAdById(adId);
-    assertEquals(1, updatedAd.getViewCount());
-  }
-
-  @Test
-  void testUpdateUserRating() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("rating@mipt.ru", "Rating User", "pass", null, null, null);
-
-    // Выполнение - обновляем рейтинг
-    boolean updated = dbManager.updateUserRating(userId, 4.5);
-
-    // Проверка
-    assertTrue(updated);
-
-    User user = dbManager.getUserById(userId);
-    assertEquals(4.5, user.getRating());
-  }
-
-  @Test
-  void testUpdateUserCoins() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("coins@mipt.ru", "Coins User", "pass", null, null, null);
-
-    // Выполнение - обновляем монеты
-    boolean updated = dbManager.updateUserCoins(userId, 150);
-
-    // Проверка
-    assertTrue(updated);
-
-    User user = dbManager.getUserById(userId);
-    assertEquals(150, user.getCoins());
-  }
-
-  @Test
-  void testSearchAdsByTitle() throws SQLException {
-    // Подготовка
-    long userId = dbManager.createUser("searcher@mipt.ru", "Searcher", "pass", null, null, null);
-
-    dbManager.createAd("iPhone for sale", "Good phone", 0, 0, 10000, "Moscow", userId, "active", new byte[0]);
-    dbManager.createAd("MacBook Pro", "Laptop", 0, 1, 50000, "SPB", userId, "active", new byte[0]);
-    dbManager.createAd("Samsung Phone", "Android", 0, 0, 8000, "Moscow", userId, "active", new byte[0]);
-    dbManager.createAd("Clothes", "T-shirt", 1, 0, 500, "Moscow", userId, "active", new byte[0]);
-
-    // Выполнение - ищем по ключевому слову
-    List<Announcement> phoneAds = dbManager.searchAdsByTitle("phone");
-
-    // Проверка
-    assertNotNull(phoneAds);
-    assertEquals(2, phoneAds.size()); // iPhone и Samsung Phone
-
-    for (Announcement ad : phoneAds) {
-      assertTrue(ad.getTitle().toLowerCase().contains("phone"));
-    }
+    assertEquals(original.getTitle(), copy.getTitle());
+    assertEquals(original.getCategory(), copy.getCategory());
+    assertEquals(original.getSubcategory(), copy.getSubcategory());
+    assertEquals(original.getPrice(), copy.getPrice());
+    assertEquals(original.getViewCount(), copy.getViewCount());
+    assertEquals(original.getUserId(), copy.getUserId());
+    assertNotNull(copy.getTags());
   }
 }
-
- */

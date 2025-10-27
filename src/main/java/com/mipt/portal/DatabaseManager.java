@@ -144,14 +144,19 @@ public class DatabaseManager implements IDatabaseManager {
       statement.setString(9, ad.getStatus().name());
       statement.setInt(10, ad.getViewCount());
 
-      // Преобразуем список тегов в JSON
+      // Преобразуем список тегов в JSON - пока так, чтобы запускался код (часть Лизы О)
+      if (ad.getTags() != null && !ad.getTags().isEmpty()) {
+        String tagsJson = "[\"" + String.join("\",\"", ad.getTags()) + "\"]";
+        statement.setString(11, tagsJson);
+      } else {
+        statement.setNull(11, Types.VARCHAR);
+      }
 
       statement.setInt(12, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
 
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {
         long generatedId = resultSet.getLong(1);
-
         // Сохраняем фото если они есть
         if (ad.getPhotos() != null && !ad.getPhotos().isEmpty()) {
           //saveAdPhotos(generatedId, ad.getPhotos());
@@ -176,7 +181,6 @@ public class DatabaseManager implements IDatabaseManager {
 
   // метод для сохранения фото
   private void saveAdPhotos(long adId, List<File> photos) throws SQLException {
-
   }
 
   // метод для загрузки фото объявления
