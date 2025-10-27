@@ -1,6 +1,5 @@
 package com.mipt.portal;
 
-import com.mipt.portal.announcement.Announcement;
 import java.sql.SQLException;
 
 public interface IDatabaseManager {
