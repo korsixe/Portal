@@ -1,6 +1,10 @@
 package com.mipt.portal;
 
-import com.mipt.portal.IDatabaseManager;
+import com.mipt.portal.announcement.AdvertisementStatus;
+import com.mipt.portal.announcement.Announcement;
+import com.mipt.portal.announcement.Category;
+import com.mipt.portal.announcement.Condition;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,6 +12,7 @@ import java.nio.file.Paths;
 import java.io.InputStream;
 import java.io.IOException;
 import java.sql.*;
+import java.util.List;
 
 public class DatabaseManager implements IDatabaseManager {
 
@@ -42,6 +47,183 @@ public class DatabaseManager implements IDatabaseManager {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  @Override
+  public Long getUserIdByEmail(String email) throws SQLException {
+    String sql = "SELECT id FROM users WHERE email = ?";
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, email);
+      ResultSet resultSet = statement.executeQuery();
+
+      if (resultSet.next()) {
+        return resultSet.getLong("id");
+      }
+      return null; // пользователь не найден
+    }
+  }
+
+  @Override
+  public void updateAd(Announcement ad) throws SQLException {
+    String sql = """
+        UPDATE ads
+        SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
+            price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
+            view_count = ?, tags = ?::JSONB, tags_count = ?
+        WHERE id = ?
+    """;
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, ad.getTitle());
+      statement.setString(2, ad.getDescription());
+      statement.setInt(3, ad.getCategory().ordinal());
+      statement.setString(4, ad.getSubcategory());
+      statement.setInt(5, ad.getCondition().ordinal());
+      statement.setInt(6, ad.getPrice());
+      statement.setString(7, ad.getLocation());
+      statement.setString(8, ad.getStatus().name());
+      statement.setInt(9, ad.getViewCount());
+
+      // Преобразуем список тегов в JSON
+      if (ad.getTags() != null && !ad.getTags().isEmpty()) {
+        String tagsJson = "[\"" + String.join("\",\"", ad.getTags()) + "\"]";
+        statement.setString(10, tagsJson);
+      } else {
+        statement.setNull(10, Types.VARCHAR);
+      }
+
+      statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
+      statement.setLong(12, ad.getId());
+
+      int affectedRows = statement.executeUpdate();
+      if (affectedRows == 0) {
+        throw new SQLException("Обновление объявления failed, no rows affected.");
+      }
+    }
+  }
+
+  @Override
+  public Announcement getAdById(long adId) throws SQLException {
+    String sql = """
+        SELECT a.*, u.name as user_name
+        FROM ads a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.id = ?
+    """;
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setLong(1, adId);
+      ResultSet resultSet = statement.executeQuery();
+
+      if (resultSet.next()) {
+        return mapResultSetToAd(resultSet);
+      }
+      return null; // объявление не найдено
+    }
+  }
+
+  @Override
+  public long saveAd(Announcement ad) throws SQLException {
+    String sql = """
+        INSERT INTO ads (title, description, category, subcategory, condition, price,
+                        location, user_id, status, view_count, tags, tags_count)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
+        RETURNING id
+    """;
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, ad.getTitle());
+      statement.setString(2, ad.getDescription());
+      statement.setInt(3, ad.getCategory().ordinal());
+      statement.setString(4, ad.getSubcategory());
+      statement.setInt(5, ad.getCondition().ordinal());
+      statement.setInt(6, ad.getPrice());
+      statement.setString(7, ad.getLocation());
+      statement.setLong(8, ad.getUserId());
+      statement.setString(9, ad.getStatus().name());
+      statement.setInt(10, ad.getViewCount());
+
+      // Преобразуем список тегов в JSON
+
+      statement.setInt(12, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
+
+      ResultSet resultSet = statement.executeQuery();
+      if (resultSet.next()) {
+        long generatedId = resultSet.getLong(1);
+
+        // Сохраняем фото если они есть
+        if (ad.getPhotos() != null && !ad.getPhotos().isEmpty()) {
+          //saveAdPhotos(generatedId, ad.getPhotos());
+        }
+
+        return generatedId;
+      }
+      throw new SQLException("Failed to get generated ID");
+    }
+  }
+
+  @Override
+  public boolean deleteAd(long adId) throws SQLException {
+    String sql = "UPDATE ads SET status = 'DELETED', updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setLong(1, adId);
+      int affectedRows = statement.executeUpdate();
+      return affectedRows > 0;
+    }
+  }
+
+  // метод для сохранения фото
+  private void saveAdPhotos(long adId, List<File> photos) throws SQLException {
+
+  }
+
+  // метод для загрузки фото объявления
+  public List<String> getAdPhotos(long adId) throws SQLException {
+    return null;
+  }
+
+  private Announcement mapResultSetToAd(ResultSet resultSet) throws SQLException {
+    // Создаем объявление с базовыми полями
+    Announcement ad = new Announcement(
+        resultSet.getString("title"),
+        resultSet.getString("description"),
+        Category.values()[resultSet.getInt("category")],
+        Condition.values()[resultSet.getInt("condition")],
+        resultSet.getInt("price"),
+        resultSet.getString("location"),
+        resultSet.getLong("user_id")
+    );
+
+    // Устанавливаем дополнительные поля
+    ad.setId(resultSet.getLong("id"));
+    ad.setSubcategory(resultSet.getString("subcategory"));
+    ad.setViewCount(resultSet.getInt("view_count"));
+
+    // Устанавливаем статус
+    String statusStr = resultSet.getString("status");
+    try {
+      AdvertisementStatus status = AdvertisementStatus.valueOf(statusStr);
+      ad.setStatus(status);
+    } catch (IllegalArgumentException e) {
+      ad.setStatus(AdvertisementStatus.DRAFT);
+    }
+
+    // Обрабатываем теги
+
+
+    // Устанавливаем даты
+    Timestamp createdAt = resultSet.getTimestamp("created_at");
+    Timestamp updatedAt = resultSet.getTimestamp("updated_at");
+    if (createdAt != null) {
+      ad.setCreatedAt(createdAt.toInstant());
+    }
+    if (updatedAt != null) {
+      ad.setUpdatedAt(updatedAt.toInstant());
+    }
+
+    return ad;
   }
 
   private String readSqlFile(String filename) {

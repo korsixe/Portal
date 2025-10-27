@@ -1,11 +1,19 @@
 package com.mipt.portal.announcement;
 
+import com.mipt.portal.DatabaseManager;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Scanner;
 import java.io.*;
 
 public class AdManager implements IAdManager {
+
+  private DatabaseManager dbManager;
+
+  public AdManager(DatabaseManager dbManager) {
+    this.dbManager = dbManager;
+  }
 
   @Override
   public Announcement createAd(long userId) {
@@ -78,6 +86,14 @@ public class AdManager implements IAdManager {
       //addTagsInteractive(scanner, ad); - Лиза Орлова
     }
 
+    try {
+      long adId = dbManager.saveAd(ad);
+      ad.setId(adId); // ураа, у нас есть id нашего объявления
+      System.out.println("✅ Объявление создано с ID: " + adId);
+    } catch (SQLException e) {
+      System.err.println("❌ Ошибка сохранения: " + e.getMessage());
+    }
+
     System.out.println("\nОбъявление успешно создано!");
     System.out.println(ad.toString());
 
@@ -85,7 +101,7 @@ public class AdManager implements IAdManager {
   }
 
   @Override
-  public Announcement editAd(Announcement ad) {
+  public Announcement editAd(Announcement ad) throws SQLException {
     Scanner scanner = null;
     try {
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
@@ -98,20 +114,23 @@ public class AdManager implements IAdManager {
     System.out.println(ad.toString());
 
     boolean continueEditing = true;
+    Announcement originalAd = new Announcement(ad); // Сохраняем оригинальную версию
 
     while (continueEditing) {
       System.out.println("\nЧто вы хотите изменить?");
       System.out.println("1. Заголовок");
       System.out.println("2. Описание");
       System.out.println("3. Категорию");
-      System.out.println("4. Местоположение");
-      System.out.println("5. Состояние товара");
-      System.out.println("6. Цену");
-      System.out.println("7. Статус объявления");
+      System.out.println("4. Подкатегорию");
+      System.out.println("5. Местоположение");
+      System.out.println("6. Состояние товара");
+      System.out.println("7. Цену");
       System.out.println("8. Теги");
-      System.out.println("0. Завершить редактирование");
+      System.out.println("9. Статус объявления");
+      System.out.println("10. Сохранить изменения");
+      System.out.println("0. Отменить изменения и выйти");
 
-      int choice = readIntInRange(scanner, "Ваш выбор: ", 0, 8);
+      int choice = readIntInRange(scanner, "Ваш выбор: ", 0, 10);
 
       switch (choice) {
         case 1:
@@ -124,34 +143,35 @@ public class AdManager implements IAdManager {
           editCategory(scanner, ad);
           break;
         case 4:
-          editLocation(scanner, ad);
+          //editSubcategory(scanner, ad);
           break;
         case 5:
-          editCondition(scanner, ad);
+          editLocation(scanner, ad);
           break;
         case 6:
-          editPrice(scanner, ad);
+          editCondition(scanner, ad);
           break;
         case 7:
-          editStatus(scanner, ad);
+          editPrice(scanner, ad);
           break;
         case 8:
-          //manageTags(scanner, ad); - редактирование тегов
+          //manageTags(scanner, ad);
           break;
+        case 9:
+          editStatus(scanner, ad);
+          break;
+        case 10:
+          // Сохраняем изменения в БД
+          ad.setUpdatedAt(Instant.now());
+          dbManager.updateAd(ad);
+          System.out.println("Изменения сохранены успешно!");
+          return ad;
         case 0:
-          continueEditing = false;
-          System.out.println("Редактирование завершено.");
-          break;
+          System.out.println("Редактирование отменено. Возврат к исходной версии.");
+          return originalAd;
       }
-
-      if (choice > 0) {
-        ad.setUpdatedAt(Instant.now());
-      }
-
-      if (continueEditing) {
-        System.out.println("\nТекущие данные после изменений:");
-        System.out.println(ad.toString());
-      }
+      System.out.println("\nТекущие данные после изменений:");
+      System.out.println(ad.toString());
     }
 
     return ad;
@@ -298,20 +318,57 @@ public class AdManager implements IAdManager {
 
   @Override
   public Announcement deleteAd(long adId) {
-    // Логика удаления объявления
-    return null;
+    try {
+      Announcement ad = dbManager.getAdById(adId);
+      if (ad == null) {
+        System.out.println("❌ Объявление с ID " + adId + " не найдено");
+        return null;
+      }
+
+      // Подтверждение удаления
+      Scanner scanner = new Scanner(System.in);
+      System.out.println("Вы действительно хотите удалить объявление?");
+      System.out.println(ad.toString());
+      System.out.print("Введите 'да' для подтверждения: ");
+      String confirmation = scanner.nextLine();
+
+      if ("да".equalsIgnoreCase(confirmation)) {
+        boolean deleted = dbManager.deleteAd(adId);
+        if (deleted) {
+          //dbManager.removeAdFromUserList(ad.getUserId(), adId); - удаляем у юзера
+          System.out.println("✅ Объявление успешно удалено");
+          return ad;
+        } else {
+          System.out.println("❌ Не удалось удалить объявление");
+          return null;
+        }
+      } else {
+        System.out.println("❌ Удаление отменено");
+        return null;
+      }
+
+    } catch (SQLException e) {
+      System.err.println("❌ Ошибка при удалении объявления: " + e.getMessage());
+      return null;
+    }
   }
 
   @Override
   public Announcement getAd(long adId) {
-    // Логика получения объявления
-    return null;
-  }
-
-  @Override
-  public List<Announcement> getAds(long userId) {
-    // Логика получения объявлений пользователя
-    return null;
+    try {
+      Announcement ad = dbManager.getAdById(adId);
+      if (ad != null) {
+        System.out.println("✅ Объявление найдено:");
+        System.out.println(ad.toString());
+        ad.incrementViewCount(); // увеличиваем просмотры
+      } else {
+        System.out.println("❌ Объявление с ID " + adId + " не найдено");
+      }
+      return ad;
+    } catch (SQLException e) {
+      System.err.println("❌ Ошибка при получении объявления: " + e.getMessage());
+      return null;
+    }
   }
 
   // Функция для безопасного ввода числа
