@@ -3,7 +3,7 @@ package com.mipt.portal.announcement;
 import java.time.Instant;
 import java.util.List;
 
-public interface IAdFilter {
+public interface IAdsFilter {
 
   List<Announcement> filterByTitle(List<Announcement> ads, String title);
 
