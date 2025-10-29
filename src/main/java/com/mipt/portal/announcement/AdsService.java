@@ -1,23 +1,20 @@
 package com.mipt.portal.announcement;
 
-import com.mipt.portal.DatabaseManager;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.List;
 import java.util.Scanner;
 import java.io.*;
 
-public class AdManager implements IAdManager {
+import lombok.AllArgsConstructor;
 
-  private DatabaseManager dbManager;
+@AllArgsConstructor
+public class AdsService implements IAdsService {
 
-  public AdManager(DatabaseManager dbManager) {
-    this.dbManager = dbManager;
-  }
+  private IAdsRepository dbManager;
 
   @Override
   public Announcement createAd(long userId) {
-    Scanner scanner = null;
+    Scanner scanner;
     try {
       scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
     } catch (UnsupportedEncodingException e) {

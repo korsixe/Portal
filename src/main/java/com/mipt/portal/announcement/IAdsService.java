@@ -1,9 +1,8 @@
 package com.mipt.portal.announcement;
 
 import java.sql.SQLException;
-import java.util.List;
 
-public interface IAdManager {
+public interface IAdsService {
 
   Announcement createAd(long userId); //  Создать объявление
 

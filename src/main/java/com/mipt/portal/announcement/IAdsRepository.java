@@ -1,9 +1,8 @@
-package com.mipt.portal;
+package com.mipt.portal.announcement;
 
-import com.mipt.portal.announcement.Announcement;
 import java.sql.SQLException;
 
-public interface IDatabaseManager {
+public interface IAdsRepository {
   void createTables() throws SQLException;
   void insertData() throws SQLException;
   Long getUserIdByEmail(String email) throws SQLException;
@@ -11,5 +10,5 @@ public interface IDatabaseManager {
   Announcement getAdById(long adId) throws SQLException;
   long saveAd(Announcement ad) throws SQLException;
   boolean deleteAd(long adId) throws SQLException;
-
+  boolean hardDeleteAd(long adId) throws SQLException;
 }

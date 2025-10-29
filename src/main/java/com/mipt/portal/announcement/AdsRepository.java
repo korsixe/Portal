@@ -1,9 +1,5 @@
-package com.mipt.portal;
+package com.mipt.portal.announcement;
 
-import com.mipt.portal.announcement.AdvertisementStatus;
-import com.mipt.portal.announcement.Announcement;
-import com.mipt.portal.announcement.Category;
-import com.mipt.portal.announcement.Condition;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,14 +9,12 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.*;
 import java.util.List;
+import lombok.AllArgsConstructor;
 
-public class DatabaseManager implements IDatabaseManager {
+@AllArgsConstructor
+public class AdsRepository implements IAdsRepository {
 
   private Connection connection;
-
-  public DatabaseManager(Connection connection) {
-    this.connection = connection;
-  }
 
   @Override
   public void createTables() {
@@ -172,6 +166,16 @@ public class DatabaseManager implements IDatabaseManager {
   public boolean deleteAd(long adId) throws SQLException {
     String sql = "UPDATE ads SET status = 'DELETED', updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setLong(1, adId);
+      int affectedRows = statement.executeUpdate();
+      return affectedRows > 0;
+    }
+  }
+
+  @Override
+  public boolean hardDeleteAd(long adId) throws SQLException {
+    String sql = "DELETE FROM ads WHERE id = ? AND status = 'DELETED'";
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, adId);
       int affectedRows = statement.executeUpdate();

@@ -6,7 +6,7 @@
 mvn clean install
 ```
 ```
-java -cp target/classes com.mipt.portal.testing_user.Application
+java -cp target/classes com.mipt.portal.testinguser.Application
 ```
 
 # Запуск БД с драйвером

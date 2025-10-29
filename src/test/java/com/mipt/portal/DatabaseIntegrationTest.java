@@ -2,6 +2,7 @@ package com.mipt.portal;
 
 import com.mipt.portal.announcement.Announcement;
 
+import com.mipt.portal.announcement.AdsRepository;
 import org.junit.jupiter.api.*;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -23,7 +24,7 @@ class DatabaseIntegrationTest {
       .withPassword("test");
 
   private Connection connection;
-  private DatabaseManager dbManager;
+  private AdsRepository dbManager;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -32,7 +33,7 @@ class DatabaseIntegrationTest {
         postgres.getUsername(),
         postgres.getPassword()
     );
-    dbManager = new DatabaseManager(connection);
+    dbManager = new AdsRepository(connection);
 
     dbManager.createTables();
   }
