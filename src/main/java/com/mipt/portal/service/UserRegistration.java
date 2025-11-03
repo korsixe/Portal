@@ -9,7 +9,5 @@ public interface UserRegistration {
 
   boolean correctPassword(String password);
 
-  boolean isEmailExists(String email);
-
   boolean isPasswordStrong(String password);
 }

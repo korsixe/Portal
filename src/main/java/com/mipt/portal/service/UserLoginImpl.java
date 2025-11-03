@@ -1,36 +1,39 @@
 package com.mipt.portal.service;
 
-import com.mipt.portal.DatabaseManager;
+import com.mipt.portal.UserRepository;
 
 import java.util.Optional;
 
 public class UserLoginImpl implements UserLogin {
-    private final DatabaseManager databaseManager;
+    private final UserRepository userRepository;
 
-    public UserLoginImpl(DatabaseManager databaseManager) {
-        this.databaseManager = databaseManager;
+    public UserLoginImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
     public User login(String email, String password) {
-        if (!userExists(email)) {
+        Optional<User> userOptinal = userRepository.findByEmail(email);
+
+        if (userOptinal.isEmpty()) {
             System.out.println("Пользователь с таким email не найден");
             return null;
         }
 
-        Optional<User> user = databaseManager.getUserByEmail(email);
+        User user = userOptinal.get();
 
-        if (passwordCorrect(password, user.get())) {
-            System.out.println("Успешно! Добро пожаловать, " + user.get().getName() + "!");
-            return user.get();
+        if (passwordCorrect(password, user)) {
+            System.out.println("Успешно! Добро пожаловать, " + user.getName() + "!");
+            return user;
+        } else {
+            System.out.println("Неверный пароль.");
+            return null;
         }
-
-        return null;
     }
 
     @Override
     public boolean userExists(String email) {
-        return databaseManager.isEmailExists(email);
+        return userRepository.existsByEmail(email);
     }
 
     @Override

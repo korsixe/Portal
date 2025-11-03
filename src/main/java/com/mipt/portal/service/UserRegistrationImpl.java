@@ -1,25 +1,26 @@
 package com.mipt.portal.service;
 
-import com.mipt.portal.UserManager;
+import com.mipt.portal.UserRepository;
+
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class UserRegistrationImpl implements UserRegistration {
 
-    private final UserManager userManager;
+    private final UserRepository userRepository;
 
-    public UserRegistrationImpl(UserManager userManager) {
-        this.userManager = userManager;
+    public UserRegistrationImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
     public User register(String email, String name, String password) {
 
-        email = email.trim();
-        password = password.trim();
-        name = name.trim();
-
-        if (!correctEmail(email) || !correctName(name) || !correctPassword(password) || !isPasswordStrong(password) || isEmailExists(email)) {
+        if (!correctEmail(email) || !correctName(name) || !correctPassword(password) || userRepository.existsByEmail(email) || !isPasswordStrong(password)) {
+            if (userRepository.existsByEmail(email)) {
+                System.out.println("Пользователь с email " + email  + " уже существует!");
+            }
             return null;
         }
         System.out.println("Подтвердите пароль: ");
@@ -33,9 +34,11 @@ public class UserRegistrationImpl implements UserRegistration {
 
         User newUser = new User(email, name, password);
 
-        if(userManager.addUser(newUser)) {
+        Optional<User> savedUser = userRepository.save(newUser);
+
+        if(savedUser.isPresent()) {
             System.out.println("\nПользователь зарегистрирован!\n");
-            return newUser;
+            return savedUser.get();
         } else {
             System.out.println("\nОшибка при регистрации пользователя.\n");
             return null ;
@@ -93,11 +96,6 @@ public class UserRegistrationImpl implements UserRegistration {
     }
 
     @Override
-    public boolean isEmailExists(String email) {
-        return userManager.isEmailExists(email);
-    }
-
-    @Override
     public boolean isPasswordStrong(String password) {
         double hasLower = 0, hasUpper = 0,
                 hasDigit = 0, hasSpecialChar = 0, goodSize = 0;
@@ -124,7 +122,7 @@ public class UserRegistrationImpl implements UserRegistration {
 
         double strength = hasLower + hasUpper + hasDigit + hasSpecialChar + goodSize;
 
-        System.out.println("Сложность вашего пароля: " + strength + " Минимальная сложность: 4");
+        System.out.println("Ваш пароль слишком простой!");
         if (strength >= 4) {
             return true;
         }
