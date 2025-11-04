@@ -1,4 +1,4 @@
-package com.mipt.portal.service;
+package com.mipt.portal.users;
 
 public interface UserLogin {
   User login(String email, String password);

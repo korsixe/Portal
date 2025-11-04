@@ -1,4 +1,4 @@
-package com.mipt.portal.service;
+package com.mipt.portal.users;
 
 public interface UserRegistration {
   User register(String email, String name, String password);

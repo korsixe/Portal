@@ -3,7 +3,7 @@ package com.mipt.portal.testinguser;
 import com.mipt.portal.DatabaseManager;
 import com.mipt.portal.UserRepository;
 import com.mipt.portal.UserRepositoryImpl;
-import com.mipt.portal.service.*;
+import com.mipt.portal.users.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Optional;

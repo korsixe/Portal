@@ -1,8 +1,5 @@
 package com.mipt.portal;
 
-import com.mipt.portal.IDatabaseManager;
-import com.mipt.portal.service.User;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,9 +7,6 @@ import java.nio.file.Paths;
 import java.io.InputStream;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 public class DatabaseManager implements IDatabaseManager {
 
