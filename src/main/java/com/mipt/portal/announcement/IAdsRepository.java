@@ -1,7 +1,9 @@
 package com.mipt.portal.announcement;
 
+import org.springframework.stereotype.Repository;
 import java.sql.SQLException;
 
+@Repository
 public interface IAdsRepository {
   void createTables() throws SQLException;
   void insertData() throws SQLException;

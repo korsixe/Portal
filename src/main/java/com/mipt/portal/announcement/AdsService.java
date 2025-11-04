@@ -1,12 +1,15 @@
 package com.mipt.portal.announcement;
 
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Scanner;
-import java.io.*;
-
+import org.springframework.stereotype.Service;
 import lombok.AllArgsConstructor;
+import com.mipt.portal.announcement.IAdsService;
 
+@Service
 @AllArgsConstructor
 public class AdsService implements IAdsService {
 
