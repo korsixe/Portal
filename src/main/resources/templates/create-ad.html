@@ -10,7 +10,7 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
   <div class="container">
-    <a class="navbar-brand" href="/">🚀 Физтех Портал</a>
+    <a class="navbar-brand" href="/static">🚀 Физтех Портал</a>
     <div class="navbar-nav ms-auto">
       <a class="nav-link" href="/ads"><i class="fas fa-list"></i> Все объявления</a>
       <a class="nav-link" href="/ads/my"><i class="fas fa-user"></i> Мои объявления</a>
@@ -26,7 +26,7 @@
           <h4 class="card-title mb-0"><i class="fas fa-plus-circle"></i> Создать новое объявление</h4>
         </div>
         <div class="card-body">
-          <form th:action="@{/ads/new}" method="post" enctype="multipart/form-data" th:object="${ad}">
+          <form th:action="@{/ads/new}" method="post" enctype="multipart/form-data" th:object="${announcement}">
 
             <!-- Заголовок -->
             <div class="mb-3">

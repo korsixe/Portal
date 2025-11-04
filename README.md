@@ -22,3 +22,7 @@ mvn clean compile
 ```
 java -cp "target/classes:postgresql-42.6.0.jar" com.mipt.portal.Main
 ```
+
+```
+mvn spring-boot:run
+```

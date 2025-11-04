@@ -1,12 +1,10 @@
 package com.mipt.portal.announcement;
 
-import org.springframework.stereotype.Repository;
 import java.sql.SQLException;
 
-@Repository
 public interface IAdsRepository {
-  void createTables() throws SQLException;
-  void insertData() throws SQLException;
+  void createTables();
+  void insertData();
   Long getUserIdByEmail(String email) throws SQLException;
   void updateAd(Announcement ad) throws SQLException;
   Announcement getAdById(long adId) throws SQLException;

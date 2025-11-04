@@ -3,35 +3,60 @@ package com.mipt.portal;
 import com.mipt.portal.announcement.AdsService;
 import com.mipt.portal.announcement.AdsRepository;
 import com.mipt.portal.announcement.Announcement;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.SQLException;
 
-public class Main {
+@SpringBootApplication
+public class Main implements CommandLineRunner {
+
+  @Autowired
+  private AdsRepository adsRepository;
+
+  @Autowired
+  private AdsService adsService;
 
   public static void main(String[] args) {
     System.out.println("🚀 Запуск Portal Application");
+    SpringApplication.run(Main.class, args);
+  }
 
-    try (Connection connection = DriverManager.getConnection(
-        "jdbc:postgresql://localhost:5432/myproject",
-        "myuser",
-        "mypassword"
-    )) {
-
-      AdsRepository adsRepository = new AdsRepository(connection);
+  @Override
+  public void run(String... args) throws Exception {
+    try {
+      // Создаем таблицы
       adsRepository.createTables();
       System.out.println("✅ Таблицы успешно созданы!");
-      adsRepository.insertData();
 
+      // Вставляем тестовые данные
+      adsRepository.insertData();
+      System.out.println("✅ Тестовые данные добавлены!");
+
+      // Основная логика приложения
       System.out.println("Теперь давайте создадим объявление");
-      AdsService adsService = new AdsService(adsRepository);
-      Announcement cur = adsService.createAd(adsRepository.getUserIdByEmail("shabunina.ao@phystech.edu"));
-      cur = adsService.editAd(cur);
-      cur = adsService.deleteAd(cur.getId());
-      adsRepository.hardDeleteAd(cur.getId());
+
+      Long userId = adsRepository.getUserIdByEmail("shabunina.ao@phystech.edu");
+      if (userId == null) {
+        System.out.println("❌ Пользователь не найден!");
+        return;
+      }
+
+      Announcement cur = adsService.createAd(userId);
+      if (cur != null) {
+        cur = adsService.editAd(cur);
+        cur = adsService.deleteAd(cur.getId());
+        adsRepository.hardDeleteAd(cur.getId());
+      }
+
+      System.out.println("✅ Приложение успешно завершило работу!");
+
     } catch (SQLException e) {
-      System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
+      System.err.println("❌ Ошибка работы с базой данных: " + e.getMessage());
+      e.printStackTrace();
+    } catch (Exception e) {
+      System.err.println("❌ Неожиданная ошибка: " + e.getMessage());
       e.printStackTrace();
     }
   }
