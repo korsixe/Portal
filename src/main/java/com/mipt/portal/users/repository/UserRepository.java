@@ -1,6 +1,7 @@
-package com.mipt.portal;
+package com.mipt.portal.users.repository;
 
 import com.mipt.portal.users.User;
+
 import java.util.List;
 import java.util.Optional;
 

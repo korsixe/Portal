@@ -1,8 +1,8 @@
-package com.mipt.portal.testinguser;
+package com.mipt.portal.users.testinguser;
 
 import com.mipt.portal.DatabaseManager;
-import com.mipt.portal.UserRepository;
-import com.mipt.portal.UserRepositoryImpl;
+import com.mipt.portal.users.repository.UserRepository;
+import com.mipt.portal.users.repository.UserRepositoryImpl;
 import com.mipt.portal.users.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
