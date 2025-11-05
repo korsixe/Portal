@@ -1,4 +1,4 @@
-package com.mipt.portal.service;
+package com.mipt.portal.users;
 
 public interface UserRegistration {
   User register(String email, String name, String password);
@@ -8,8 +8,6 @@ public interface UserRegistration {
   boolean correctName(String name);
 
   boolean correctPassword(String password);
-
-  boolean isEmailExists(String email);
 
   boolean isPasswordStrong(String password);
 }
