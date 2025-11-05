@@ -50,7 +50,7 @@ public class Main implements CommandLineRunner {
       System.out.println("✅ Приложение успешно завершило работу!");
 
     } catch (SQLException e) {
-      System.err.println("❌ Ошибка работы с базой данных: " + e.getMessage());
+      System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
       e.printStackTrace();
     } catch (Exception e) {
       System.err.println("❌ Неожиданная ошибка: " + e.getMessage());
