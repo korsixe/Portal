@@ -5,11 +5,9 @@ import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Scanner;
-import org.springframework.stereotype.Service;
 import lombok.AllArgsConstructor;
-import com.mipt.portal.announcement.IAdsService;
 
-@Service
+
 @AllArgsConstructor
 public class AdsService implements IAdsService {
 

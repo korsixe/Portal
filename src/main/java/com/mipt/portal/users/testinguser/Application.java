@@ -1,6 +1,6 @@
 package com.mipt.portal.users.testinguser;
 
-import com.mipt.portal.DatabaseManager;
+import com.mipt.portal.announcement.AdsRepository;
 import com.mipt.portal.users.repository.UserRepository;
 import com.mipt.portal.users.repository.UserRepositoryImpl;
 import com.mipt.portal.users.*;
@@ -10,12 +10,12 @@ import java.util.Optional;
 import java.util.Scanner;
 
 public class Application {
-    private final DatabaseManager databaseManager;
+    private final AdsRepository databaseManager;
     private final UserRepository userRepository;
     private final UserRegistrationImpl registration;
     private final UserLoginImpl login;
 
-    public Application(DatabaseManager databaseManager, UserRepository userRepository, UserRegistrationImpl registration, UserLoginImpl login) {
+    public Application(AdsRepository databaseManager, UserRepository userRepository, UserRegistrationImpl registration, UserLoginImpl login) {
         this.databaseManager = databaseManager;
         this.userRepository = userRepository;
         this.registration = registration;
@@ -34,7 +34,7 @@ public class Application {
             Connection connection = DriverManager.getConnection(url, username, password);
             System.out.println("✅ Успешное подключение к БД!");
 
-            DatabaseManager  databaseManager = new DatabaseManager(connection);
+            AdsRepository databaseManager = new AdsRepository(connection);
             databaseManager.createTables();
             databaseManager.insertData();
 
