@@ -1,0 +1,35 @@
+DROP TABLE IF EXISTS ads CASCADE;
+
+-- Создание таблицы пользователей
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,                    -- Используем BIGSERIAL для автоинкремента
+    email TEXT NOT NULL UNIQUE,                  -- Электронная почта (уникальная)
+    name TEXT NOT NULL,                          -- Имя пользователя
+    password TEXT NOT NULL,                      -- Пароль
+    address TEXT,                                -- Адрес (может быть пустым)
+    study_program TEXT,                          -- Учебная программа
+    course INTEGER,                              -- Курс
+    rating REAL DEFAULT 0.0,                     -- Рейтинг (по умолчанию 0.0)
+    coins INTEGER DEFAULT 0,                     -- Количество монет (по умолчанию 0)
+    ad_list BIGINT[] DEFAULT '{}'                -- Список ID объявлений (массив BIGINT)
+);
+-- а как создать зависимоть для user --> ads
+
+CREATE TABLE IF NOT EXISTS ads (
+    id BIGSERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    category INTEGER NOT NULL,
+    subcategory TEXT,
+    condition INTEGER NOT NULL,
+    price INTEGER NOT NULL,
+    location TEXT,
+    user_id BIGINT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    view_count INTEGER DEFAULT 0,
+    tags JSONB,
+    tags_count INTEGER DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
