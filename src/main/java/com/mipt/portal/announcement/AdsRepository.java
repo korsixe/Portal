@@ -9,35 +9,20 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.*;
 import java.util.List;
-import javax.sql.DataSource;
-
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+@AllArgsConstructor
 @Repository
 public class AdsRepository implements IAdsRepository {
 
-  //private Connection connection;
-
-  //  public DatabaseManager(Connection connection) {
-  //      this.connection = connection;
-  //  }
-  
-  private final DataSource dataSource;
-
-  // принимаем DataSource вместо Connection
-  public AdsRepository(DataSource dataSource) {
-    this.dataSource = dataSource;
-  }
-
-  private Connection getConnection() throws SQLException {
-    return dataSource.getConnection();
-  }
+  private Connection connection;
 
   @Override
   public void createTables() {
-    try (Connection conn = getConnection()) {
+    try {
       String sql = readSqlFile("sql/create_tables.sql");
-      executeSql(conn, sql);
+      executeSql(sql);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -45,16 +30,16 @@ public class AdsRepository implements IAdsRepository {
 
   @Override
   public void insertData() {
-    try (Connection conn = getConnection()) {
+    try {
       String sql = readSqlFile("sql/insert_data.sql");
-      executeSql(conn, sql);
+      executeSql(sql);
     } catch (Exception e) {
       e.printStackTrace();
     }
 
-    try (Connection conn = getConnection()) {
+    try {
       String sql = readSqlFile("sql/insert_data_ad.sql");
-      executeSql(conn, sql);
+      executeSql(sql);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -64,8 +49,7 @@ public class AdsRepository implements IAdsRepository {
   public Long getUserIdByEmail(String email) throws SQLException {
     String sql = "SELECT id FROM users WHERE email = ?";
 
-    try (Connection conn = getConnection();
-        PreparedStatement statement = conn.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, email);
       ResultSet resultSet = statement.executeQuery();
 
@@ -86,8 +70,7 @@ public class AdsRepository implements IAdsRepository {
         WHERE id = ?
     """;
 
-    try (Connection conn = getConnection();
-        PreparedStatement statement = conn.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, ad.getTitle());
       statement.setString(2, ad.getDescription());
       statement.setInt(3, ad.getCategory().ordinal());
@@ -125,8 +108,7 @@ public class AdsRepository implements IAdsRepository {
         WHERE a.id = ?
     """;
 
-    try (Connection conn = getConnection();
-        PreparedStatement statement = conn.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, adId);
       ResultSet resultSet = statement.executeQuery();
 
@@ -146,8 +128,7 @@ public class AdsRepository implements IAdsRepository {
         RETURNING id
     """;
 
-    try (Connection conn = getConnection();
-        PreparedStatement statement = conn.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, ad.getTitle());
       statement.setString(2, ad.getDescription());
       statement.setInt(3, ad.getCategory().ordinal());
@@ -159,7 +140,7 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(9, ad.getStatus().name());
       statement.setInt(10, ad.getViewCount());
 
-      // Преобразуем список тегов в JSON
+      // Преобразуем список тегов в JSON - пока так, чтобы запускался код (часть Лизы О)
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
         String tagsJson = "[\"" + String.join("\",\"", ad.getTags()) + "\"]";
         statement.setString(11, tagsJson);
@@ -187,8 +168,7 @@ public class AdsRepository implements IAdsRepository {
   public boolean deleteAd(long adId) throws SQLException {
     String sql = "UPDATE ads SET status = 'DELETED', updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
-    try (Connection conn = getConnection();
-        PreparedStatement statement = conn.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, adId);
       int affectedRows = statement.executeUpdate();
       return affectedRows > 0;
@@ -198,8 +178,7 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public boolean hardDeleteAd(long adId) throws SQLException {
     String sql = "DELETE FROM ads WHERE id = ? AND status = 'DELETED'";
-    try (Connection conn = getConnection();
-        PreparedStatement statement = conn.prepareStatement(sql)) {
+    try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, adId);
       int affectedRows = statement.executeUpdate();
       return affectedRows > 0;
@@ -241,6 +220,9 @@ public class AdsRepository implements IAdsRepository {
       ad.setStatus(AdvertisementStatus.DRAFT);
     }
 
+    // Обрабатываем теги
+
+
     // Устанавливаем даты
     Timestamp createdAt = resultSet.getTimestamp("created_at");
     Timestamp updatedAt = resultSet.getTimestamp("updated_at");
@@ -262,7 +244,7 @@ public class AdsRepository implements IAdsRepository {
         return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
       }
 
-      Path path = Paths.get("src/main/resources/sql/" + filename);
+      Path path = Paths.get("~Portal/src/main/resources/sql/" + filename);
       if (Files.exists(path)) {
         return Files.readString(path);
       }
@@ -274,8 +256,8 @@ public class AdsRepository implements IAdsRepository {
     }
   }
 
-  private void executeSql(Connection conn, String sql) throws SQLException {
-    try (Statement statement = conn.createStatement()) {
+  private void executeSql(String sql) throws SQLException {
+    try (Statement statement = connection.createStatement()) {
       String[] sqlCommands = sql.split(";");
       for (String command : sqlCommands) {
         if (!command.trim().isEmpty()) {

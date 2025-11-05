@@ -13,7 +13,7 @@ import com.mipt.portal.announcement.IAdsService;
 @AllArgsConstructor
 public class AdsService implements IAdsService {
 
-  private IAdsRepository dbManager;
+  private AdsRepository dbManager;
 
   @Override
   public Announcement createAd(long userId) {
