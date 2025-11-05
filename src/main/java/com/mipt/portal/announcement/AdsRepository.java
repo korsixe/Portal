@@ -16,6 +16,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class AdsRepository implements IAdsRepository {
 
+  //private Connection connection;
+
+  //  public DatabaseManager(Connection connection) {
+  //      this.connection = connection;
+  //  }
+  
   private final DataSource dataSource;
 
   // принимаем DataSource вместо Connection
