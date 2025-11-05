@@ -6,9 +6,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+
 public class Announcement {
 
   private long id;                     // id объявления
@@ -134,7 +139,7 @@ public class Announcement {
     updatedAt = Instant.now();
   }
 
-  // Методы для работы с тегами
+  // Методы для работы с тегами, жду объединения с другой частью проекта
 
   public void addTag(String tag) {
     if (tags == null) {

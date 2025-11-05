@@ -1,8 +1,7 @@
-package com.mipt.portal.testing_user;
+package com.mipt.portal.testinguser;
 
 import com.mipt.portal.service.UserRegistrationImpl;
 import com.mipt.portal.service.User;
-import java.util.List;
 import java.util.Scanner;
 
 

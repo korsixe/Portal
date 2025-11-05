@@ -1,12 +1,17 @@
 package com.mipt.portal;
 
+import com.mipt.portal.announcement.AdsRepository;
+import com.mipt.portal.announcement.AdsService;
+import com.mipt.portal.announcement.Announcement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Main {
+
   public static void main(String[] args) {
     System.out.println("🚀 Запуск Portal Application");
+
 
     try {
       Connection connection = DriverManager.getConnection(
@@ -14,12 +19,31 @@ public class Main {
           "myuser",
           "mypassword"
       );
+      AdsRepository adsRepository = new AdsRepository(connection);
+      AdsService adsService = new AdsService(adsRepository);
 
-      DatabaseManager dbManager = new DatabaseManager(connection);
-      dbManager.createTables();
+      adsRepository.createTables();
       System.out.println("✅ Таблицы успешно созданы!");
-      dbManager.insertData();
 
+      adsRepository.insertData();
+      System.out.println("✅ Тестовые данные добавлены!");
+
+      System.out.println("Теперь давайте создадим объявление");
+
+      Long userId = adsRepository.getUserIdByEmail("shabunina.ao@phystech.edu");
+      if (userId == null) {
+        System.out.println("❌ Пользователь не найден!");
+        return;
+      }
+
+      Announcement cur = adsService.createAd(userId);
+      if (cur != null) {
+        cur = adsService.editAd(cur);
+        cur = adsService.deleteAd(cur.getId());
+        adsRepository.hardDeleteAd(cur.getId());
+      }
+
+      System.out.println("✅ Приложение успешно завершило работу!");
     } catch (SQLException e) {
       System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
       e.printStackTrace();

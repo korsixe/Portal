@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class AdFilter implements IAdFilter {
+public class AdsFilter implements IAdsFilter {
 
   @Override
   public List<Announcement> filterByTitle(List<Announcement> ads, String title) { // в тупую сравниваниваем названия
