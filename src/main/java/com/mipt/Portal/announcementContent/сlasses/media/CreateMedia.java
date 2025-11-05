@@ -1,9 +1,9 @@
 package com.mipt.Portal.announcementContent.classes.media;
 
+import com.mipt.Portal.announcementContent.сlasses.media.DBManager;
 import lombok.RequiredArgsConstructor;
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -14,6 +14,8 @@ public class CreateMedia {
   private final Scanner scanner;
   private final String mediaDirectory;
   private final int maxFiles;
+  private final DBManager dbManager;
+  private final int adId;
 
   public void addMedia() {
     System.out.println("ДОБАВЛЕНИЕ МЕДИА");
@@ -36,7 +38,7 @@ public class CreateMedia {
         }
         addFileByPath();
       } else {
-        System.out.println(" Неверный ввод! Выберите 1 или 2");
+        System.out.println("Неверный ввод! Выберите 1 или 2");
       }
     }
   }
@@ -46,27 +48,38 @@ public class CreateMedia {
       System.out.println("Достигнут лимит файлов! Максимум: " + maxFiles);
       return;
     }
+
     System.out.print("Введите полный путь к файлу: ");
     String filePath = scanner.nextLine().trim();
 
     File sourceFile = new File(filePath);
 
+    if (!sourceFile.exists()) {
+      System.out.println("Файл не найден: " + filePath);
+      return;
+    }
 
     try {
       String fileName = sourceFile.getName();
+      byte[] fileBytes = Files.readAllBytes(sourceFile.toPath());
 
       if (mediaList.size() >= maxFiles) {
         System.out.println("Достигнут лимит файлов во время копирования!");
         return;
       }
-      Path targetPath = Paths.get(mediaDirectory + fileName);
-      Files.copy(sourceFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+      // Копируем файл в папку
+      Files.copy(sourceFile.toPath(), Paths.get(mediaDirectory + fileName), StandardCopyOption.REPLACE_EXISTING);
       mediaList.add(fileName);
+
+      // Сохраняем в БД
+      dbManager.saveFileToDB(adId, fileBytes);
+
       System.out.println("Файл добавлен: " + fileName);
-      System.out.println("");
+      System.out.println("Размер: " + fileBytes.length + " байт");
 
     } catch (IOException e) {
-      System.out.println("Ошибка при копировании: " + e.getMessage());
+      System.out.println("Ошибка: " + e.getMessage());
     }
   }
 }
