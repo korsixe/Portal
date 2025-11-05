@@ -48,7 +48,6 @@ public class Main implements CommandLineRunner {
       }
 
       System.out.println("✅ Приложение успешно завершило работу!");
-
     } catch (SQLException e) {
       System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
       e.printStackTrace();
