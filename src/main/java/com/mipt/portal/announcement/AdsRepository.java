@@ -10,10 +10,8 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Repository;
 
 @AllArgsConstructor
-@Repository
 public class AdsRepository implements IAdsRepository {
 
   private Connection connection;
