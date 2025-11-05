@@ -52,9 +52,6 @@ public class Main implements CommandLineRunner {
     } catch (SQLException e) {
       System.err.println("❌ Ошибка подключения к базе данных: " + e.getMessage());
       e.printStackTrace();
-    } catch (Exception e) {
-      System.err.println("❌ Неожиданная ошибка: " + e.getMessage());
-      e.printStackTrace();
     }
   }
 }
