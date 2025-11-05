@@ -26,15 +26,12 @@ public class Main implements CommandLineRunner {
   @Override
   public void run(String... args) throws Exception {
     try {
-      // Создаем таблицы
       adsRepository.createTables();
       System.out.println("✅ Таблицы успешно созданы!");
-
-      // Вставляем тестовые данные
       adsRepository.insertData();
       System.out.println("✅ Тестовые данные добавлены!");
 
-      // Основная логика приложения
+      
       System.out.println("Теперь давайте создадим объявление");
 
       Long userId = adsRepository.getUserIdByEmail("shabunina.ao@phystech.edu");
