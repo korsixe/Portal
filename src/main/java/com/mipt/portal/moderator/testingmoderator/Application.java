@@ -1,6 +1,8 @@
-package com.mipt.portal.users.testinguser;
+package com.mipt.portal.moderator.testingmoderator;
 
 import com.mipt.portal.announcement.AdsRepository;
+import com.mipt.portal.moderator.Moderator;
+import com.mipt.portal.moderator.ModeratorRepository;
 import com.mipt.portal.users.repository.UserRepository;
 import com.mipt.portal.users.repository.UserRepositoryImpl;
 import com.mipt.portal.users.*;
@@ -10,14 +12,14 @@ import java.util.Optional;
 import java.util.Scanner;
 
 public class Application {
-    private final AdsRepository databaseManager;
-    private final UserRepository userRepository;
+    private final AdsRepository adsRepository;
+    private final ModeratorRepository moderatorRepository;
     private final UserRegistrationImpl registration;
     private final UserLoginImpl login;
 
-    public Application(AdsRepository databaseManager, UserRepository userRepository, UserRegistrationImpl registration, UserLoginImpl login) {
-        this.databaseManager = databaseManager;
-        this.userRepository = userRepository;
+    public Application(AdsRepository adsRepository, ModeratorRepository moderatorRepository, UserRegistrationImpl registration, UserLoginImpl login) {
+        this.adsRepository = adsRepository;
+        this.moderatorRepository = moderatorRepository;
         this.registration = registration;
         this.login = login;
     }
@@ -58,6 +60,7 @@ public class Application {
 
         while (true) {
             System.out.println("\n=== PORTAL SYSTEM ===");
+            System.out.println("\n=== MODERATORS ===\n");
             System.out.println("1. Регистрация");
             System.out.println("2. Вход");
             System.out.println("3. Выход");
@@ -85,7 +88,7 @@ public class Application {
         }
     }
 
-    private static void testRegistration(UserRegistrationImpl registration, UserRepository userRepository, Scanner scanner) {
+    private static void testRegistration(ModeratorRepository moderatorRepository, Scanner scanner) {
         System.out.println("\n=== РЕГИСТРАЦИЯ В PORTAL ===");
 
         System.out.print("Введите Вашу физтех-почту: ");
@@ -102,11 +105,12 @@ public class Application {
         System.out.print("Введите пароль: ");
         String password = scanner.nextLine();
 
-        User user = registration.register(email, name, password);
+        Moderator moderator = new Moderator(email, name, password);
+        Optional<Moderator> modetatorOpt = moderatorRepository.save(moderator);
 
-        if (user != null) {
+        if (!modetatorOpt.isEmpty()) {
             System.out.println("\n\uD83C\uDF89 Спасибо за регистрацию!");
-            System.out.println(user);
+            System.out.println(moderator);
         } else {
             System.out.println("Регистрация не удалась!");
         }

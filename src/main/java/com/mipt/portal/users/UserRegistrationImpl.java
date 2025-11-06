@@ -23,6 +23,7 @@ public class UserRegistrationImpl implements UserRegistration {
             }
             return null;
         }
+
         System.out.println("Подтвердите пароль: ");
         Scanner scanner = new Scanner(System.in);
         String passwordAgain = scanner.nextLine();
@@ -122,10 +123,11 @@ public class UserRegistrationImpl implements UserRegistration {
 
         double strength = hasLower + hasUpper + hasDigit + hasSpecialChar + goodSize;
 
-        System.out.println("Ваш пароль слишком простой!");
         if (strength >= 4) {
             return true;
         }
+
+        System.out.println("Ваш пароль слишком простой!");
         return false;
     }
 }

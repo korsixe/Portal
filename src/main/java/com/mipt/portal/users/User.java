@@ -29,7 +29,6 @@ public class User {
         this.password = password;
         this.course = 1;
         this.adList = adList;
-        //this.id = DataBase.createId(email);
     }
 
     public User(String email, String name, String password, String address, String studyProgram, int course) {
