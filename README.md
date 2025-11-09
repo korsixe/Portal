@@ -30,3 +30,7 @@ mvn tomcat7:run
 ```
 http://localhost:8080/portal/
 ```
+
+```
+sudo netstat -tulpn | grep :8080
+```

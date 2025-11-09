@@ -12,13 +12,14 @@ import java.sql.SQLException;
 
 @WebServlet("/create-ad")
 public class CreateAdServlet extends HttpServlet {
+
   private AdsService adsService;
+  private AdsRepository adsRepository;
 
   @Override
   public void init() throws ServletException {
     try {
-      // Инициализируем AdsRepository и AdsService
-      AdsRepository adsRepository = new AdsRepository(); // Убедись что у AdsRepository есть конструктор без параметров
+      this.adsRepository = new AdsRepository();
       this.adsService = new AdsService(adsRepository);
     } catch (Exception e) {
       throw new ServletException("Error initializing AdsService", e);
@@ -29,15 +30,23 @@ public class CreateAdServlet extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     // Проверяем авторизацию
-    HttpSession session = request.getSession(false);
+   /* HttpSession session = request.getSession(false);
     if (session == null || session.getAttribute("userId") == null) {
       response.sendRedirect("login.jsp");
       return;
+    }*/
+
+    HttpSession session = request.getSession(true);
+    try {
+      session.setAttribute("userId", adsRepository.getUserIdByEmail("shabunina.ao@phystech.edu"));
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
     }
 
     request.setAttribute("categories", Category.values());
     request.setAttribute("conditions", Condition.values());
     request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
+
   }
 
   @Override
@@ -92,18 +101,15 @@ public class CreateAdServlet extends HttpServlet {
   }
 
   private Announcement createAdFromForm(long userId, String title, String description,
-      Category category, Condition condition,
-      int price, String location, String action)
+      Category category, Condition condition, int price, String location, String action)
       throws SQLException {
 
-    // Создаем объявление как в твоем консольном приложении
     Announcement ad = new Announcement(title, description, category, condition,
         price, location, userId);
 
     if ("publish".equals(action)) {
       ad.sendToModeration();
     }
-    // Если "draft" - оставляем как черновик
 
     // Сохраняем через репозиторий
     long adId = adsService.getAdsRepository().saveAd(ad);
