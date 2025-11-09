@@ -24,7 +24,7 @@ public class Application {
 
     public static void main(String[] args) {
 
-        String url = "jdbc:postgresql://localhost:5433/myproject"; // замените на ваши настройки
+        String url = "jdbc:postgresql://localhost:5433/myproject";
         String username = "myuser";
         String password = "mypassword";
 
@@ -42,7 +42,6 @@ public class Application {
             UserRegistrationImpl registration = new UserRegistrationImpl(userRepository);
             UserLoginImpl login = new UserLoginImpl(userRepository);
 
-            // Запуск тестового приложения
             runApplication(registration, login, userRepository);
 
             connection.close();
@@ -79,6 +78,7 @@ public class Application {
                     System.out.println("До свидания!");
                     System.out.println();
                     scanner.close();
+                    return;
                 default:
                     System.out.println("Введите число (1-3)");
             }
@@ -98,7 +98,7 @@ public class Application {
                 "1) прописные буквы \n" +
                 "2) заглавные буквы \n" +
                 "3) цифры \n" +
-                "4) специальные символы: !?@#$%%&*_-");
+                "4) специальные символы: !?@#$%&*_-");
         System.out.print("Введите пароль: ");
         String password = scanner.nextLine();
 

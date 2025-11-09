@@ -101,7 +101,7 @@ public class UserRegistrationImpl implements UserRegistration {
         double hasLower = 0, hasUpper = 0,
                 hasDigit = 0, hasSpecialChar = 0, goodSize = 0;
         List<String> strengthCriteria = List.of("!", "?", "@", "#", "$",
-                "%", "%", "&", "*", "_", "-");
+                "%", "&", "*", "_", "-");
         for (char i : password.toCharArray()) {
             if (Character.isLowerCase(i)) {
                 hasLower = 1;

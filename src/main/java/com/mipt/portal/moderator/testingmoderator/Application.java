@@ -71,7 +71,7 @@ public class Application {
 
             switch (choice) {
                 case 1:
-                    testRegistration(registration, userRepository, scanner);
+                    //testRegistration(registration, userRepository, scanner);
                     System.out.println();
                     break;
                 case 2:
