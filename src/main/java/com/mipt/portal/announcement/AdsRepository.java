@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.io.InputStream;
 import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 
@@ -115,6 +116,40 @@ public class AdsRepository implements IAdsRepository {
       }
       return null; // объявление не найдено
     }
+  }
+
+  @Override
+  public List<Long> getAllAdIds() throws SQLException {
+    String sql = "SELECT id FROM ads ORDER BY id";
+
+    List<Long> ids = new ArrayList<>();
+
+    try (PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+
+      while (resultSet.next()) {
+        ids.add(resultSet.getLong("id"));
+      }
+    }
+
+    return ids;
+  }
+
+  @Override
+  public List<Long> getModerAdIds() throws SQLException {
+    String sql = "SELECT id FROM ads WHERE status = 'UNDER_MODERATION' ORDER BY id";
+
+    List<Long> ids = new ArrayList<>();
+
+    try (PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+
+      while (resultSet.next()) {
+        ids.add(resultSet.getLong("id"));
+      }
+    }
+
+    return ids;
   }
 
   @Override

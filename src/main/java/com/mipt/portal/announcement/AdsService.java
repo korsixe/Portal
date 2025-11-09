@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Scanner;
 import lombok.AllArgsConstructor;
 
@@ -11,7 +12,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class AdsService implements IAdsService {
 
-  private AdsRepository dbManager;
+  private AdsRepository adsRepository;
 
   @Override
   public Announcement createAd(long userId) {
@@ -87,7 +88,7 @@ public class AdsService implements IAdsService {
     }
 
     try {
-      long adId = dbManager.saveAd(ad);
+      long adId = adsRepository.saveAd(ad);
       ad.setId(adId); // ураа, у нас есть id нашего объявления
       System.out.println("✅ Объявление создано с ID: " + adId);
     } catch (SQLException e) {
@@ -163,7 +164,7 @@ public class AdsService implements IAdsService {
         case 10:
           // Сохраняем изменения в БД
           ad.setUpdatedAt(Instant.now());
-          dbManager.updateAd(ad);
+          adsRepository.updateAd(ad);
           System.out.println("✅ Изменения сохранены успешно!");
           return ad;
         case 0:
@@ -318,7 +319,7 @@ public class AdsService implements IAdsService {
   @Override
   public Announcement deleteAd(long adId) {
     try {
-      Announcement ad = dbManager.getAdById(adId);
+      Announcement ad = adsRepository.getAdById(adId);
       if (ad == null) {
         System.out.println("❌ Объявление с ID " + adId + " не найдено");
         return null;
@@ -332,9 +333,9 @@ public class AdsService implements IAdsService {
       String confirmation = scanner.nextLine();
 
       if ("да".equalsIgnoreCase(confirmation)) {
-        boolean deleted = dbManager.deleteAd(adId);
+        boolean deleted = adsRepository.deleteAd(adId);
         if (deleted) {
-          //dbManager.removeAdFromUserList(ad.getUserId(), adId); - удаляем у юзера
+          //adsRepository.removeAdFromUserList(ad.getUserId(), adId); - удаляем у юзера
           System.out.println("✅ Объявление успешно удалено");
           return ad;
         } else {
@@ -355,7 +356,7 @@ public class AdsService implements IAdsService {
   @Override
   public Announcement getAd(long adId) {
     try {
-      Announcement ad = dbManager.getAdById(adId);
+      Announcement ad = adsRepository.getAdById(adId);
       if (ad != null) {
         System.out.println("✅ Объявление найдено:");
         System.out.println(ad.toString());
@@ -368,6 +369,47 @@ public class AdsService implements IAdsService {
       System.err.println("❌ Ошибка при получении объявления: " + e.getMessage());
       return null;
     }
+  }
+
+  @Override
+  public void sendToModeration(Announcement ad) throws SQLException {
+    ad.sendToModeration();
+    adsRepository.updateAd(ad);
+  }
+
+  @Override
+  public void activate(Announcement ad) throws SQLException {
+    ad.activate();
+    adsRepository.updateAd(ad);
+  }
+
+  @Override
+  public void archive(Announcement ad) throws SQLException {
+    ad.archive();
+    adsRepository.updateAd(ad);
+  }
+
+  @Override
+  public void saveAsDraft(Announcement ad) throws SQLException {
+    ad.saveAsDraft();
+    adsRepository.updateAd(ad);
+  }
+
+  @Override
+  public void rejectModeration(Announcement ad) throws SQLException {
+    ad.rejectModeration();
+    adsRepository.updateAd(ad);
+  }
+
+  @Override
+  public void delete(Announcement ad) throws SQLException {
+    ad.delete();
+    adsRepository.updateAd(ad);
+  }
+
+
+  public List<Long> getModerAdIds() throws SQLException {
+    return adsRepository.getModerAdIds();
   }
 
   // Функция для безопасного ввода числа
