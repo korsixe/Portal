@@ -24,5 +24,9 @@ java -cp "target/classes:postgresql-42.6.0.jar" com.mipt.portal.Main
 ```
 
 ```
-mvn spring-boot:run
+mvn tomcat7:run
+```
+
+```
+http://localhost:8080/portal/
 ```

@@ -7,9 +7,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Scanner;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 
 
 @AllArgsConstructor
+@Data
+
 public class AdsService implements IAdsService {
 
   private AdsRepository adsRepository;
@@ -409,6 +412,26 @@ public class AdsService implements IAdsService {
 
   public List<Long> getModerAdIds() throws SQLException {
     return adsRepository.getModerAdIds();
+  }
+
+
+  // тут начинаем фронт
+
+  public Announcement createAdFromWeb(long userId, String title, String description,
+      Category category, Condition condition,
+      int price, String location, String action) throws SQLException {
+
+    Announcement ad = new Announcement(title, description, category, condition, price, location, userId);
+
+    if ("publish".equals(action)) {
+      ad.sendToModeration();
+    }
+    // Если "draft" - оставляем как черновик
+
+    long adId = adsRepository.saveAd(ad);
+    ad.setId(adId);
+
+    return ad;
   }
 
   // Функция для безопасного ввода числа

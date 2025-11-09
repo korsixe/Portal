@@ -11,8 +11,10 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
+@NoArgsConstructor
 public class AdsRepository implements IAdsRepository {
 
   private Connection connection;
