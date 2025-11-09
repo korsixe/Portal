@@ -16,7 +16,7 @@ public class Main {
 
     try {
       Connection connection = DriverManager.getConnection(
-          "jdbc:postgresql://localhost:5432/myproject",
+          "jdbc:postgresql://localhost:5433/myproject",
           "myuser",
           "mypassword"
       );
