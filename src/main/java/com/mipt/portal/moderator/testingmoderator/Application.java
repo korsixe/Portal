@@ -1,11 +1,11 @@
 package com.mipt.portal.moderator.testingmoderator;
 
 import com.mipt.portal.announcement.AdsRepository;
-import com.mipt.portal.moderator.Moderator;
-import com.mipt.portal.moderator.ModeratorRepository;
+import com.mipt.portal.moderator.*;
 import com.mipt.portal.users.repository.UserRepository;
 import com.mipt.portal.users.repository.UserRepositoryImpl;
 import com.mipt.portal.users.*;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Optional;
@@ -14,19 +14,18 @@ import java.util.Scanner;
 public class Application {
     private final AdsRepository adsRepository;
     private final ModeratorRepository moderatorRepository;
-    private final UserRegistrationImpl registration;
-    private final UserLoginImpl login;
+    private final ModeratorRegistrationImpl moderatorRegistration;
+    private final ModeratorLoginImpl moderatorLogin;
 
-    public Application(AdsRepository adsRepository, ModeratorRepository moderatorRepository, UserRegistrationImpl registration, UserLoginImpl login) {
+    public Application(AdsRepository adsRepository, ModeratorRepository moderatorRepository, ModeratorRegistrationImpl moderatorRegistration, ModeratorLoginImpl moderatorLogin) {
         this.adsRepository = adsRepository;
         this.moderatorRepository = moderatorRepository;
-        this.registration = registration;
-        this.login = login;
+        this.moderatorRegistration = moderatorRegistration;
+        this.moderatorLogin = moderatorLogin;
     }
 
     public static void main(String[] args) {
-
-        String url = "jdbc:postgresql://localhost:5433/myproject"; // замените на ваши настройки
+        String url = "jdbc:postgresql://localhost:5433/myproject";
         String username = "myuser";
         String password = "mypassword";
 
@@ -36,16 +35,11 @@ public class Application {
             Connection connection = DriverManager.getConnection(url, username, password);
             System.out.println("✅ Успешное подключение к БД!");
 
-            AdsRepository databaseManager = new AdsRepository(connection);
-            databaseManager.createTables();
-            databaseManager.insertData();
+            ModeratorRepository moderatorRepository = new ModeratorRepository(connection);
+            ModeratorRegistrationImpl moderatorRegistration = new ModeratorRegistrationImpl(moderatorRepository);
+            ModeratorLoginImpl moderatorLogin = new ModeratorLoginImpl(moderatorRepository);
 
-            UserRepository userRepository = new UserRepositoryImpl(connection);
-            UserRegistrationImpl registration = new UserRegistrationImpl(userRepository);
-            UserLoginImpl login = new UserLoginImpl(userRepository);
-
-            // Запуск тестового приложения
-            runApplication(registration, login, userRepository);
+            runTests(moderatorRepository, moderatorRegistration, moderatorLogin);
 
             connection.close();
             System.out.println("✅ Соединение с БД закрыто");
@@ -55,172 +49,113 @@ public class Application {
         }
     }
 
-    public static void runApplication(UserRegistrationImpl registration,UserLoginImpl login, UserRepository userRepository) {
-        Scanner scanner = new Scanner(System.in);
-
-        while (true) {
-            System.out.println("\n=== PORTAL SYSTEM ===");
-            System.out.println("\n=== MODERATORS ===\n");
-            System.out.println("1. Регистрация");
-            System.out.println("2. Вход");
-            System.out.println("3. Выход");
-            System.out.print("Выберите действие: ");
-
-            int choice = scanner.nextInt();
-            scanner.nextLine();
-
-            switch (choice) {
-                case 1:
-                    //testRegistration(registration, userRepository, scanner);
-                    System.out.println();
-                    break;
-                case 2:
-                    testLogin(login, userRepository, scanner);
-                    System.out.println();
-                    break;
-                case 3:
-                    System.out.println("До свидания!");
-                    System.out.println();
-                    scanner.close();
-                default:
-                    System.out.println("Введите число (1-3)");
-            }
-        }
+    public static void runTests(ModeratorRepository moderatorRepository, ModeratorRegistrationImpl moderatorRegistration, ModeratorLoginImpl moderatorLogin) {
+        testRegistration(moderatorRegistration);
+        testLoginAndUpdate(moderatorLogin, moderatorRepository);
+        testDeleteAccount(moderatorRepository, moderatorRegistration, moderatorLogin);
     }
 
-    private static void testRegistration(ModeratorRepository moderatorRepository, Scanner scanner) {
-        System.out.println("\n=== РЕГИСТРАЦИЯ В PORTAL ===");
+    private static void testRegistration(ModeratorRegistrationImpl moderatorRegistration) {
+        System.out.println("\n=== TEST 1: РЕГИСТРАЦИЯ В PORTAL ===");
 
-        System.out.print("Введите Вашу физтех-почту: ");
-        String email = scanner.nextLine();
+        String email = "test.moderator@phystech.edu";
+        String name = "Test Moderator";
+        String password = "TestPass123!";
 
-        System.out.print("Введите Ваш никнейм: ");
-        String name = scanner.nextLine();
-
-        System.out.println("Длина пароля не менее 8 символов, он может содержать: \n" +
-                "1) прописные буквы \n" +
-                "2) заглавные буквы \n" +
-                "3) цифры \n" +
-                "4) специальные символы: !?@#$%%&*_-");
-        System.out.print("Введите пароль: ");
-        String password = scanner.nextLine();
+        System.out.println("Тестовые данные:");
+        System.out.println("Email: " + email);
+        System.out.println("Имя: " + name);
+        System.out.println("Пароль: " + password);
 
         Moderator moderator = new Moderator(email, name, password);
-        Optional<Moderator> modetatorOpt = moderatorRepository.save(moderator);
+        Optional<Moderator> moderatorOpt = moderatorRegistration.register(moderator);
 
-        if (!modetatorOpt.isEmpty()) {
-            System.out.println("\n\uD83C\uDF89 Спасибо за регистрацию!");
-            System.out.println(moderator);
+        if (moderatorOpt.isPresent()) {
+            System.out.println("✅ ТЕСТ ПРОЙДЕН: Регистрация успешна!");
+            System.out.println("Создан модератор: " + moderatorOpt.get());
         } else {
-            System.out.println("Регистрация не удалась!");
+            System.out.println("❌ ТЕСТ ПРОВАЛЕН: Регистрация не удалась!");
         }
     }
 
-    private static void testLogin(UserLoginImpl login, UserRepository userRepository, Scanner scanner) {
-        System.out.println("\n=== ВХОД В СИСТЕМУ ===");
-        System.out.print("Введите email: ");
-        String email = scanner.nextLine();
+    private static void testLoginAndUpdate(ModeratorLoginImpl moderatorLogin, ModeratorRepository moderatorRepository) {
+        System.out.println("\n=== ТЕСТ 2: ВХОД И ИЗМЕНЕНИЕ ДАННЫХ ===");
 
-        System.out.print("Введите пароль: ");
-        String password = scanner.nextLine();
+        String email = "test.moderator@phystech.edu";
+        String password = "TestPass123!";
+        String newName = "Updated Test Moderator";
 
-        User user = login.login(email, password);
+        System.out.println("Попытка входа с:");
+        System.out.println("Email: " + email);
+        System.out.println("Пароль: " + password);
 
-        if (user != null) {
-            System.out.println("Вход выполнен успешно!\nЗдравствуйте, " + user.getName());
-            testUserMenu(user, userRepository, scanner);
-        }
-    }
+        Moderator moderator = moderatorLogin.login(email, password);
 
-    private static void testUserMenu(User user, UserRepository userRepository, Scanner scanner) {
-        while (true) {
-            System.out.println("\n=== ЛИЧНЫЙ КАБИНЕТ (" + user.getName() + ") ===");
-            System.out.println("1. Посмотреть данные");
-            System.out.println("2. Изменить данные");
-            System.out.println("3. Выйти из аккаунта");
-            System.out.println("4. Удалить аккаунт");
-            System.out.print("Выберите действие: ");
+        if (moderator != null) {
+            System.out.println("✅ Вход успешен!");
+            System.out.println("Текущее имя: " + moderator.getName());
 
-            int choice = scanner.nextInt();
-            scanner.nextLine(); // consume newline
+            moderator.setName(newName);
+            System.out.println("Новое имя: " + moderator.getName());
 
-            switch (choice) {
-                case 1:
-                    System.out.println(user);
-                    break;
-                case 2:
-                    updateUserInfo(user, userRepository, scanner);
-                    break;
-                case 3:
-                    System.out.println("До свидания, " + user.getName() + "!");
-                    return;
-                case 4:
-                    if (deleteAccount(user, userRepository, scanner)) {
-                        return;
-                    }
-                    break;
-                default:
-                    System.out.println("Неверный выбор");
+            if (moderator.getName().equals(newName)) {
+                System.out.println("✅ ТЕСТ ПРОЙДЕН: Данные успешно изменены!");
+            } else {
+                System.out.println("❌ ТЕСТ ПРОВАЛЕН: Данные не изменились!");
             }
+        } else {
+            System.out.println("❌ ТЕСТ ПРОВАЛЕН: Вход не удался!");
         }
     }
 
-    private static void updateUserInfo(User user, UserRepository userRepository, Scanner scanner) {
+    private static void testDeleteAccount(ModeratorRepository moderatorRepository,
+                                          ModeratorRegistrationImpl moderatorRegistration,
+                                          ModeratorLoginImpl moderatorLogin) {
+        System.out.println("\n=== ТЕСТ 3: УДАЛЕНИЕ АККАУНТА ===");
+
+        String deleteTestEmail = "delete.test@phystech.edu";
+        String deleteTestName = "Delete Test Moderator";
+        String deleteTestPassword = "DeletePass123!";
+
+        System.out.println("Создаем тестового модератора для удаления...");
+        Moderator deleteModerator = new Moderator(deleteTestEmail, deleteTestName, deleteTestPassword);
+        Optional<Moderator> deleteModeratorOpt = moderatorRegistration.register(deleteModerator);
+
+        if (deleteModeratorOpt.isPresent()) {
+            System.out.println("✅ Тестовый модератор создан!");
+            Moderator createdModerator = deleteModeratorOpt.get();
+            Long moderatorId = createdModerator.getId();
+
+            System.out.println("Пытаемся удалить модератора с ID: " + moderatorId);
+            boolean deleteResult = moderatorRepository.delete(moderatorId);
+
+            if (deleteResult) {
+                System.out.println("✅ Модератор удален из базы данных!");
+
+                Optional<Moderator> foundModerator = moderatorRepository.findByEmail(deleteTestEmail);
+                if (foundModerator.isEmpty()) {
+                    System.out.println("✅ ТЕСТ ПРОЙДЕН: Аккаунт полностью удален!");
+                } else {
+                    System.out.println("❌ ТЕСТ ПРОВАЛЕН: Модератор все еще найден в базе!");
+                }
+            } else {
+                System.out.println("❌ ТЕСТ ПРОВАЛЕН: Не удалось удалить модератора из базы!");
+            }
+        } else {
+            System.out.println("❌ ТЕСТ ПРОВАЛЕН: Не удалось создать тестового модератора!");
+        }
+    }
+
+    private static void updateModeratorInfo(Moderator moderator) {
+        Scanner scanner = new Scanner(System.in);
         System.out.println("\n=== ИЗМЕНЕНИЕ ДАННЫХ ===");
-        System.out.print("Новое имя (текущее: " + user.getName() + "): ");
+        System.out.print("Новое имя (текущее: " + moderator.getName() + "): ");
         String newName = scanner.nextLine().trim();
         if (!newName.isEmpty()) {
-            user.setName(newName);
-        }
-
-        System.out.print("Новый адрес (текущий: " + user.getAddress() + "): ");
-        String newAddress = scanner.nextLine().trim();
-        if (!newAddress.isEmpty()) {
-            user.setAddress(newAddress);
-        }
-
-        System.out.print("Новая программа обучения (текущая: " + user.getStudyProgram() + "): ");
-        String newProgram = scanner.nextLine().trim();
-        if (!newProgram.isEmpty()) {
-            user.setStudyProgram(newProgram);
-        }
-
-        System.out.print("Новый курс (текущий: " + user.getCourse() + "): ");
-        String newCourse = scanner.nextLine().trim();
-        if (!newCourse.isEmpty()) {
-            user.setCourse(Integer.parseInt(newCourse));
-        }
-
-        if (userRepository.update(user)) {
             System.out.println("✅ Данные успешно обновлены!");
+            moderator.setName(newName);
         } else {
             System.out.println("❌ Ошибка при обновлении данных");
-        }
-    }
-
-    private static boolean deleteAccount(User user, UserRepository userRepository, Scanner scanner) {
-        System.out.println("\nВы уверены что хотите удалить ваш аккаунт? (Y/N)");
-        String answer = scanner.nextLine().toUpperCase();
-
-        if (answer.equals("Y") || answer.equals("YES") || answer.equals("ДА")) {
-            System.out.println("ВНИМАНИЕ: Ваши данные будут безвозвратно удалены!");
-            System.out.println("\nДля подтверждения введите пароль: ");
-            String password = scanner.nextLine();
-
-            if (!user.getPassword().equals(password)) {
-                System.out.println("❌ Неверный пароль! Удаление отменено.");
-                return false;
-            }
-
-            if (userRepository.delete(user.getId())) {
-                System.out.println("Аккаунт удален! :(");
-                return true;
-            } else {
-                System.out.println("Ошибка при удалении аккаунта.");
-                return false;
-            }
-        } else {
-            return false;
         }
     }
 }

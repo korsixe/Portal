@@ -108,9 +108,16 @@ public class ModeratorRepository {
         return moderator;
     }
 
+    public boolean delete(Long moderatorId) {
+        String sql = "DELETE FROM moderators WHERE id = ?";
 
-
-
-
-
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setLong(1, moderatorId);
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("Ошибка при удалении модератора: " + e.getMessage());
+            return false;
+        }
+    }
 }
