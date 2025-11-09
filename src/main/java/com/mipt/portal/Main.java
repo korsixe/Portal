@@ -6,6 +6,7 @@ import com.mipt.portal.announcement.Announcement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
 
 public class Main {
 
@@ -28,19 +29,9 @@ public class Main {
       adsRepository.insertData();
       System.out.println("✅ Тестовые данные добавлены!");
 
-      System.out.println("Теперь давайте создадим объявление");
-
-      Long userId = adsRepository.getUserIdByEmail("shabunina.ao@phystech.edu");
-      if (userId == null) {
-        System.out.println("❌ Пользователь не найден!");
-        return;
-      }
-
-      Announcement cur = adsService.createAd(userId);
-      if (cur != null) {
-        cur = adsService.editAd(cur);
-        cur = adsService.deleteAd(cur.getId());
-        adsRepository.hardDeleteAd(cur.getId());
+      List<Long> hehehe = adsRepository.getModerAdIds();
+      for(int i = 0; i < hehehe.size(); ++i){
+        System.out.println(hehehe.get(i));
       }
 
       System.out.println("✅ Приложение успешно завершило работу!");
