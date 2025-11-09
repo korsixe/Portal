@@ -335,7 +335,6 @@ public class AdsService implements IAdsService {
       if ("да".equalsIgnoreCase(confirmation)) {
         boolean deleted = adsRepository.deleteAd(adId);
         if (deleted) {
-          //adsRepository.removeAdFromUserList(ad.getUserId(), adId); - удаляем у юзера
           System.out.println("✅ Объявление успешно удалено");
           return ad;
         } else {
