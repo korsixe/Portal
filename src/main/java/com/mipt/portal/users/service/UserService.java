@@ -26,18 +26,18 @@ public class UserService {
 
     public User registerUser(String email, String name, String password, String address,
                              String studyProgram, int course) throws SQLException {
-        // Проверяем, не существует ли уже пользователь с таким email
+        
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Пользователь с email " + email + " уже существует");
         }
 
-        // Валидация входных данных
+       
         validateUserData(email, name, password, studyProgram, course);
 
         User user = new User();
         user.setEmail(email);
         user.setName(name);
-        user.setPassword(password); // В реальном приложении пароль должен быть хеширован!
+        user.setPassword(password); 
         user.setAddress(address);
         user.setStudyProgram(studyProgram);
         user.setCourse(course);
