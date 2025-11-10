@@ -1,5 +1,6 @@
 package com.mipt.portal.announcement;
 
+import com.mipt.portal.database.DatabaseConnection;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,6 +17,22 @@ import lombok.AllArgsConstructor;
 public class AdsRepository implements IAdsRepository {
 
   private Connection connection;
+
+  public AdsRepository() throws SQLException {
+    this.connection = DatabaseConnection.getConnection();
+    createTables();
+    insertData();
+  }
+
+  private void resetSequences() throws SQLException {
+    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq"};
+
+    for (String seq : sequences) {
+      try (Statement stmt = connection.createStatement()) {
+        stmt.execute("ALTER SEQUENCE IF EXISTS " + seq + " RESTART WITH 1;");
+      }
+    }
+  }
 
   @Override
   public void createTables() {
@@ -62,12 +79,12 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public void updateAd(Announcement ad) throws SQLException {
     String sql = """
-        UPDATE ads
-        SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
-            price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
-            view_count = ?, tags = ?::JSONB, tags_count = ?
-        WHERE id = ?
-    """;
+            UPDATE ads
+            SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
+                price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
+                view_count = ?, tags = ?::JSONB, tags_count = ?
+            WHERE id = ?
+        """;
 
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, ad.getTitle());
@@ -101,11 +118,11 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public Announcement getAdById(long adId) throws SQLException {
     String sql = """
-        SELECT a.*, u.name as user_name
-        FROM ads a
-        LEFT JOIN users u ON a.user_id = u.id
-        WHERE a.id = ?
-    """;
+            SELECT a.*, u.name as user_name
+            FROM ads a
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.id = ?
+        """;
 
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, adId);
@@ -155,11 +172,11 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public long saveAd(Announcement ad) throws SQLException {
     String sql = """
-        INSERT INTO ads (title, description, category, subcategory, condition, price,
-                        location, user_id, status, view_count, tags, tags_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
-        RETURNING id
-    """;
+            INSERT INTO ads (title, description, category, subcategory, condition, price,
+                            location, user_id, status, view_count, tags, tags_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
+            RETURNING id
+        """;
 
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, ad.getTitle());
@@ -254,7 +271,6 @@ public class AdsRepository implements IAdsRepository {
     }
 
     // Обрабатываем теги
-
 
     // Устанавливаем даты
     Timestamp createdAt = resultSet.getTimestamp("created_at");

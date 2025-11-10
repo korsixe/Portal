@@ -4,7 +4,10 @@ import java.sql.SQLException;
 
 public interface IAdsService {
 
-  Announcement createAd(long userId); //  Создать объявление
+  Announcement createAd(long userId, String title, String description, Category category,
+      Condition condition, int price, String location, String action) throws SQLException; //  Создать объявление
+
+  Long getUserIdByEmail(String email) throws SQLException;
 
   Announcement editAd(Announcement ad) throws SQLException; // Изменить объявление
 
