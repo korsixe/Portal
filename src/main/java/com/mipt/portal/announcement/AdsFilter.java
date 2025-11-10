@@ -1,5 +1,6 @@
 package com.mipt.portal.announcement;
 
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,45 +8,51 @@ import java.util.List;
 
 public class AdsFilter implements IAdsFilter {
 
+  AdsRepository adsRepository;
+
+  AdsFilter(AdsRepository adsRepository) {
+    this.adsRepository = adsRepository;
+  }
+
   @Override
-  public List<Announcement> filterByTitle(List<Announcement> ads, String title) { // в тупую сравниваниваем названия
-    List<Announcement> filteredAds = new ArrayList<>();
-    for (Announcement ad : ads) {
-      if (ad.getTitle().equalsIgnoreCase(title)) {
-        filteredAds.add(ad);
+  public List<Long> filterByTitle(List<Long> ads, String title) throws SQLException { // в тупую сравниваниваем названия
+    List<Long> filteredAds = new ArrayList<>();
+    for (Long idAd : ads) {
+      if (adsRepository.getAdById(idAd).getTitle().equalsIgnoreCase(title)) {
+        filteredAds.add(idAd);
       }
     }
     return filteredAds;
   }
 
   @Override
-  public List<Announcement> filterByCategory(List<Announcement> ads, Category category) {
-    List<Announcement> filteredAds = new ArrayList<>();
-    for (Announcement ad : ads) {
-      if (ad.getCategory() == category) {
-        filteredAds.add(ad);
+  public List<Long> filterByCategory(List<Long> ads, Category category) throws SQLException {
+    List<Long> filteredAds = new ArrayList<>();
+    for (Long idAd : ads) {
+      if (adsRepository.getAdById(idAd).getCategory() == category) {
+        filteredAds.add(idAd);
       }
     }
     return filteredAds;
   }
 
   @Override
-  public List<Announcement> filterByPrice(List<Announcement> ads, int minPrice, int maxPrice) {
-    List<Announcement> filteredAds = new ArrayList<>();
-    for (Announcement ad : ads) {
-      if (ad.getPrice() >= minPrice && ad.getPrice() <= maxPrice) {
-        filteredAds.add(ad);
+  public List<Long> filterByPrice(List<Long> ads, int minPrice, int maxPrice) throws SQLException {
+    List<Long> filteredAds = new ArrayList<>();
+    for (Long idAd : ads) {
+      if (adsRepository.getAdById(idAd).getPrice() >= minPrice && adsRepository.getAdById(idAd).getPrice() <= maxPrice) {
+        filteredAds.add(idAd);
       }
     }
     return filteredAds;
   }
 
   @Override
-  public List<Announcement> filterByCondition(List<Announcement> ads, Condition condition) {
-    List<Announcement> filteredAds = new ArrayList<>();
-    for (Announcement ad : ads) {
-      if (ad.getCondition() == condition) {
-        filteredAds.add(ad);
+  public List<Long> filterByCondition(List<Long> ads, Condition condition) throws SQLException {
+    List<Long> filteredAds = new ArrayList<>();
+    for (Long idAd : ads) {
+      if (adsRepository.getAdById(idAd).getCondition() == condition) {
+        filteredAds.add(idAd);
       }
     }
     return filteredAds;
@@ -53,12 +60,12 @@ public class AdsFilter implements IAdsFilter {
 
   // Фильтрация объявлений за последние N дней
   @Override
-  public List<Announcement> filterByLastDays(List<Announcement> ads, int days) {
+  public List<Long> filterByLastDays(List<Long> ads, int days) throws SQLException {
     Instant cutoffInstant = Instant.now().minusSeconds(days * 24 * 60 * 60L);
-    List<Announcement> filteredAds = new ArrayList<>();
-    for (Announcement ad : ads) {
-      if (ad.getCreatedAt() != null && !ad.getCreatedAt().isBefore(cutoffInstant)) {
-        filteredAds.add(ad);
+    List<Long> filteredAds = new ArrayList<>();
+    for (Long idAd : ads) {
+      if (adsRepository.getAdById(idAd).getCreatedAt() != null && !adsRepository.getAdById(idAd).getCreatedAt().isBefore(cutoffInstant)) {
+        filteredAds.add(idAd);
       }
     }
     return filteredAds;
@@ -66,11 +73,11 @@ public class AdsFilter implements IAdsFilter {
 
   // Фильтрация объявлений новее определенной даты
   @Override
-  public List<Announcement> filterByDateAfter(List<Announcement> ads, Instant date) {
-    List<Announcement> filteredAds = new ArrayList<>();
-    for (Announcement ad : ads) {
-      if (ad.getCreatedAt() != null && !ad.getCreatedAt().isBefore(date)) {
-        filteredAds.add(ad);
+  public List<Long> filterByDateAfter(List<Long> ads, Instant date) throws SQLException {
+    List<Long> filteredAds = new ArrayList<>();
+    for (Long idAd : ads) {
+      if (adsRepository.getAdById(idAd).getCreatedAt() != null && !adsRepository.getAdById(idAd).getCreatedAt().isBefore(date)) {
+        filteredAds.add(idAd);
       }
     }
     return filteredAds;
@@ -78,11 +85,11 @@ public class AdsFilter implements IAdsFilter {
 
   // Фильтрация объявлений старше определенной даты
   @Override
-  public List<Announcement> filterByDateBefore(List<Announcement> ads, Instant date) {
-    List<Announcement> filteredAds = new ArrayList<>();
-    for (Announcement ad : ads) {
-      if (ad.getCreatedAt() != null && ad.getCreatedAt().isBefore(date)) {
-        filteredAds.add(ad);
+  public List<Long> filterByDateBefore(List<Long> ads, Instant date) throws SQLException {
+    List<Long> filteredAds = new ArrayList<>();
+    for (Long idAd : ads) {
+      if (adsRepository.getAdById(idAd).getCreatedAt() != null && adsRepository.getAdById(idAd).getCreatedAt().isBefore(date)) {
+        filteredAds.add(idAd);
       }
     }
     return filteredAds;
@@ -90,9 +97,15 @@ public class AdsFilter implements IAdsFilter {
 
   // Сортировка по популярности (по убыванию просмотров)
   @Override
-  public List<Announcement> sortByPopularity(List<Announcement> ads) {
-    List<Announcement> sortedAds = new ArrayList<>(ads);
-    sortedAds.sort((ad1, ad2) -> Integer.compare(ad2.getViewCount(), ad1.getViewCount()));
+  public List<Long> sortByPopularity(List<Long> ads) {
+    List<Long> sortedAds = new ArrayList<>(ads);
+    sortedAds.sort((ad1, ad2) -> {
+      try {
+        return Integer.compare(adsRepository.getAdById(ad1).getViewCount(), adsRepository.getAdById(ad2).getViewCount());
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
+      }
+    });
     return sortedAds;
   }
 }

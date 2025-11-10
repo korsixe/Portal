@@ -1,23 +1,24 @@
 package com.mipt.portal.announcement;
 
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 
 public interface IAdsFilter {
 
-  List<Announcement> filterByTitle(List<Announcement> ads, String title);
+  List<Long> filterByTitle(List<Long> ads, String title) throws SQLException;
 
-  List<Announcement> filterByCategory(List<Announcement> ads, Category category);
+  List<Long> filterByCategory(List<Long> ads, Category category) throws SQLException;
 
-  List<Announcement> filterByPrice(List<Announcement> ads, int minPrice, int maxPrice);
+  List<Long> filterByPrice(List<Long> ads, int minPrice, int maxPrice) throws SQLException;
 
-  List<Announcement> filterByCondition(List<Announcement> ads, Condition condition);
+  List<Long> filterByCondition(List<Long> ads, Condition condition) throws SQLException;
 
-  List<Announcement> filterByLastDays(List<Announcement> ads, int days);
+  List<Long> filterByLastDays(List<Long> ads, int days) throws SQLException;
 
-  List<Announcement> filterByDateAfter(List<Announcement> ads, Instant date);
+  List<Long> filterByDateAfter(List<Long> ads, Instant date) throws SQLException;
 
-  List<Announcement> filterByDateBefore(List<Announcement> ads, Instant date);
+  List<Long> filterByDateBefore(List<Long> ads, Instant date) throws SQLException;
 
-  List<Announcement> sortByPopularity(List<Announcement> ads);
+  List<Long> sortByPopularity(List<Long> ads);
 }
