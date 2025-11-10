@@ -15,7 +15,7 @@ import lombok.Data;
 
 @Data
 
-public class Announcement {
+public class Announcement_1 {
 
   private long id;                     // id объявления
   private String title;                // Заголовок
@@ -37,7 +37,7 @@ public class Announcement {
 
   // Конструкторы
 
-  public Announcement(Announcement other) {
+  public Announcement_1(Announcement_1 other) {
     this.id = other.id;
     this.title = other.title;
     this.description = other.description;
@@ -54,8 +54,8 @@ public class Announcement {
   }
 
 
-  public Announcement(String title, String description, Category category, Condition condition,
-                      int price, String location, long userId, AdvertisementStatus status) {
+  public Announcement_1(String title, String description, Category category, Condition condition,
+                        int price, String location, long userId, AdvertisementStatus status) {
     this.title = title;
     this.description = description;
     this.category = category;
@@ -69,7 +69,7 @@ public class Announcement {
     this.viewCount = 0;
   }
 
-  public Announcement() {
+  public Announcement_1() {
 
   }
 
