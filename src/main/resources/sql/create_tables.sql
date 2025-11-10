@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS ads
     view_count  INTEGER                           DEFAULT 0,
     tags        JSONB,
     tags_count  INTEGER                           DEFAULT 0,
+    photos      BYTEA[]                          DEFAULT '{}', -- массив бинарных данных фотографий
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
@@ -47,11 +48,12 @@ CREATE TABLE IF NOT EXISTS moderators
 
 -- Создание таблицы комментариев
 CREATE TABLE IF NOT EXISTS comments (
-                                        id BIGSERIAL PRIMARY KEY,                    -- Уникальный ID
-                                        ad_id BIGINT NOT NULL,                       -- ID объявления
-                                        user_id BIGINT NOT NULL,                     -- ID пользователя
-                                        content TEXT NOT NULL,                       -- Текст комментария
-                                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Дата создания
+                                        id BIGSERIAL PRIMARY KEY,
+                                        ad_id BIGINT NOT NULL,
+                                        user_id BIGINT NOT NULL,
+                                        user_name TEXT NOT NULL,
+                                        content TEXT NOT NULL,
+                                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
                                         FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
