@@ -15,7 +15,6 @@ import java.util.logging.Logger;
 public class CreateAdServlet extends HttpServlet {
 
   private AdsService adsService;
-  private AdsRepository adsRepository;
   private static final Logger logger = Logger.getLogger(CreateAdServlet.class.getName());
 
   @Override
@@ -24,11 +23,8 @@ public class CreateAdServlet extends HttpServlet {
       System.out.println("🚀 ========== НАЧАЛО ИНИЦИАЛИЗАЦИИ ==========");
       System.out.println("📦 Создаем AdsRepository...");
 
-      this.adsRepository = new AdsRepository();
-      System.out.println("✅ AdsRepository создан успешно");
-
       System.out.println("📦 Создаем AdsService...");
-      this.adsService = new AdsService(adsRepository);
+      this.adsService = new AdsService();
       System.out.println("✅ AdsService создан успешно");
 
       logger.info("AdsService initialized successfully");
@@ -53,7 +49,7 @@ public class CreateAdServlet extends HttpServlet {
     HttpSession session = request.getSession(true);
     try {
       System.out.println("👤 Ищем пользователя по email...");
-      Long testUserId = adsRepository.getUserIdByEmail("shabunina.ao@phystech.edu");
+      Long testUserId = adsService.getUserIdByEmail("shabunina.ao@phystech.edu");
 
       if (testUserId != null) {
         session.setAttribute("userId", testUserId);
@@ -80,18 +76,19 @@ public class CreateAdServlet extends HttpServlet {
 
     System.out.println("📤 POST запрос на /create-ad");
 
+    // Уберем авторизацию на данный момент
+    /*
     HttpSession session = request.getSession(false);
     if (session == null || session.getAttribute("userId") == null) {
       System.out.println("❌ Пользователь не авторизован");
       response.sendRedirect("login.jsp");
       return;
-    }
+    }*/
 
-    long userId = (Long) session.getAttribute("userId");
-    System.out.println("👤 User ID из сессии: " + userId);
 
     try {
-      // Получаем параметры формы
+      Long userId = adsService.getUserIdByEmail("shabunina.ao@phystech.edu");
+
       String title = request.getParameter("title");
       String description = request.getParameter("description");
       String categoryStr = request.getParameter("category");
@@ -100,11 +97,6 @@ public class CreateAdServlet extends HttpServlet {
       String priceType = request.getParameter("priceType");
       String priceValue = request.getParameter("price");
       String action = request.getParameter("action");
-
-      System.out.println("📋 Параметры формы:");
-      System.out.println("   - title: " + title);
-      System.out.println("   - category: " + categoryStr);
-      System.out.println("   - action: " + action);
 
       // Валидация обязательных полей
       if (title == null || title.trim().isEmpty() ||
@@ -131,54 +123,20 @@ public class CreateAdServlet extends HttpServlet {
       }
 
       int price = parsePrice(priceType, priceValue);
-      System.out.println("💰 Цена: " + price);
-
-      // Создаем объявление
       System.out.println("🛠️  Создаем объявление...");
-      Announcement ad = createAdFromForm(userId, title, description, category,
+      Announcement ad = adsService.createAd(userId, title, description, category,
           condition, price, location, action);
 
       System.out.println("✅ Объявление создано с ID: " + ad.getId());
       response.sendRedirect("index.jsp?success=true&adId=" + ad.getId());
 
+    } catch (ServletException e) {
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     } catch (SQLException e) {
-      System.err.println("❌ Ошибка БД при создании объявления: " + e.getMessage());
-      e.printStackTrace();
-      request.setAttribute("error", "Ошибка базы данных при создании объявления");
-      forwardToForm(request, response);
-    } catch (NumberFormatException e) {
-      System.err.println("❌ Неверный формат цены: " + e.getMessage());
-      request.setAttribute("error", "Неверный формат цены");
-      forwardToForm(request, response);
-    } catch (Exception e) {
-      System.err.println("❌ Неожиданная ошибка: " + e.getMessage());
-      e.printStackTrace();
-      request.setAttribute("error", "Неожиданная ошибка: " + e.getMessage());
-      forwardToForm(request, response);
+      throw new RuntimeException(e);
     }
-  }
-
-  private Announcement createAdFromForm(long userId, String title, String description,
-      Category category, Condition condition, int price, String location, String action)
-      throws SQLException {
-
-    System.out.println("🛠️  Создаем объект Announcement...");
-    Announcement ad = new Announcement(title, description, category, condition,
-        price, location, userId);
-
-    if ("publish".equals(action)) {
-      System.out.println("📤 Отправляем на модерацию");
-      ad.sendToModeration();
-    } else {
-      System.out.println("💾 Сохраняем как черновик");
-    }
-
-    // Сохраняем через репозиторий
-    System.out.println("💾 Сохраняем в БД...");
-    long adId = adsService.getAdsRepository().saveAd(ad);
-    ad.setId(adId);
-
-    return ad;
   }
 
   private int parsePrice(String priceType, String priceValue) {

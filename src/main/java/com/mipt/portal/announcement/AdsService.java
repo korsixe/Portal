@@ -17,91 +17,35 @@ public class AdsService implements IAdsService {
 
   private AdsRepository adsRepository;
 
-  @Override
-  public Announcement createAd(long userId) {
-    Scanner scanner;
+  public AdsService() {
     try {
-      scanner = new Scanner(new InputStreamReader(System.in, "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      scanner = new Scanner(System.in);
-    }
-
-    System.out.println("Введите заголовок объявления:");
-    String title = scanner.nextLine();
-
-    System.out.println("Введите описание объявления:");
-    String description = scanner.nextLine();
-
-    // Выбор категории из enum
-    System.out.println("Выберите категорию объявления:");
-    Category.displayCategories();
-    int categoryChoice = readIntInRange(scanner, "Ваш выбор: ", 1, Category.values().length);
-    scanner.nextLine(); // очистка буфера
-    Category category = Category.getByNumber(categoryChoice);
-
-    System.out.println("Введите местоположение объявления:");
-    String location = scanner.nextLine();
-
-    System.out.println("Выберите состояние товара:");
-    Condition.displayConditions();
-    int conditionChoice = readIntInRange(scanner, "Ваш выбор: ", 1, Condition.values().length);
-    Condition condition = Condition.getByNumber(conditionChoice);
-
-    int price = -1;
-    System.out.println("Цена договорная? Введите число: 1 - Да, 2 - Нет");
-    int type = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
-
-    if (type == 2) {
-      price = readIntInRange(scanner, "Введите стоимость товара (от 0 до 1000000000): ", 0,
-          1000000000);
-    }
-
-    // Создаем объявление как черновик
-    Announcement ad = new Announcement(title, description, category, condition, price, location,
-        userId);
-
-    // Предлагаем выбрать действие с объявлением
-    System.out.println("\nВыберите действие с объявлением:");
-    System.out.println("1. Опубликовать (отправить на модерацию)");
-    System.out.println("2. Сохранить как черновик");
-
-    int actionChoice = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
-
-    try {
-      switch (actionChoice) {
-        case 1:
-          ad.sendToModeration();
-          System.out.println("Объявление отправлено на модерацию!");
-          break;
-        case 2:
-          System.out.println("Объявление сохранено как черновик!");
-          break;
-      }
-    } catch (IllegalStateException e) {
-      System.out.println("Ошибка: " + e.getMessage());
-      System.out.println("Объявление сохранено как черновик.");
-    }
-
-    // Предлагаем добавить теги
-    System.out.println("\nХотите добавить теги к объявлению? (1 - Да, 2 - Нет)");
-    int addTagsChoice = readIntInRange(scanner, "Ваш выбор: ", 1, 2);
-
-    if (addTagsChoice == 1) {
-      //addTagsInteractive(scanner, ad); - Лиза Орлова
-    }
-
-    try {
-      long adId = adsRepository.saveAd(ad);
-      ad.setId(adId); // ураа, у нас есть id нашего объявления
-      System.out.println("✅ Объявление создано с ID: " + adId);
+      this.adsRepository = new AdsRepository();
     } catch (SQLException e) {
-      System.err.println("❌ Ошибка сохранения: " + e.getMessage());
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public Announcement createAd(long userId, String title, String description, Category category,
+      Condition condition, int price, String location, String action) throws SQLException {
+
+    Announcement ad = new Announcement(title, description, category, condition,
+        price, location, userId);
+
+    if ("publish".equals(action)) {
+      ad.sendToModeration();
     }
 
-    System.out.println("\nОбъявление успешно создано!");
-    System.out.println(ad.toString());
+    System.out.println("💾 Сохраняем в БД...");
+    long adId = adsRepository.saveAd(ad);
+    ad.setId(adId);
 
     return ad;
+  }
+
+  @Override
+  public Long getUserIdByEmail(String email) throws SQLException {
+    return adsRepository.getUserIdByEmail(email);
   }
 
   @Override
@@ -414,14 +358,14 @@ public class AdsService implements IAdsService {
     return adsRepository.getModerAdIds();
   }
 
-
   // тут начинаем фронт
 
   public Announcement createAdFromWeb(long userId, String title, String description,
       Category category, Condition condition,
       int price, String location, String action) throws SQLException {
 
-    Announcement ad = new Announcement(title, description, category, condition, price, location, userId);
+    Announcement ad = new Announcement(title, description, category, condition, price, location,
+        userId);
 
     if ("publish".equals(action)) {
       ad.sendToModeration();
