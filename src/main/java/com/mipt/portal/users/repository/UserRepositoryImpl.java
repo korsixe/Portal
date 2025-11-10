@@ -1,5 +1,6 @@
 package com.mipt.portal.users.repository;
 
+import com.mipt.portal.database.DatabaseConnection;
 import com.mipt.portal.users.User;
 
 import java.sql.*;
@@ -10,8 +11,8 @@ import java.util.Optional;
 public class UserRepositoryImpl implements UserRepository {
     private final Connection connection;
 
-    public UserRepositoryImpl(Connection connection) {
-        this.connection = connection;
+    public UserRepositoryImpl() throws SQLException {
+        this.connection = DatabaseConnection.getConnection();
     }
 
     @Override

@@ -38,11 +38,8 @@ public class Application {
             databaseManager.createTables();
             databaseManager.insertData();
 
-            UserRepository userRepository = new UserRepositoryImpl(connection);
-            UserRegistrationImpl registration = new UserRegistrationImpl(userRepository);
-            UserLoginImpl login = new UserLoginImpl(userRepository);
 
-            runApplication(registration, login, userRepository);
+            testUserService();
 
             connection.close();
             System.out.println("✅ Соединение с БД закрыто");
@@ -217,6 +214,22 @@ public class Application {
             }
         } else {
             return false;
+        }
+    }
+
+    public static void testUserService() {
+        UserServiceTest testDemo = new UserServiceTest();
+
+        try {
+            System.out.println("=== ТЕСТИРОВАНИЕ USER SERVICE ===\n");
+
+            testDemo.testCompleteUserLifecycle();
+
+            System.out.println("\n=== ВСЕ ТЕСТЫ ЗАВЕРШЕНЫ ===");
+
+        } catch (Exception e) {
+            System.err.println("❌ Ошибка при тестировании: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
