@@ -24,6 +24,16 @@ public class AdsRepository implements IAdsRepository {
     insertData();
   }
 
+  private void resetSequences() throws SQLException {
+    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq"};
+
+    for (String seq : sequences) {
+      try (Statement stmt = connection.createStatement()) {
+        stmt.execute("ALTER SEQUENCE IF EXISTS " + seq + " RESTART WITH 1;");
+      }
+    }
+  }
+
   @Override
   public void createTables() {
     try {

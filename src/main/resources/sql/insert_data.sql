@@ -1,9 +1,6 @@
-DELETE
-FROM ads;
-DELETE
-FROM users;
-DELETE
-FROM moderators;
+DELETE FROM ads;
+DELETE FROM users;
+DELETE FROM moderators;
 
 
 -- Вставляем пользователей (id будет автоматически сгенерирован)
