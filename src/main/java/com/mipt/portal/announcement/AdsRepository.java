@@ -1,5 +1,6 @@
 package com.mipt.portal.announcement;
 
+import com.mipt.portal.database.DatabaseConnection;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -11,13 +12,17 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
-@NoArgsConstructor
 public class AdsRepository implements IAdsRepository {
 
   private Connection connection;
+
+  public AdsRepository() throws SQLException {
+    this.connection = DatabaseConnection.getConnection();
+    createTables();
+    insertData();
+  }
 
   @Override
   public void createTables() {
@@ -64,12 +69,12 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public void updateAd(Announcement ad) throws SQLException {
     String sql = """
-        UPDATE ads
-        SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
-            price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
-            view_count = ?, tags = ?::JSONB, tags_count = ?
-        WHERE id = ?
-    """;
+            UPDATE ads
+            SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
+                price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
+                view_count = ?, tags = ?::JSONB, tags_count = ?
+            WHERE id = ?
+        """;
 
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, ad.getTitle());
@@ -103,11 +108,11 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public Announcement getAdById(long adId) throws SQLException {
     String sql = """
-        SELECT a.*, u.name as user_name
-        FROM ads a
-        LEFT JOIN users u ON a.user_id = u.id
-        WHERE a.id = ?
-    """;
+            SELECT a.*, u.name as user_name
+            FROM ads a
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.id = ?
+        """;
 
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, adId);
@@ -157,11 +162,11 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public long saveAd(Announcement ad) throws SQLException {
     String sql = """
-        INSERT INTO ads (title, description, category, subcategory, condition, price,
-                        location, user_id, status, view_count, tags, tags_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
-        RETURNING id
-    """;
+            INSERT INTO ads (title, description, category, subcategory, condition, price,
+                            location, user_id, status, view_count, tags, tags_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
+            RETURNING id
+        """;
 
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, ad.getTitle());
@@ -256,7 +261,6 @@ public class AdsRepository implements IAdsRepository {
     }
 
     // Обрабатываем теги
-
 
     // Устанавливаем даты
     Timestamp createdAt = resultSet.getTimestamp("created_at");

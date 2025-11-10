@@ -24,7 +24,7 @@ java -cp "target/classes:postgresql-42.6.0.jar" com.mipt.portal.Main
 ```
 
 ```
-mvn tomcat7:run
+mvn jetty:run
 ```
 
 ```
@@ -33,4 +33,8 @@ http://localhost:8080/portal/
 
 ```
 sudo netstat -tulpn | grep :8080
+```
+
+```
+sudo kill -9 "номер процесса"
 ```
