@@ -49,10 +49,44 @@ public class Application {
         }
     }
 
+<<<<<<< HEAD
     public static void runTests(ModeratorRepository moderatorRepository, ModeratorRegistrationImpl moderatorRegistration, ModeratorLoginImpl moderatorLogin) {
         testRegistration(moderatorRegistration);
         testLoginAndUpdate(moderatorLogin, moderatorRepository);
         testDeleteAccount(moderatorRepository, moderatorRegistration, moderatorLogin);
+=======
+    public static void runApplication(UserRegistrationImpl registration,UserLoginImpl login, UserRepository userRepository) {
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("\n=== PORTAL SYSTEM ===");
+            System.out.println("\n=== MODERATORS ===\n");
+            System.out.println("1. Регистрация");
+            System.out.println("2. Вход");
+            System.out.println("3. Выход");
+            System.out.print("Выберите действие: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (choice) {
+                case 1:
+                    // testRegistration(registration, userRepository, scanner);
+                    System.out.println();
+                    break;
+                case 2:
+                    testLogin(login, userRepository, scanner);
+                    System.out.println();
+                    break;
+                case 3:
+                    System.out.println("До свидания!");
+                    System.out.println();
+                    scanner.close();
+                default:
+                    System.out.println("Введите число (1-3)");
+            }
+        }
+>>>>>>> 490281a (added test data to db and cleaned files)
     }
 
     private static void testRegistration(ModeratorRegistrationImpl moderatorRegistration) {
