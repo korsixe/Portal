@@ -1,5 +1,6 @@
 package com.mipt.portal.announcement;
 
+import com.mipt.portal.users.service.UserService;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -17,6 +18,7 @@ import lombok.Data;
 public class AdsService implements IAdsService {
 
   private AdsRepository adsRepository;
+  private UserService userService;
 
   public AdsService() {
     try {
@@ -38,6 +40,8 @@ public class AdsService implements IAdsService {
     ad.setStatus(action);
 
     ad.setId( adsRepository.saveAd(ad));
+
+    userService.addAnnouncemetId(ad.getUserId(), ad.getId());
     return ad;
   }
 
