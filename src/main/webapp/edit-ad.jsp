@@ -10,7 +10,7 @@
 
     Announcement announcement = (Announcement) request.getAttribute("announcement");
     if (announcement == null) {
-        response.sendRedirect("my-ads");
+        response.sendRedirect("dashboard");
         return;
     }
 %>
