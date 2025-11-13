@@ -105,6 +105,7 @@ public class CreateAdServlet extends HttpServlet {
         return;
       }
 
+      /// TODO:LIST получать сессию
       // Получаем ID пользователя из сессии
       //HttpSession session = request.getSession();
       //Long userId = (Long) session.getAttribute("userId");
@@ -130,15 +131,11 @@ public class CreateAdServlet extends HttpServlet {
           location,
           uploadedPhotos,
           tag,
-          "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION : AdvertisementStatus.DRAFT
+          "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
+              : AdvertisementStatus.DRAFT
       );
-
-      request.setAttribute("success",
-          String.format("Объявление успешно создано! ID: %d", ad.getId()));
-
-      // Очищаем форму после успешного создания
-      request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
-
+      request.setAttribute("announcement", ad);
+      request.getRequestDispatcher("/successful-create-ad.jsp").forward(request, response);
     } catch (IllegalArgumentException e) {
       request.setAttribute("error", "Некорректные данные: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
