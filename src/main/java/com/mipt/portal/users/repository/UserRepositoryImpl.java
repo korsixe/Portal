@@ -73,7 +73,7 @@ public class UserRepositoryImpl implements UserRepository {
                 return Optional.of(mapResultSetToUser(rs));
             }
         } catch (SQLException e) {
-            System.err.println("Ошибка при поиске пользователя по ID: " + e.getMessage());
+            System.err.println("Ошибка при поиске пользователя " + e.getMessage());
         }
         return Optional.empty();
     }
