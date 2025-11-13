@@ -17,7 +17,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<User> save(User user) {
-        String sql = "INSERT INTO users (email, name, password, address, study_program, course, rating, coins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (email, name, password, address, study_program, course, rating, coins, ad_list) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, user.getEmail());
             pstmt.setString(2, user.getName());
@@ -27,6 +27,13 @@ public class UserRepositoryImpl implements UserRepository {
             pstmt.setInt(6, user.getCourse());
             pstmt.setDouble(7, user.getRating());
             pstmt.setInt(8, user.getCoins());
+
+            if (user.getAdList() != null && !user.getAdList().isEmpty()) {
+                Array adListArray = connection.createArrayOf("bigint", user.getAdList().toArray());
+                pstmt.setArray(9, adListArray);
+            } else {
+                pstmt.setArray(9, null);
+            }
 
             int affectedRows = pstmt.executeUpdate();
 
@@ -42,6 +49,66 @@ public class UserRepositoryImpl implements UserRepository {
             System.err.println("Ошибка при сохранении пользователя: " + e.getMessage());
         }
         return Optional.empty();
+    }
+
+    @Override
+    public boolean update(User user) {
+        String sql = "UPDATE users SET email = ?, name = ?, password = ?, address = ?, study_program = ?, course = ?, rating = ?, coins = ?, ad_list = ? WHERE id = ?";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, user.getEmail());
+            pstmt.setString(2, user.getName());
+            pstmt.setString(3, user.getPassword());
+            pstmt.setString(4, user.getAddress());
+            pstmt.setString(5, user.getStudyProgram());
+            pstmt.setInt(6, user.getCourse());
+            pstmt.setDouble(7, user.getRating());
+            pstmt.setInt(8, user.getCoins());
+
+            if (user.getAdList() != null && !user.getAdList().isEmpty()) {
+                Array adListArray = connection.createArrayOf("bigint", user.getAdList().toArray());
+                pstmt.setArray(9, adListArray);
+            } else {
+                pstmt.setArray(9, null);
+            }
+            System.out.println("пользователь " + user.getEmail() + " обновлен, объявлений: " + user.getAdList().size());
+
+            pstmt.setLong(10, user.getId());
+
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Ошибка при обновлении пользователя: " + e.getMessage());
+        }
+        return false;
+    }
+
+    // Исправленный метод mapResultSetToUser
+    private User mapResultSetToUser(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.setId(rs.getLong("id"));
+        user.setEmail(rs.getString("email"));
+        user.setName(rs.getString("name"));
+        user.setPassword(rs.getString("password"));
+        user.setAddress(rs.getString("address"));
+        user.setStudyProgram(rs.getString("study_program"));
+        user.setCourse(rs.getInt("course"));
+        user.setRating(rs.getDouble("rating"));
+        user.setCoins(rs.getInt("coins"));
+
+        // Правильное чтение массива bigint[]
+        Array adListArray = rs.getArray("ad_list");
+        ArrayList<Long> adList = new ArrayList<>();
+        if (adListArray != null) {
+            Object[] array = (Object[]) adListArray.getArray();
+            for (Object item : array) {
+                if (item instanceof Number) {
+                    adList.add(((Number) item).longValue());
+                }
+            }
+        }
+        user.setAdList(adList);
+
+        return user;
     }
 
     @Override
@@ -79,28 +146,6 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public boolean update(User user) {
-        String sql = "UPDATE users SET email = ?, name = ?, password = ?, address = ?, study_program = ?, course = ?, rating = ?, coins = ? WHERE id = ?";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, user.getEmail());
-            pstmt.setString(2, user.getName());
-            pstmt.setString(3, user.getPassword());
-            pstmt.setString(4, user.getAddress());
-            pstmt.setString(5, user.getStudyProgram());
-            pstmt.setInt(6, user.getCourse());
-            pstmt.setDouble(7, user.getRating());
-            pstmt.setInt(8, user.getCoins());
-            pstmt.setLong(9, user.getId());
-
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Ошибка при обновлении пользователя: " + e.getMessage());
-        }
-        return false;
-    }
-
-    @Override
     public boolean delete(long id) {
         String sql = "DELETE FROM users WHERE id = ?";
 
@@ -133,21 +178,5 @@ public class UserRepositoryImpl implements UserRepository {
             System.err.println("Ошибка при получении всех пользователей: " + e.getMessage());
         }
         return users;
-    }
-
-    private User mapResultSetToUser(ResultSet rs) throws SQLException {
-        User user = new User();
-        user.setId(rs.getLong("id"));
-        user.setEmail(rs.getString("email"));
-        user.setName(rs.getString("name"));
-        user.setPassword(rs.getString("password"));
-        user.setAddress(rs.getString("address"));
-        user.setStudyProgram(rs.getString("study_program"));
-        user.setCourse(rs.getInt("course"));
-        user.setRating(rs.getDouble("rating"));
-        user.setCoins(rs.getInt("coins"));
-        user.setAdList(new ArrayList<>());
-
-        return user;
     }
 }

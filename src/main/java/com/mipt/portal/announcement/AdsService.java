@@ -23,6 +23,7 @@ public class AdsService implements IAdsService {
   public AdsService() {
     try {
       this.adsRepository = new AdsRepository();
+      this.userService = new UserService();
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -41,7 +42,7 @@ public class AdsService implements IAdsService {
 
     ad.setId( adsRepository.saveAd(ad));
 
-    userService.addAnnouncemetId(ad.getUserId(), ad.getId());
+    userService.addAnnouncementId(ad.getUserId(), ad.getId());
     return ad;
   }
 
