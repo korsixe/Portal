@@ -518,7 +518,7 @@
                 <div class="ad-date">📅 <%= formatDate(ad.getCreatedAt()) %></div>
 
                 <div class="ad-actions">
-                    <a href="edit-ad.jsp?id=<%= ad.getId() %>" class="btn btn-edit">Редактировать</a>
+                    <a href="edit-ad?adId=<%= ad.getId() %>" class="btn btn-edit">Редактировать</a>
                     <a href="delete-ad.jsp?id=<%= ad.getId() %>" class="btn btn-danger"
                        onclick="return confirm('Вы уверены, что хотите удалить это объявление?')">Удалить</a>
                 </div>

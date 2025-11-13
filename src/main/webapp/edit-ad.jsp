@@ -610,7 +610,7 @@
 
             <!-- Кнопки действий -->
             <div class="form-actions">
-                <a href="my-ads" class="btn btn-outline">
+                <a href="dashboard.jsp" class="btn btn-outline">
                     <span class="icon">←</span> Назад к списку
                 </a>
 
