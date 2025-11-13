@@ -3,121 +3,199 @@ package com.mipt.portal.users.service;
 import com.mipt.portal.users.User;
 import com.mipt.portal.users.repository.UserRepository;
 import com.mipt.portal.users.repository.UserRepositoryImpl;
+import com.mipt.portal.users.util.UserValidator;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
 @AllArgsConstructor
-@Data
 public class UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     public UserService() {
         try {
             this.userRepository = new UserRepositoryImpl();
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to initialize UserRepository", e);
+            throw new RuntimeException("Failed to initialize UserService", e);
         }
     }
 
-    public User registerUser(String email, String name, String password, String address,
-                             String studyProgram, int course) throws SQLException {
-        
-        if (userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Пользователь с email " + email + " уже существует");
-        }
+    public OperationResult<User> registerUser(String email, String name, String password,
+                                              String passwordAgain, String address,
+                                              String studyProgram, int course) {
+        try {
+            if (email == null || email.trim().isEmpty()) {
+                return OperationResult.error("❌ Email не может быть пустым");
+            }
 
-       
-        validateUserData(email, name, password, studyProgram, course);
+            try {
+                UserValidator.validateEmail(email);
+            } catch (IllegalArgumentException e) {
+                return OperationResult.error("❌ " + e.getMessage());
+            }
 
-        User user = new User();
-        user.setEmail(email);
-        user.setName(name);
-        user.setPassword(password); 
-        user.setAddress(address);
-        user.setStudyProgram(studyProgram);
-        user.setCourse(course);
-        user.setRating(0.0);
-        user.setCoins(0);
+            if (name == null || name.trim().isEmpty()) {
+                return OperationResult.error("❌ Имя не может быть пустым");
+            }
 
-        Optional<User> savedUser = userRepository.save(user);
-        if (savedUser.isPresent()) {
-            System.out.println("✅ Пользователь успешно зарегистрирован! ID: " + savedUser.get().getId());
-            return savedUser.get();
-        } else {
-            throw new SQLException("Не удалось сохранить пользователя");
+            try {
+                UserValidator.validateName(name);
+            } catch (IllegalArgumentException e) {
+                return OperationResult.error("❌ " + e.getMessage());
+            }
+
+            if (password == null || password.trim().isEmpty()) {
+                return OperationResult.error("❌ Пароль не может быть пустым");
+            }
+
+            try {
+                UserValidator.validatePassword(password);
+                UserValidator.isPasswordStrong(password);
+            } catch (IllegalArgumentException e) {
+                return OperationResult.error("❌ " + e.getMessage());
+            }
+
+            if (!password.equals(passwordAgain)) {
+                return OperationResult.error("❌ Пароли не совпадают");
+            }
+
+            if (studyProgram == null || studyProgram.trim().isEmpty()) {
+                return OperationResult.error("❌ Учебная программа не может быть пустой");
+            }
+
+            if (course < 1 || course > 6) {
+                return OperationResult.error("❌ Курс должен быть в диапазоне от 1 до 6");
+            }
+
+            if (userRepository.existsByEmail(email)) {
+                return OperationResult.error("❌ Пользователь с email " + email + " уже существует");
+            }
+
+            User user = new User();
+            user.setEmail(email);
+            user.setName(name);
+            user.setPassword(password);
+            user.setAddress(address != null ? address : "");
+            user.setStudyProgram(studyProgram);
+            user.setCourse(course);
+            user.setRating(0.0);
+            user.setCoins(0);
+
+            Optional<User> savedUser = userRepository.save(user);
+            if (savedUser.isPresent()) {
+                return OperationResult.success(
+                        "🎉 Спасибо за регистрацию! Добро пожаловать в PORTAL!",
+                        savedUser.get()
+                );
+            } else {
+                return OperationResult.error("❌ Не удалось сохранить пользователя в базу данных");
+            }
+
+        } catch (Exception e) {
+            return OperationResult.error("❌ Неизвестная ошибка: " + e.getMessage());
         }
     }
 
-    public Optional<User> updateUser(User user) throws SQLException {
+    public OperationResult<User> loginUser(String email, String password) {
+        try {
+            if (email == null || email.trim().isEmpty()) {
+                return OperationResult.error("❌ Email не может быть пустым");
+            }
 
+            try {
+                UserValidator.validateEmail(email);
+            } catch (IllegalArgumentException e) {
+                return OperationResult.error("❌ " + e.getMessage());
+            }
+
+            if (password == null || password.trim().isEmpty()) {
+                return OperationResult.error("❌ Пароль не может быть пустым");
+            }
+
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                return OperationResult.error("❌ Пользователь с email " + email + " не найден");
+            }
+
+            User user = userOpt.get();
+
+            if (!user.getPassword().equals(password)) {
+                return OperationResult.error("❌ Неверный пароль");
+            }
+
+            return OperationResult.success("Добро пожаловать, " + user.getName() + "!", user);
+
+        } catch (Exception e) {
+            return OperationResult.error("❌ Неизвестная ошибка: " + e.getMessage());
+        }
+    }
+
+    public OperationResult<User> updateUser(User user) {
         Optional<User> existingUser = userRepository.findById(user.getId());
         if (existingUser.isEmpty()) {
-            System.out.println("❌ Пользователь с ID " + user.getId() + " не найден");
-            return Optional.empty();
+            return OperationResult.error("❌ Пользователь не найден");
         }
 
-        validateUserData(user.getEmail(), user.getName(), user.getPassword(),
-                user.getStudyProgram(), user.getCourse());
+        try {
+            UserValidator.validateEmail(user.getEmail());
+            UserValidator.validateName(user.getName());
+            UserValidator.validatePassword(user.getPassword());
+            UserValidator.isPasswordStrong(user.getPassword());
+        } catch (IllegalArgumentException e) {
+            return OperationResult.error("❌ " + e.getMessage());
+        }
 
         Optional<User> userWithSameEmail = userRepository.findByEmail(user.getEmail());
-        if (userWithSameEmail.isPresent() && userWithSameEmail.get().getId() != user.getId()) {
-            throw new IllegalArgumentException("Email " + user.getEmail() + " уже занят другим пользователем");
+        if (userWithSameEmail.isPresent() && userWithSameEmail.get().getId() != (user.getId())) {
+            return OperationResult.error("❌ Email " + user.getEmail() + " уже занят другим пользователем");
         }
 
         boolean updated = userRepository.update(user);
         if (updated) {
-            System.out.println("✅ Данные пользователя обновлены успешно!");
-            return Optional.of(user);
+            return OperationResult.success("✅ Данные пользователя обновлены успешно!", user);
         } else {
-            System.out.println("❌ Не удалось обновить данные пользователя");
-            return Optional.empty();
+            return OperationResult.error("❌ Не удалось обновить данные пользователя");
         }
     }
 
-    public boolean deleteUser(long userId) throws SQLException {
+    public OperationResult<Boolean> deleteUser(long userId) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
-            System.out.println("❌ Пользователь с ID " + userId + " не найден");
-            return false;
+            return OperationResult.error("❌ Пользователь не найден");
         }
 
         boolean deleted = userRepository.delete(userId);
         if (deleted) {
-            System.out.println("✅ Пользователь успешно удален");
+            return OperationResult.success("✅ Пользователь успешно удален", true);
         } else {
-            System.out.println("❌ Не удалось удалить пользователя");
+            return OperationResult.error("❌ Не удалось удалить пользователя");
         }
-        return deleted;
     }
 
-    public Optional<User> findUserById(long userId) throws SQLException {
+    public OperationResult<User> findUserById(long userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
-            System.out.println("✅ Пользователь найден: " + user.get().getEmail());
+            return OperationResult.success("✅ Пользователь найден", user.get());
         } else {
-            System.out.println("❌ Пользователь с ID " + userId + " не найден");
+            return OperationResult.error("❌ Пользователь с ID " + userId + " не найден");
         }
-        return user;
     }
 
-    public Optional<User> findUserByEmail(String email) throws SQLException {
+    public OperationResult<User> findUserByEmail(String email) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
-            System.out.println("✅ Пользователь найден: " + user.get().getName());
+            return OperationResult.success("✅ Пользователь найден", user.get());
         } else {
-            System.out.println("❌ Пользователь с email " + email + " не найден");
+            return OperationResult.error("❌ Пользователь с email " + email + " не найден");
         }
-        return user;
     }
 
-    public boolean updateUserRating(long userId, double newRating) throws SQLException {
+    public OperationResult<Boolean> updateUserRating(long userId, double newRating) {
         if (newRating < 0.0 || newRating > 5.0) {
-            throw new IllegalArgumentException("Рейтинг должен быть в диапазоне от 0.0 до 5.0");
+            return OperationResult.error("❌ Рейтинг должен быть в диапазоне от 0.0 до 5.0");
         }
 
         Optional<User> userOpt = userRepository.findById(userId);
@@ -126,44 +204,23 @@ public class UserService {
             user.setRating(newRating);
             boolean updated = userRepository.update(user);
             if (updated) {
-                System.out.println("✅ Рейтинг пользователя обновлен: " + newRating);
+                return OperationResult.success("✅ Рейтинг пользователя обновлен: " + newRating, true);
             }
-            return updated;
         }
-        return false;
-    }
-
-    public boolean updateUserCoins(long userId, int coins) throws SQLException {
-        if (coins < 0) {
-            throw new IllegalArgumentException("Количество коинов не может быть отрицательным");
-        }
-
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            user.setCoins(coins);
-            boolean updated = userRepository.update(user);
-            if (updated) {
-                System.out.println("✅ Коины пользователя обновлены: " + coins);
-            }
-            return updated;
-        }
-        return false;
+        return OperationResult.error("❌ Не удалось обновить рейтинг пользователя");
     }
 
     public List<User> getAllUsers() throws SQLException {
-        List<User> users = userRepository.findAll();
-        System.out.println("📊 Найдено пользователей: " + users.size());
-        return users;
+        return userRepository.findAll();
     }
 
     public boolean existsByEmail(String email) throws SQLException {
         return userRepository.existsByEmail(email);
     }
 
-    public boolean addCoins(long userId, int coinsToAdd) throws SQLException {
+    public OperationResult<Boolean> addCoins(long userId, int coinsToAdd) {
         if (coinsToAdd <= 0) {
-            throw new IllegalArgumentException("Количество добавляемых коинов должно быть положительным");
+            return OperationResult.error("❌ Количество добавляемых коинов должно быть положительным");
         }
 
         Optional<User> userOpt = userRepository.findById(userId);
@@ -172,54 +229,37 @@ public class UserService {
             user.setCoins(user.getCoins() + coinsToAdd);
             boolean updated = userRepository.update(user);
             if (updated) {
-                System.out.println("✅ Добавлено " + coinsToAdd + " коинов. Текущий баланс: " + user.getCoins());
+                return OperationResult.success(
+                        "✅ Добавлено " + coinsToAdd + " коинов. Текущий баланс: " + user.getCoins(),
+                        true
+                );
             }
-            return updated;
         }
-        return false;
+        return OperationResult.error("❌ Не удалось добавить коины");
     }
 
-    public boolean deductCoins(long userId, int coinsToDeduct) throws SQLException {
+    public OperationResult<Boolean> deductCoins(long userId, int coinsToDeduct) {
         if (coinsToDeduct <= 0) {
-            throw new IllegalArgumentException("Количество списываемых коинов должно быть положительным");
+            return OperationResult.error("❌ Количество списываемых коинов должно быть положительным");
         }
 
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             if (user.getCoins() < coinsToDeduct) {
-                throw new IllegalArgumentException("Недостаточно коинов. Текущий баланс: " + user.getCoins() + ", требуется: " + coinsToDeduct);
+                return OperationResult.error(
+                        "❌ Недостаточно коинов. Текущий баланс: " + user.getCoins() + ", требуется: " + coinsToDeduct
+                );
             }
             user.setCoins(user.getCoins() - coinsToDeduct);
             boolean updated = userRepository.update(user);
             if (updated) {
-                System.out.println("✅ Списано " + coinsToDeduct + " коинов. Текущий баланс: " + user.getCoins());
+                return OperationResult.success(
+                        "✅ Списано " + coinsToDeduct + " коинов. Текущий баланс: " + user.getCoins(),
+                        true
+                );
             }
-            return updated;
         }
-        return false;
-    }
-
-    private void validateUserData(String email, String name, String password,
-                                  String studyProgram, int course) {
-        if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email не может быть пустым");
-        }
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Имя не может быть пустым");
-        }
-        if (password == null || password.trim().isEmpty()) {
-            throw new IllegalArgumentException("Пароль не может быть пустым");
-        }
-        if (studyProgram == null || studyProgram.trim().isEmpty()) {
-            throw new IllegalArgumentException("Учебная программа не может быть пустой");
-        }
-        if (course < 1 || course > 6) {
-            throw new IllegalArgumentException("Курс должен быть в диапазоне от 1 до 6");
-        }
-
-        if (!email.contains("@")) {
-            throw new IllegalArgumentException("Некорректный формат email");
-        }
+        return OperationResult.error("❌ Не удалось списать коины");
     }
 }
