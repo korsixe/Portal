@@ -72,12 +72,6 @@ public class Announcement {
     this.tagsCount = 0;
   }
 
-  public Announcement(String title, String description, Category category, String subcategory,
-      Condition condition, int price, String location, long userId) {
-    this(title, description, category, condition, price, location, userId);
-    this.subcategory = subcategory;
-  }
-
   // Бизнес-методы для работы со статусами
 
   public void sendToModeration() {
@@ -85,7 +79,8 @@ public class Announcement {
       status = AdvertisementStatus.UNDER_MODERATION;
       updatedAt = Instant.now();
     } else {
-      throw new IllegalStateException("Невозможно отправить на модерацию из статуса: " + status.getDisplayName());
+      throw new IllegalStateException(
+          "Невозможно отправить на модерацию из статуса: " + status.getDisplayName());
     }
   }
 
@@ -94,7 +89,9 @@ public class Announcement {
       status = AdvertisementStatus.ACTIVE;
       updatedAt = Instant.now();
     } else {
-      throw new IllegalStateException("Можно активировать только из статуса модерации. Текущий статус: " + status.getDisplayName());
+      throw new IllegalStateException(
+          "Можно активировать только из статуса модерации. Текущий статус: "
+              + status.getDisplayName());
     }
   }
 
@@ -103,7 +100,8 @@ public class Announcement {
       status = AdvertisementStatus.ARCHIVED;
       updatedAt = Instant.now();
     } else {
-      throw new IllegalStateException("Невозможно архивировать из статуса: " + status.getDisplayName());
+      throw new IllegalStateException(
+          "Невозможно архивировать из статуса: " + status.getDisplayName());
     }
   }
 
@@ -112,7 +110,8 @@ public class Announcement {
       status = AdvertisementStatus.ACTIVE;
       updatedAt = Instant.now();
     } else {
-      throw new IllegalStateException("Невозможно восстановить из статуса: " + status.getDisplayName());
+      throw new IllegalStateException(
+          "Невозможно восстановить из статуса: " + status.getDisplayName());
     }
   }
 
@@ -121,7 +120,8 @@ public class Announcement {
       status = AdvertisementStatus.DRAFT;
       updatedAt = Instant.now();
     } else {
-      throw new IllegalStateException("Невозможно сохранить как черновик из статуса: " + status.getDisplayName());
+      throw new IllegalStateException(
+          "Невозможно сохранить как черновик из статуса: " + status.getDisplayName());
     }
   }
 
@@ -130,7 +130,9 @@ public class Announcement {
       status = AdvertisementStatus.DRAFT;
       updatedAt = Instant.now();
     } else {
-      throw new IllegalStateException("Можно отклонить только из статуса модерации. Текущий статус: " + status.getDisplayName());
+      throw new IllegalStateException(
+          "Можно отклонить только из статуса модерации. Текущий статус: "
+              + status.getDisplayName());
     }
   }
 
@@ -225,7 +227,8 @@ public class Announcement {
         .withZone(ZoneId.systemDefault());
 
     return "Заголовок: " + title +
-        ", Описание: " + (description != null ? description.substring(0, Math.min(description.length(), 100)) + "..." : "нет") +
+        ", Описание: " + (description != null ?
+        description.substring(0, Math.min(description.length(), 100)) + "..." : "нет") +
         ", Категория: " + category.getDisplayName() +
         (subcategory != null ? ", Подкатегория: " + subcategory : "") +
         ", Состояние: " + condition.getDisplayName() +
