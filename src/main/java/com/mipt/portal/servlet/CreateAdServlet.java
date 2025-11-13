@@ -6,6 +6,7 @@ import com.mipt.portal.announcement.Category;
 import com.mipt.portal.announcement.Condition;
 import com.mipt.portal.announcement.AdvertisementStatus;
 
+import com.mipt.portal.users.User;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -60,7 +61,6 @@ public class CreateAdServlet extends HttpServlet {
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
-    // Просто показываем форму создания объявления
     request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
   }
 
@@ -105,17 +105,14 @@ public class CreateAdServlet extends HttpServlet {
         return;
       }
 
-      /// TODO:LIST получать сессию
-      // Получаем ID пользователя из сессии
-      //HttpSession session = request.getSession();
-      //Long userId = (Long) session.getAttribute("userId");
 
-      Long userId = adsService.getUserIdByEmail("shabunina.ao@phystech.edu");
-
-      // Если пользователь не авторизован, используем заглушку
-      if (userId == null) {
-        userId = 1L; // В реальном приложении нужно перенаправить на страницу входа
+      HttpSession session = request.getSession();
+      User user = (User) session.getAttribute("user");
+      if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
       }
+      Long userId = user.getId();
 
       List<File> uploadedPhotos = new ArrayList<>(); // Обрабатываем загрузку фотографий - Лиза О
       List<String> tag = new ArrayList<>(); // Обрабатываем теги - Лиза О

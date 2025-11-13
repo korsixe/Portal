@@ -1,21 +1,22 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.mipt.portal.announcement.Announcement" %>
 <%@ page import="com.mipt.portal.announcement.Category" %>
 <%@ page import="com.mipt.portal.announcement.Condition" %>
+<%@ page import="com.mipt.portal.announcement.AdvertisementStatus" %>
 <%
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     response.setHeader("Pragma", "no-cache");
     response.setDateHeader("Expires", 0);
 
-    // Обработка отображения поля цены на сервере
-    String priceType = request.getParameter("priceType");
-    boolean showPrice = "fixed".equals(priceType);
-    if (priceType == null) {
-        priceType = "negotiable"; // значение по умолчанию
+    Announcement announcement = (Announcement) request.getAttribute("announcement");
+    if (announcement == null) {
+        response.sendRedirect("my-ads");
+        return;
     }
 %>
 <html>
 <head>
-    <title>Создать объявление • Portal</title>
+    <title>Редактировать объявление • Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       :root {
@@ -94,12 +95,66 @@
         font-size: 1.1rem;
       }
 
+      .ad-info {
+        background: var(--light);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-left: 4px solid var(--primary);
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .info-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .info-label {
+        font-weight: 600;
+        color: var(--dark);
+        font-size: 0.9rem;
+      }
+
+      .info-value {
+        color: var(--gray);
+        font-size: 1rem;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .status-draft {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status-moderation {
+        background: #cce7ff;
+        color: #004085;
+      }
+
+      .status-active {
+        background: #d4edda;
+        color: #155724;
+      }
+
       .form-section {
         margin-bottom: 30px;
         padding: 25px;
         background: var(--light);
         border-radius: 15px;
-        border-left: 4px solid var(--primary);
+        border-left: 4px solid var(--warning);
       }
 
       .section-title {
@@ -183,20 +238,6 @@
         color: var(--dark);
       }
 
-      .price-section {
-        margin-top: 15px;
-        padding: 15px;
-        background: white;
-        border-radius: 10px;
-        border: 2px solid var(--primary);
-        animation: fadeIn 0.5s ease;
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
       .btn {
         padding: 12px 24px;
         border: none;
@@ -233,13 +274,13 @@
         color: var(--primary);
       }
 
-      .btn-preview {
-        background: var(--warning);
+      .btn-danger {
+        background: var(--danger);
         color: white;
       }
 
-      .btn-preview:hover {
-        background: #e68900;
+      .btn-danger:hover {
+        background: #e00;
         transform: translateY(-2px);
       }
 
@@ -269,19 +310,13 @@
         color: var(--success);
       }
 
-      .alert-info {
-        background: rgba(67, 97, 238, 0.1);
-        border: 1px solid var(--primary);
-        color: var(--primary);
-      }
-
       .tags-hint {
         font-size: 0.9rem;
         color: var(--gray);
         margin-top: 5px;
       }
 
-      .preview-note {
+      .edit-note {
         background: #fff3cd;
         border: 1px solid #ffeaa7;
         color: #856404;
@@ -312,6 +347,10 @@
         .form-actions {
           flex-direction: column;
         }
+
+        .info-grid {
+          grid-template-columns: 1fr;
+        }
       }
 
       .icon {
@@ -331,8 +370,8 @@
 
     <div class="card">
         <div class="card-header">
-            <h1 class="card-title">Создать новое объявление</h1>
-            <p class="card-subtitle">Заполните информацию о вашем товаре или услуге</p>
+            <h1 class="card-title">Редактировать объявление</h1>
+            <p class="card-subtitle">ID: #<%= announcement.getId() %></p>
         </div>
 
         <% if (request.getAttribute("error") != null) { %>
@@ -347,8 +386,62 @@
         </div>
         <% } %>
 
-        <!-- Основная форма для создания объявления -->
-        <form action="create-ad" method="post" enctype="multipart/form-data">
+        <!-- Информация об объявлении -->
+        <div class="ad-info">
+            <h3 class="section-title">
+                <span class="icon">📊</span> Текущие данные
+            </h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Статус:</span>
+                    <%
+                        String statusClass = "";
+                        String statusText = announcement.getStatus().getDisplayName();
+
+                        switch (announcement.getStatus()) {
+                            case DRAFT:
+                                statusClass = "status-draft";
+                                break;
+                            case UNDER_MODERATION:
+                                statusClass = "status-moderation";
+                                break;
+                            case ACTIVE:
+                                statusClass = "status-active";
+                                break;
+                            default:
+                                statusClass = "status-draft";
+                        }
+                    %>
+                    <span class="status-badge <%= statusClass %>"><%= statusText %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Просмотры:</span>
+                    <span class="info-value"><%= announcement.getViewCount() != null ? announcement.getViewCount() : 0 %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Создано:</span>
+                    <span class="info-value"><%= announcement.getCreatedAt() != null ? announcement.getCreatedAt() : "Не указано" %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Обновлено:</span>
+                    <span class="info-value"><%= announcement.getUpdatedAt() != null ? announcement.getUpdatedAt() : "Не указано" %></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-note">
+            <strong>💡 Примечание:</strong>
+            <% if (!announcement.canBeEdited()) { %>
+            Это объявление нельзя редактировать в текущем статусе. Сначала измените статус на "Черновик".
+            <% } else { %>
+            Вы можете редактировать все поля объявления. После сохранения статус может измениться.
+            <% } %>
+        </div>
+
+        <!-- Форма редактирования -->
+        <form action="edit-ad" method="post">
+            <input type="hidden" name="adId" value="<%= announcement.getId() %>">
+
             <!-- Основная информация -->
             <div class="form-section">
                 <h3 class="section-title">
@@ -359,13 +452,15 @@
                     <label for="title" class="required">Заголовок объявления</label>
                     <input type="text" id="title" name="title" class="form-control"
                            placeholder="Например: iPhone 13 Pro Max 256GB" required
-                           value="<%= request.getParameter("title") != null ? request.getParameter("title") : "" %>">
+                           value="<%= announcement.getTitle() != null ? announcement.getTitle() : "" %>"
+                        <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                 </div>
 
                 <div class="form-group">
                     <label for="description" class="required">Описание</label>
                     <textarea id="description" name="description" class="form-control"
-                              placeholder="Подробно опишите ваш товар или услугу..." required><%= request.getParameter("description") != null ? request.getParameter("description") : "" %></textarea>
+                              placeholder="Подробно опишите ваш товар или услугу..." required
+                            <%= !announcement.canBeEdited() ? "disabled" : "" %>><%= announcement.getDescription() != null ? announcement.getDescription() : "" %></textarea>
                 </div>
             </div>
 
@@ -377,11 +472,12 @@
 
                 <div class="form-group">
                     <label for="category" class="required">Основная категория</label>
-                    <select id="category" name="category" class="form-control" required>
+                    <select id="category" name="category" class="form-control" required
+                            <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                         <option value="">Выберите категорию</option>
                         <% for (Category category : Category.values()) { %>
                         <option value="<%= category.name() %>"
-                                <%= (request.getParameter("category") != null && request.getParameter("category").equals(category.name())) ? "selected" : "" %>>
+                                <%= announcement.getCategory() == category ? "selected" : "" %>>
                             <%= category.getDisplayName() %>
                         </option>
                         <% } %>
@@ -392,7 +488,8 @@
                     <label for="subcategory">Подкатегория</label>
                     <input type="text" id="subcategory" name="subcategory" class="form-control"
                            placeholder="Например: Смартфоны и телефоны"
-                           value="<%= request.getParameter("subcategory") != null ? request.getParameter("subcategory") : "" %>">
+                           value="<%= announcement.getSubcategory() != null ? announcement.getSubcategory() : "" %>"
+                        <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                 </div>
             </div>
 
@@ -406,7 +503,8 @@
                     <label for="location" class="required">Местоположение</label>
                     <input type="text" id="location" name="location" class="form-control"
                            placeholder="Например: Москва, центр" required
-                           value="<%= request.getParameter("location") != null ? request.getParameter("location") : "" %>">
+                           value="<%= announcement.getLocation() != null ? announcement.getLocation() : "" %>"
+                        <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                 </div>
 
                 <div class="form-group">
@@ -416,7 +514,8 @@
                         <label class="radio-item">
                             <input type="radio" name="condition"
                                    value="<%= condition.name() %>" required
-                                <%= (request.getParameter("condition") != null && request.getParameter("condition").equals(condition.name())) ? "checked" : "" %>>
+                                <%= announcement.getCondition() == condition ? "checked" : "" %>
+                                <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                             <span class="radio-label"><%= condition.getDisplayName() %></span>
                         </label>
                         <% } %>
@@ -425,38 +524,51 @@
             </div>
 
             <!-- Цена -->
-            <div class="form-group">
-                <label>Тип цены *</label>
-                <div>
-                    <input type="radio" name="priceType" value="negotiable" checked onchange="togglePriceInput()">
-                    <label style="display: inline;">Договорная</label>
-                </div>
-                <div>
-                    <input type="radio" name="priceType" value="free" onchange="togglePriceInput()">
-                    <label style="display: inline;">Бесплатно</label>
-                </div>
-                <div>
-                    <input type="radio" name="priceType" value="fixed" onchange="togglePriceInput()">
-                    <label style="display: inline;">Указать цену</label>
-                </div>
-            </div>
-
-            <div id="priceSection" class="form-group price-section">
-                <label for="price">Цена (руб.)</label>
-                <input type="number" id="price" name="price" min="1" max="1000000000">
-            </div>
-
-            <!-- Фотографии -->
             <div class="form-section">
                 <h3 class="section-title">
-                    <span class="icon">📷</span> Фотографии
+                    <span class="icon">💰</span> Цена
                 </h3>
 
                 <div class="form-group">
-                    <label for="photos">Добавить фотографии</label>
-                    <input type="file" id="photos" name="photos" class="form-control"
-                           multiple accept="image/*">
-                    <div class="tags-hint">Можно выбрать несколько файлов (JPEG, PNG, GIF)</div>
+                    <label class="required">Тип цены</label>
+                    <div class="radio-group">
+                        <%
+                            int price = announcement.getPrice();
+                            String priceType = price == -1 ? "negotiable" : price == 0 ? "free" : "fixed";
+                        %>
+                        <label class="radio-item">
+                            <input type="radio" name="priceType" value="negotiable"
+                                <%= "negotiable".equals(priceType) ? "checked" : "" %>
+                                <%= !announcement.canBeEdited() ? "disabled" : "" %>>
+                            <span class="radio-label">Договорная</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="priceType" value="free"
+                                <%= "free".equals(priceType) ? "checked" : "" %>
+                                <%= !announcement.canBeEdited() ? "disabled" : "" %>>
+                            <span class="radio-label">Бесплатно</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="priceType" value="fixed"
+                                <%= "fixed".equals(priceType) ? "checked" : "" %>
+                                <%= !announcement.canBeEdited() ? "disabled" : "" %>>
+                            <span class="radio-label">Указать цену</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Цена (руб.)</label>
+                    <input type="number" id="price" name="price" class="form-control"
+                           min="1" max="1000000000" placeholder="1000"
+                           value="<%= price > 0 ? price : "" %>"
+                        <%= !announcement.canBeEdited() ? "disabled" : "" %>>
+                    <div class="tags-hint">
+                        <strong>Пояснение по ценам:</strong><br>
+                        • -1 = Договорная цена<br>
+                        • 0 = Бесплатно<br>
+                        • > 0 = Указать конкретную цену
+                    </div>
                 </div>
             </div>
 
@@ -470,15 +582,17 @@
                     <label for="tags">Ключевые слова</label>
                     <input type="text" id="tags" name="tags" class="form-control"
                            placeholder="например: электроника, б/у, срочно, apple"
-                           value="<%= request.getParameter("tags") != null ? request.getParameter("tags") : "" %>">
+                           value="<%= announcement.getTags() != null ? String.join(", ", announcement.getTags()) : "" %>"
+                        <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                     <div class="tags-hint">Введите теги через запятую для лучшего поиска</div>
                 </div>
             </div>
 
-            <!-- Действие после создания -->
+            <!-- Действие после сохранения -->
+            <% if (announcement.canBeEdited()) { %>
             <div class="form-section">
                 <h3 class="section-title">
-                    <span class="icon">⚡</span> Действие после создания
+                    <span class="icon">⚡</span> Действие после сохранения
                 </h3>
 
                 <div class="radio-group">
@@ -492,16 +606,28 @@
                     </label>
                 </div>
             </div>
+            <% } %>
 
             <!-- Кнопки действий -->
             <div class="form-actions">
-                <a href="index.jsp" class="btn btn-outline">
-                    <span class="icon">←</span> Отмена
+                <a href="my-ads" class="btn btn-outline">
+                    <span class="icon">←</span> Назад к списку
                 </a>
 
+                <% if (announcement.canBeEdited()) { %>
                 <button type="submit" class="btn btn-primary">
-                    <span class="icon">✓</span> Создать объявление
+                    <span class="icon">💾</span> Сохранить изменения
                 </button>
+                <% } else { %>
+                <a href="edit-ad?action=toDraft&adId=<%= announcement.getId() %>" class="btn btn-warning">
+                    <span class="icon">📝</span> Сделать черновиком
+                </a>
+                <% } %>
+
+                <a href="delete-ad?adId=<%= announcement.getId() %>" class="btn btn-danger"
+                   onclick="return confirm('Вы уверены, что хотите удалить это объявление?')">
+                    <span class="icon">🗑️</span> Удалить
+                </a>
             </div>
         </form>
     </div>
