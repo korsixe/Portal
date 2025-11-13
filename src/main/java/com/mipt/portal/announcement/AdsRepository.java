@@ -20,9 +20,8 @@ public class AdsRepository implements IAdsRepository {
 
   public AdsRepository() throws SQLException {
     this.connection = DatabaseConnection.getConnection();
-    resetSequences();
-    createTables();
-    insertData();
+    //createTables();
+    //insertData();
   }
 
   private void resetSequences() throws SQLException {

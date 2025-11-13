@@ -7,6 +7,7 @@ import com.mipt.portal.users.util.UserValidator;
 import lombok.AllArgsConstructor;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -158,6 +159,36 @@ public class UserService {
             return OperationResult.success("✅ Данные пользователя обновлены успешно!", user);
         } else {
             return OperationResult.error("❌ Не удалось обновить данные пользователя");
+        }
+    }
+
+    public OperationResult<Boolean> addAnnouncementId(Long userId, Long adId) {
+        try {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return OperationResult.error("❌ Пользователь не найден");
+            }
+
+            User user = userOpt.get();
+
+            if (user.getAdList() == null) {
+                user.setAdList(new ArrayList<>());
+            }
+
+            if (!user.getAdList().contains(adId)) {
+                user.getAdList().add(adId);
+
+                boolean updated = userRepository.update(user);
+                if (updated) {
+                    return OperationResult.success("✅ ID объявления добавлен в список пользователя", true);
+                } else {
+                    return OperationResult.error("❌ Не удалось обновить данные пользователя в БД");
+                }
+            } else {
+                return OperationResult.success("✅ ID объявления уже присутствует в списке", true);
+            }
+        } catch (Exception e) {
+            return OperationResult.error("❌ Ошибка при добавлении ID объявления: " + e.getMessage());
         }
     }
 
