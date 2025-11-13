@@ -1,11 +1,13 @@
 package com.mipt.portal.announcement;
 
+import java.io.File;
 import java.sql.SQLException;
+import java.util.List;
 
 public interface IAdsService {
-
   Announcement createAd(long userId, String title, String description, Category category,
-      Condition condition, int price, String location, String action) throws SQLException; //  Создать объявление
+      String subcategory, Condition condition, int price, String location, List<File> photos,
+      List<String> tags, AdvertisementStatus action) throws SQLException;
 
   Long getUserIdByEmail(String email) throws SQLException;
 
