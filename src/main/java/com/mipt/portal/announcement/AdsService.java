@@ -1,5 +1,6 @@
 package com.mipt.portal.announcement;
 
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
@@ -27,19 +28,16 @@ public class AdsService implements IAdsService {
 
   @Override
   public Announcement createAd(long userId, String title, String description, Category category,
-      Condition condition, int price, String location, String action) throws SQLException {
+      String subcategory, Condition condition, int price, String location, List<File> photos,
+      List<String> tags, AdvertisementStatus action) throws SQLException {
 
-    Announcement ad = new Announcement(title, description, category, condition,
-        price, location, userId);
+    Announcement ad = new Announcement(title, description, category, condition, price, location, userId);
+    ad.setSubcategory(subcategory);
+    ad.setPhotos(photos);
+    ad.setTags(tags);
+    ad.setStatus(action);
 
-    if ("publish".equals(action)) {
-      ad.sendToModeration();
-    }
-
-    System.out.println("💾 Сохраняем в БД...");
-    long adId = adsRepository.saveAd(ad);
-    ad.setId(adId);
-
+    ad.setId( adsRepository.saveAd(ad));
     return ad;
   }
 
