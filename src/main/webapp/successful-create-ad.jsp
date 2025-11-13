@@ -377,9 +377,6 @@
             <a href="create-ad" class="btn btn-primary">
                 <span>📝</span> Создать еще одно
             </a>
-            <a href="edit-ad?adId=<%= announcement.getId() %>&action=edit" class="btn">
-                <span>📝</span> Редактировать
-            </a>
             <a href="my-ads" class="btn btn-outline">
                 <span>📋</span> Мои объявления
             </a>
