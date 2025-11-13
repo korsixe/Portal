@@ -10,7 +10,7 @@
 %>
 <html>
 <head>
-    <title>Объявление создано • Marketplace</title>
+    <title>Объявление создано • Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       :root {
@@ -362,6 +362,9 @@
         <div class="action-buttons">
             <a href="create-ad" class="btn btn-primary">
                 <span>📝</span> Создать еще одно
+            </a>
+            <a href="edit-ad.jsp" class="btn btn-success">
+                <span>📝</span> Редактировать
             </a>
             <a href="my-ads" class="btn btn-outline">
                 <span>📋</span> Мои объявления
