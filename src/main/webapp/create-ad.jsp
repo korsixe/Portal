@@ -332,7 +332,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <div class="logo">Market<span>Place</span></div>
+        <div class="logo">Создать объявление</div>
     </div>
 
     <div class="card">
