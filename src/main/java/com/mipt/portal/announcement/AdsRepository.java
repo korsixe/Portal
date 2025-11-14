@@ -246,7 +246,7 @@ public class AdsRepository implements IAdsRepository {
 
   @Override
   public boolean hardDeleteAd(long adId) throws SQLException {
-    String sql = "DELETE FROM ads WHERE id = ? AND status = 'DELETED'";
+    String sql = "DELETE FROM ads WHERE id = ?";
     try (PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, adId);
       int affectedRows = statement.executeUpdate();

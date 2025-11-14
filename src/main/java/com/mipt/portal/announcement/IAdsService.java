@@ -15,6 +15,8 @@ public interface IAdsService {
 
   Announcement deleteAd(long adId); // Удалить объявление
 
+  Announcement hardDeleteAd(long adId);
+
   Announcement getAd(long adId); // Получить объявление
 
   void sendToModeration(Announcement ad) throws SQLException;
