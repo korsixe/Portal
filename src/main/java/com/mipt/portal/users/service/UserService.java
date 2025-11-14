@@ -139,7 +139,9 @@ public class UserService {
         if (existingUser.isEmpty()) {
             return OperationResult.error("❌ Пользователь не найден");
         }
-
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            user.setPassword(existingUser.get().getPassword());
+        }
         try {
             UserValidator.validateEmail(user.getEmail());
             UserValidator.validateName(user.getName());
@@ -189,6 +191,36 @@ public class UserService {
             }
         } catch (Exception e) {
             return OperationResult.error("❌ Ошибка при добавлении ID объявления: " + e.getMessage());
+        }
+    }
+
+    public OperationResult<Boolean> deleteAnnouncementId(Long userId, Long adId) {
+        try {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return OperationResult.error("Пользователь не найден");
+            }
+
+            User user = userOpt.get();
+
+            if (user.getAdList() == null || user.getAdList().isEmpty()) {
+                return OperationResult.error("У пользователя нет объявлений");
+            }
+
+            if (user.getAdList().contains(adId)) {
+                user.getAdList().remove(adId);
+                boolean updated = userRepository.update(user);
+
+                if (updated) {
+                    return OperationResult.success("ID объявления удалено");
+                } else {
+                    return OperationResult.success("Не удалось удалить ID объявления");
+                }
+            } else {
+                return OperationResult.error("Данное объявление не найдено у пользователя");
+            }
+        } catch (Exception e) {
+            return OperationResult.error("Ошибка при удалении объявления: " + e);
         }
     }
 

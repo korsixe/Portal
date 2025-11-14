@@ -192,6 +192,7 @@
     <div class="button-group">
         <a href="register.jsp" class="btn btn-primary">Зарегистрироваться</a>
         <a href="login.jsp" class="btn btn-secondary">Войти</a>
+        <a href="home.jsp" class="btn btn-secondary">На главную</a>
     </div>
 </div>
 
