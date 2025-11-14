@@ -4,6 +4,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 public interface IAdsRepository {
+
+  void deleteData();
+
   void createTables();
   void insertData();
   Long getUserIdByEmail(String email) throws SQLException;
