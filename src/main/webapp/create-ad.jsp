@@ -332,7 +332,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <div class="logo">Создать объявление</div>
+        <div class="logo">Portal</div>
     </div>
 
     <div class="card">
