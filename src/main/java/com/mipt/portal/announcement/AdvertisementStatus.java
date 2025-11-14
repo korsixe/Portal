@@ -69,10 +69,6 @@ public enum AdvertisementStatus {
     return this == ARCHIVED;
   }
 
-  public boolean canBeSentToModeration() {
-    return this == DRAFT;
-  }
-
   public boolean isModerationRequired() {
     return this == UNDER_MODERATION;
   }

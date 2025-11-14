@@ -75,13 +75,8 @@ public class Announcement {
   // Бизнес-методы для работы со статусами
 
   public void sendToModeration() {
-    if (status.canBeSentToModeration()) {
-      status = AdvertisementStatus.UNDER_MODERATION;
-      updatedAt = Instant.now();
-    } else {
-      throw new IllegalStateException(
-          "Невозможно отправить на модерацию из статуса: " + status.getDisplayName());
-    }
+    status = AdvertisementStatus.UNDER_MODERATION;
+    updatedAt = Instant.now();
   }
 
   public void activate() {
