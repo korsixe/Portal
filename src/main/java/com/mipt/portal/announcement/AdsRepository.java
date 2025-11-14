@@ -1,6 +1,7 @@
 package com.mipt.portal.announcement;
 
 import com.mipt.portal.database.DatabaseConnection;
+import com.mipt.portal.database.TestData;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,6 +23,17 @@ public class AdsRepository implements IAdsRepository {
     this.connection = DatabaseConnection.getConnection();
   }
 
+  @Override
+  public void deleteData() {
+    try {
+      String sql = readSqlFile("sql/delete_data.sql");
+      executeSql(sql);
+      resetSequences();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private void resetSequences() throws SQLException {
     String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq"};
 
@@ -29,16 +41,6 @@ public class AdsRepository implements IAdsRepository {
       try (Statement stmt = connection.createStatement()) {
         stmt.execute("ALTER SEQUENCE IF EXISTS " + seq + " RESTART WITH 1;");
       }
-    }
-  }
-
-  @Override
-  public void deleteData() {
-    try {
-      String sql = readSqlFile("sql/delete_data.sql");
-      executeSql(sql);
-    } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
@@ -60,7 +62,6 @@ public class AdsRepository implements IAdsRepository {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    generateTestAds();
   }
 
   @Override
@@ -74,7 +75,7 @@ public class AdsRepository implements IAdsRepository {
       if (resultSet.next()) {
         return resultSet.getLong("id");
       }
-      return null; // пользователь не найден
+      return null;
     }
   }
 
@@ -316,72 +317,5 @@ public class AdsRepository implements IAdsRepository {
         }
       }
     }
-  }
-
-
-  private void generateTestAds() {
-    try {
-      // Анастасия Шабунина
-      Long userId1 = getUserIdByEmail("shabunina.ao@phystech.edu");
-      if (userId1 != null) {
-        createAd(userId1, "MacBook Pro 13\" 2020", "Отличный MacBook в идеальном состоянии",
-            Category.ELECTRONICS, Condition.NEW, 75000, AdvertisementStatus.ACTIVE);
-        createAd(userId1, "Учебник по матану", "Сборник задач за 1 курс", Category.BOOKS,
-            Condition.NEW, 500, AdvertisementStatus.ACTIVE);
-        createAd(userId1, "Настольная лампа", "Светодиодная лампа с регулировкой",
-            Category.ELECTRONICS, Condition.USED, 1200, AdvertisementStatus.DRAFT);
-        createAd(userId1, "Калькулятор Casio", "Инженерный калькулятор", Category.ELECTRONICS,
-            Condition.BROKEN, 800, AdvertisementStatus.UNDER_MODERATION);
-      }
-
-      // Мария Соколова
-      Long userId2 = getUserIdByEmail("ivanov.ii@phystech.edu");
-      if (userId2 != null) {
-        createAd(userId2, "Учебник по физике", "Курс общей физики Ландсберга", Category.BOOKS,
-            Condition.USED, 1500, AdvertisementStatus.ACTIVE);
-        createAd(userId2, "Микроскоп школьный", "Детский микроскоп для начинающих", Category.TOYS,
-            Condition.USED, 2000, AdvertisementStatus.ACTIVE);
-        createAd(userId2, "Рюкзак студенческий", "Вместительный рюкзак для ноутбука",
-            Category.OTHER, Condition.USED, 800, AdvertisementStatus.DRAFT);
-      }
-
-      // Дмитрий Орлов
-      Long userId3 = getUserIdByEmail("orlov.ka@phystech.edu");
-      if (userId3 != null) {
-        createAd(userId3, "Игровой компьютер", "Gaming PC для учебы и игр", Category.ELECTRONICS,
-            Condition.USED, 45000, AdvertisementStatus.ACTIVE);
-        createAd(userId3, "Клавиатура механическая", "Mechanical keyboard с RGB",
-            Category.ELECTRONICS, Condition.NEW, 3500, AdvertisementStatus.ACTIVE);
-        createAd(userId3, "Стул офисный", "Офисный стул с регулировкой", Category.FURNITURE,
-            Condition.NEW, 2500, AdvertisementStatus.UNDER_MODERATION);
-        createAd(userId3, "Книги по программированию", "Java, Python, Algorithms", Category.BOOKS,
-            Condition.USED, 1200, AdvertisementStatus.DRAFT);
-      }
-
-      // Валерия Новикова
-      Long userId4 = getUserIdByEmail("novikova.vv@phystech.edu");
-      if (userId4 != null) {
-        createAd(userId4, "Микроскоп лабораторный", "Профессиональный для исследований",
-            Category.OTHER, Condition.NEW, 15000, AdvertisementStatus.ACTIVE);
-        createAd(userId4, "Набор реактивов", "Для студенческих опытов", Category.OTHER,
-            Condition.BROKEN, 3000, AdvertisementStatus.ACTIVE);
-        createAd(userId4, "Лабораторный халат", "Белый халат размер M", Category.CLOTHING,
-            Condition.USED, 500, AdvertisementStatus.UNDER_MODERATION);
-      }
-
-      System.out.println("✅ Тестовые объявления созданы!");
-
-    } catch (Exception e) {
-      System.err.println("❌ Ошибка: " + e.getMessage());
-      e.printStackTrace();
-    }
-  }
-
-  private void createAd(Long userId, String title, String description, Category category,
-      Condition condition, int price, AdvertisementStatus status) throws SQLException {
-    Announcement ad = new Announcement(title, description, category, condition, price,
-        "МФТИ, Долгопрудный", userId);
-    ad.setStatus(status);
-    saveAd(ad);
   }
 }

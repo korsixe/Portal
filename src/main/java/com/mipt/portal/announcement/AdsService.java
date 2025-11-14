@@ -2,8 +2,6 @@ package com.mipt.portal.announcement;
 
 import com.mipt.portal.users.service.UserService;
 import java.io.File;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
@@ -34,7 +32,8 @@ public class AdsService implements IAdsService {
       String subcategory, Condition condition, int price, String location, List<File> photos,
       List<String> tags, AdvertisementStatus action) throws SQLException {
 
-    Announcement ad = new Announcement(title, description, category, condition, price, location, userId);
+    Announcement ad = new Announcement(title, description, category, condition, price, location,
+        userId);
     ad.setSubcategory(subcategory);
     ad.setPhotos(photos);
     ad.setTags(tags);
