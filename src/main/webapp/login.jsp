@@ -212,7 +212,7 @@
 <body>
 <div class="portal-container">
     <div class="portal-logo">PORTAL</div>
-    <div class="portal-subtitle">Войдите в аккаунт</div>
+    <div class="portal-subtitle">Вход</div>
 
     <%
         String message = "";
