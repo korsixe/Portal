@@ -10,7 +10,7 @@
 %>
 <html>
 <head>
-    <title>Объявление создано • Marketplace</title>
+    <title>Объявление создано • Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       :root {
@@ -57,7 +57,7 @@
         font-weight: 700;
         color: white;
         margin-bottom: 10px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       .logo span {
@@ -69,7 +69,7 @@
         border-radius: 20px;
         padding: 40px;
         box-shadow: var(--shadow-lg);
-        border: 1px solid rgba(255,255,255,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         text-align: center;
       }
 
@@ -231,8 +231,14 @@
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       .fade-in {
@@ -240,9 +246,15 @@
       }
 
       @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-        40% {transform: translateY(-10px);}
-        60% {transform: translateY(-5px);}
+        0%, 20%, 50%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(-5px);
+        }
       }
 
       .bounce {
@@ -345,11 +357,13 @@
         <div class="next-steps">
             <h4>Что дальше?</h4>
             <ul>
-                <% if (announcement != null && announcement.getStatus() == AdvertisementStatus.UNDER_MODERATION) { %>
+                <% if (announcement != null
+                        && announcement.getStatus() == AdvertisementStatus.UNDER_MODERATION) { %>
                 <li>Ваше объявление отправлено на модерацию</li>
                 <li>Обычно модерация занимает до 24 часов</li>
                 <li>После одобрения объявление станет активным</li>
-                <% } else if (announcement != null && announcement.getStatus() == AdvertisementStatus.DRAFT) { %>
+                <% } else if (announcement != null
+                        && announcement.getStatus() == AdvertisementStatus.DRAFT) { %>
                 <li>Объявление сохранено как черновик</li>
                 <li>Вы можете отредактировать его в любое время</li>
                 <li>Чтобы опубликовать, измените статус на "На модерации"</li>
@@ -375,7 +389,7 @@
 
 <script>
   // Автоматический редирект на главную через 30 секунд
-  setTimeout(function() {
+  setTimeout(function () {
     window.location.href = 'index.jsp';
   }, 30000);
 </script>
