@@ -672,8 +672,7 @@
 
                 <div class="ad-actions">
                     <a href="edit-ad?adId=<%= ad.getId() %>" class="btn btn-edit">Редактировать</a>
-                    <a href="delete-ad.jsp?id=<%= ad.getId() %>" class="btn btn-danger"
-                       onclick="return confirm('Вы уверены, что хотите удалить это объявление?')">Удалить</a>
+                    <a href="confirm-delete?adId=<%= ad.getId() %>" class="btn btn-danger">Удалить</a>
                 </div>
             </div>
             <% } %>
