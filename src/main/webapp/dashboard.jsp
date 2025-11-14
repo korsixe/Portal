@@ -15,11 +15,9 @@
         return;
     }
 
-    // Получаем объявления пользователя через AdsService
     AdsService adsService = new AdsService();
     List<Announcement> userAnnouncements = new ArrayList<>();
 
-    // Если у пользователя есть список ID объявлений, получаем их
     if (user.getAdList() != null && !user.getAdList().isEmpty()) {
         for (Long adId : user.getAdList()) {
             try {
@@ -32,6 +30,33 @@
                 System.err.println("Ошибка при загрузке объявления ID " + adId + ": " + e.getMessage());
             }
         }
+    }
+%>
+<%
+    // Проверяем сообщения от обработчиков
+    String passwordMessage = (String) session.getAttribute("passwordMessage");
+    String passwordMessageType = (String) session.getAttribute("passwordMessageType");
+    String deleteMessage = (String) session.getAttribute("deleteMessage");
+    String deleteMessageType = (String) session.getAttribute("deleteMessageType");
+
+    if (passwordMessage != null) {
+%>
+<script>
+    alert("<%= passwordMessage %>");
+</script>
+<%
+        session.removeAttribute("passwordMessage");
+        session.removeAttribute("passwordMessageType");
+    }
+
+    if (deleteMessage != null) {
+%>
+<script>
+    alert("<%= deleteMessage %>");
+</script>
+<%
+        session.removeAttribute("deleteMessage");
+        session.removeAttribute("deleteMessageType");
     }
 %>
 <!DOCTYPE html>
@@ -120,6 +145,14 @@
 
         .info-value {
             color: #333;
+        }
+
+        .profile-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
         }
 
         .ads-section {
@@ -376,6 +409,101 @@
             margin-bottom: 10px;
         }
 
+        /* Стили для модальных окон */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .modal h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 768px) {
             .user-info {
                 grid-template-columns: 1fr;
@@ -402,6 +530,15 @@
                 gap: 10px;
                 text-align: center;
             }
+
+            .profile-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .profile-actions .btn {
+                width: 200px;
+            }
         }
     </style>
 </head>
@@ -409,7 +546,6 @@
 <div class="dashboard-container">
     <div class="header">
         <div class="portal-logo">PORTAL</div>
-        <div class="welcome-message">Добро пожаловать, <%= user.getName() %>!</div>
     </div>
 
     <!-- Статистика -->
@@ -466,19 +602,25 @@
             <div class="info-item">
                 <span class="info-label">Рейтинг:</span>
                 <span class="info-value">
-                        <span class="rating-stars">
-                            <% for (int i = 0; i < 5; i++) { %>
-                                <%= i < Math.round(user.getRating()) ? "★" : "☆" %>
-                            <% } %>
-                        </span>
-                        (<%= String.format("%.1f", user.getRating()) %>)
+                    <span class="rating-stars">
+                        <% for (int i = 0; i < 5; i++) { %>
+                            <%= i < Math.round(user.getRating()) ? "★" : "☆" %>
+                        <% } %>
                     </span>
+                    (<%= String.format("%.1f", user.getRating()) %>)
+                </span>
             </div>
             <div class="info-item">
                 <span class="info-label">Коины:</span>
                 <span class="info-value coins"><%= user.getCoins() %> 🪙</span>
             </div>
         </div>
+    </div>
+
+    <!-- Кнопки управления профилем -->
+    <div class="profile-actions">
+        <a href="edit-profile.jsp" class="btn btn-primary">Редактировать профиль</a>
+        <button onclick="openAccountManagement()" class="btn btn-secondary">Управление аккаунтом</button>
     </div>
 
     <div class="ads-section">
@@ -502,8 +644,8 @@
                     <span class="ad-category"><%= ad.getCategory().getDisplayName() %></span>
                     <span class="ad-condition"><%= ad.getCondition().getDisplayName() %></span>
                     <span class="ad-status <%= getStatusClass(ad.getStatus()) %>">
-                                    <%= ad.getStatus().getDisplayName() %>
-                                </span>
+                        <%= ad.getStatus().getDisplayName() %>
+                    </span>
                 </div>
 
                 <div class="ad-price">
@@ -529,13 +671,149 @@
     </div>
 
     <div class="action-buttons">
-        <a href="edit-profile.jsp" class="btn btn-primary">Редактировать профиль</a>
-        <a href="index.jsp" class="btn btn-secondary">На главную</a>
-        <a href="logout.jsp" class="btn btn-secondary">Выйти</a>
+        <a href="home.jsp" class="btn btn-primary">На главную</a>
+        <a href="index.jsp" class="btn btn-secondary">Выйти</a>
+    </div>
+</div>
+
+<!-- Модальное окно управления аккаунтом -->
+<div id="accountManagementModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAccountManagement()">&times;</span>
+        <h3>🔧 Управление аккаунтом</h3>
+
+        <div class="button-group" style="display: flex; flex-direction: column; gap: 15px;">
+            <button onclick="openChangePassword()" class="btn btn-primary">Изменить пароль</button>
+            <button onclick="openDeleteAccount()" class="btn btn-danger">Удалить аккаунт</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно изменения пароля -->
+<div id="changePasswordModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeChangePassword()">&times;</span>
+        <h3>🔐 Изменение пароля</h3>
+
+        <form id="changePasswordForm" method="POST" action="change-password-handler.jsp">
+            <input type="hidden" name="action" value="changePassword">
+
+            <div class="form-group">
+                <label for="currentPassword">Текущий пароль</label>
+                <input type="password" id="currentPassword" name="currentPassword" required>
+            </div>
+
+            <div class="form-group">
+                <label for="newPassword">Новый пароль</label>
+                <input type="password" id="newPassword" name="newPassword" required>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Подтверждение нового пароля</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+
+            <div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">Сохранить пароль</button>
+                <button type="button" onclick="closeChangePassword()" class="btn btn-secondary">Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно удаления аккаунта -->
+<div id="deleteAccountModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeDeleteAccount()">&times;</span>
+        <h3>🗑️ Удаление аккаунта</h3>
+
+        <div class="warning-box">
+            <h4>⚠️ Внимание!</h4>
+            <p>Это действие необратимо. Все ваши данные, включая объявления, будут удалены без возможности восстановления.</p>
+        </div>
+
+        <p>Для подтверждения введите ваш пароль:</p>
+
+        <form id="deleteAccountForm" method="POST" action="delete-account-handler.jsp">
+            <input type="hidden" name="action" value="deleteAccount">
+
+            <div class="form-group">
+                <label for="confirmPasswordDelete">Текущий пароль</label>
+                <input type="password" id="confirmPasswordDelete" name="confirmPassword" required>
+            </div>
+
+            <div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-danger">Удалить аккаунт</button>
+                <button type="button" onclick="closeDeleteAccount()" class="btn btn-secondary">Отмена</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
+    // Функции для управления модальными окнами
+    function openAccountManagement() {
+        document.getElementById('accountManagementModal').style.display = 'block';
+    }
+
+    function closeAccountManagement() {
+        document.getElementById('accountManagementModal').style.display = 'none';
+    }
+
+    function openChangePassword() {
+        closeAccountManagement();
+        document.getElementById('changePasswordModal').style.display = 'block';
+    }
+
+    function closeChangePassword() {
+        document.getElementById('changePasswordModal').style.display = 'none';
+    }
+
+    function openDeleteAccount() {
+        closeAccountManagement();
+        document.getElementById('deleteAccountModal').style.display = 'block';
+    }
+
+    function closeDeleteAccount() {
+        document.getElementById('deleteAccountModal').style.display = 'none';
+    }
+
+    // Закрытие модальных окон при клике вне их
+    window.onclick = function(event) {
+        const modals = document.getElementsByClassName('modal');
+        for (let modal of modals) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    }
+
+    // Валидация формы изменения пароля
+    document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            e.preventDefault();
+            alert('❌ Пароли не совпадают!');
+            return false;
+        }
+
+        if (newPassword.length < 8) {
+            e.preventDefault();
+            alert('❌ Пароль должен содержать минимум 8 символов!');
+            return false;
+        }
+    });
+
+    // Валидация формы удаления аккаунта
+    document.getElementById('deleteAccountForm').addEventListener('submit', function(e) {
+        if (!confirm('❗ Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить!')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
     // Добавляем анимации при загрузке
     document.addEventListener('DOMContentLoaded', function() {
         const cards = document.querySelectorAll('.info-card, .ad-item, .stat-card');
@@ -548,17 +826,17 @@
     // Стили для анимации
     const style = document.createElement('style');
     style.textContent = `
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
             }
-        `;
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    `;
     document.head.appendChild(style);
 </script>
 </body>
