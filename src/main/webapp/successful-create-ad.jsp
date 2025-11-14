@@ -377,7 +377,7 @@
             <a href="create-ad" class="btn btn-primary">
                 <span>📝</span> Создать еще одно
             </a>
-            <a href="my-ads" class="btn btn-outline">
+            <a href="dashboard.jsp" class="btn btn-outline">
                 <span>📋</span> Мои объявления
             </a>
             <a href="home.jsp" class="btn btn-success">
