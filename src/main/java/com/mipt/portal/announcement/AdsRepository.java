@@ -1,7 +1,6 @@
 package com.mipt.portal.announcement;
 
 import com.mipt.portal.database.DatabaseConnection;
-import com.mipt.portal.database.TestData;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -158,6 +157,23 @@ public class AdsRepository implements IAdsRepository {
   @Override
   public List<Long> getModerAdIds() throws SQLException {
     String sql = "SELECT id FROM ads WHERE status = 'UNDER_MODERATION' ORDER BY id";
+
+    List<Long> ids = new ArrayList<>();
+
+    try (PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+
+      while (resultSet.next()) {
+        ids.add(resultSet.getLong("id"));
+      }
+    }
+
+    return ids;
+  }
+
+  @Override
+  public List<Long> getActiveAdIds() throws SQLException {
+    String sql = "SELECT id FROM ads WHERE status = 'ACTIVE' ORDER BY id";
 
     List<Long> ids = new ArrayList<>();
 

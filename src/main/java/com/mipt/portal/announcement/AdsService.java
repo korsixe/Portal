@@ -99,7 +99,6 @@ public class AdsService implements IAdsService {
       if (ad != null) {
         System.out.println("✅ Объявление найдено:");
         System.out.println(ad.toString());
-        ad.incrementViewCount(); // увеличиваем просмотры
       } else {
         System.out.println("❌ Объявление с ID " + adId + " не найдено");
       }
@@ -149,4 +148,9 @@ public class AdsService implements IAdsService {
   public List<Long> getModerAdIds() throws SQLException {
     return adsRepository.getModerAdIds();
   }
+
+  public List<Long> getActiveAdIds() throws SQLException {
+    return adsRepository.getActiveAdIds();
+  }
+
 }

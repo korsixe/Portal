@@ -8,9 +8,13 @@
     // Проверяем авторизацию пользователя
     User user = (User) session.getAttribute("user");
 
-    // Получаем последние объявления (пока заглушка)
+    // Получаем все активные объявления
     AdsService adsService = new AdsService();
-    List<Announcement> recentAds = new ArrayList<>(); // Заглушка - пустой список
+    List<Long> recentAdsIds = adsService.getActiveAdIds();
+    List<Announcement> recentAds = new ArrayList<>();
+    for(long idAd: recentAdsIds){
+      recentAds.add(adsService.getAd(idAd));
+    }
 %>
 <!DOCTYPE html>
 <html lang="ru">
@@ -436,7 +440,6 @@
     // Функция для загрузки дополнительных объявлений
     function loadMoreAds() {
         alert('Функция "Показать еще" будет реализована позже');
-        // Здесь будет AJAX-запрос для подгрузки объявлений
     }
 
     // Обработка формы поиска
