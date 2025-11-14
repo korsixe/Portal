@@ -358,7 +358,7 @@
         <div class="auth-buttons">
             <% if (user != null) { %>
             <a href="dashboard.jsp" class="btn btn-primary">Личный кабинет</a>
-            <a href="index.jsp" class="btn btn-secondary">Выйти</a>
+            <a href="logout.jsp" class="btn btn-secondary">Выйти</a>
             <% } else { %>
             <a href="login.jsp" class="btn btn-secondary">Войти</a>
             <a href="register.jsp" class="btn btn-primary">Регистрация</a>
