@@ -196,7 +196,7 @@
 <body>
 <div class="portal-container">
     <div class="portal-logo">PORTAL</div>
-    <div class="portal-subtitle">Создайте аккаунт</div>
+    <div class="portal-subtitle">Регистрация</div>
 
     <%
         String message = "";

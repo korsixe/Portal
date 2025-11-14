@@ -2,7 +2,7 @@ DELETE FROM ads;
 DELETE FROM users;
 DELETE FROM moderators;
 
-
+-- Вставляем пользователей (id будет автоматически сгенерирован)
 INSERT INTO users (email, name, password, address, study_program, course, rating, coins)
 VALUES ('shabunina.ao@phystech.edu', 'Анастасия', 'pass_strong123', 'Долгопрудный', 'ВШПИ', 1, 4.95, 100),
        ('ivanov.ii@phystech.edu', 'Мария Соколова', 'physics2024', 'Москва, Ленинский проспект', 'Общая физика', 3,
