@@ -33,6 +33,17 @@
     }
 %>
 <%
+    // В начале home.jsp, после проверки авторизации
+    String message = request.getParameter("message");
+    if (message != null) {
+%>
+<script>
+    alert('<%= message %>');
+</script>
+<%
+    }
+%>
+<%
     // Проверяем сообщения от обработчиков
     String passwordMessage = (String) session.getAttribute("passwordMessage");
     String passwordMessageType = (String) session.getAttribute("passwordMessageType");
@@ -672,7 +683,7 @@
 
     <div class="action-buttons">
         <a href="home.jsp" class="btn btn-primary">На главную</a>
-        <a href="index.jsp" class="btn btn-secondary">Выйти</a>
+        <a href="logout.jsp" class="btn btn-secondary">Выйти</a>
     </div>
 </div>
 
