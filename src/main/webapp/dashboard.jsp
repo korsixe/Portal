@@ -7,6 +7,7 @@
 <%@ page import="com.mipt.portal.announcement.AdvertisementStatus" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="com.mipt.portal.users.service.UserService" %>
 <%
     // Проверяем авторизацию
     User user = (User) session.getAttribute("user");
@@ -15,8 +16,14 @@
         return;
     }
 
+    UserService userService = new UserService();
+    User freshUser = userService.findUserById(user.getId()).getData();
+    session.setAttribute("user", freshUser);
+    user = freshUser; // Обновляем локальную переменную
+
     AdsService adsService = new AdsService();
     List<Announcement> userAnnouncements = new ArrayList<>();
+
 
     if (user.getAdList() != null && !user.getAdList().isEmpty()) {
         for (Long adId : user.getAdList()) {
