@@ -1,13 +1,59 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.mipt.portal.users.User" %>
 <%@ page import="com.mipt.portal.users.service.UserService" %>
 <%@ page import="com.mipt.portal.users.service.OperationResult" %>
-<%@ page import="com.mipt.portal.users.User" %>
+<%
+    // Проверяем авторизацию
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    String message = "";
+    String messageType = "";
+
+    // Проверяем сообщения от обработчика обновления
+    String updateMessage = (String) session.getAttribute("updateMessage");
+    String updateMessageType = (String) session.getAttribute("updateMessageType");
+    if (updateMessage != null) {
+        message = updateMessage;
+        messageType = updateMessageType;
+        session.removeAttribute("updateMessage");
+        session.removeAttribute("updateMessageType");
+    }
+
+    // Если форма отправлена для проверки пароля
+    if ("POST".equalsIgnoreCase(request.getMethod()) && "verify".equals(request.getParameter("action"))) {
+        String currentPassword = request.getParameter("currentPassword");
+
+        UserService userService = new UserService();
+        OperationResult<User> loginResult = userService.loginUser(user.getEmail(), currentPassword);
+
+        if (loginResult.isSuccess()) {
+            // Пароль верный, устанавливаем флаг в сессии
+            session.setAttribute("canEditProfile", true);
+            message = "✅ Пароль подтвержден. Теперь вы можете изменить данные.";
+            messageType = "success";
+        } else {
+            message = "❌ Неверный пароль. Попробуйте снова.";
+            messageType = "error";
+        }
+    }
+
+    // Проверяем, подтвержден ли пароль
+    Boolean canEdit = (Boolean) session.getAttribute("canEditProfile");
+    if (canEdit == null) {
+        canEdit = false;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal - Регистрация</title>
+    <title>Portal - Редактирование профиля</title>
     <style>
         * {
             margin: 0;
@@ -19,18 +65,17 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
         }
 
-        .portal-container {
+        .edit-container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 60px 40px;
-            text-align: center;
+            padding: 40px;
             max-width: 500px;
             width: 100%;
             animation: fadeInUp 0.8s ease-out;
@@ -48,26 +93,26 @@
         }
 
         .portal-logo {
-            font-size: 3.5rem;
+            font-size: 2.5rem;
             font-weight: 800;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            text-align: center;
             margin-bottom: 10px;
-            letter-spacing: 2px;
         }
 
-        .portal-subtitle {
+        .page-title {
             color: #666;
-            font-size: 1.2rem;
-            margin-bottom: 40px;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 30px;
             font-weight: 300;
         }
 
         .form-group {
             margin-bottom: 20px;
-            text-align: left;
         }
 
         label {
@@ -90,6 +135,12 @@
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .readonly-field {
+            background-color: #f8f9fa;
+            color: #666;
+            cursor: not-allowed;
         }
 
         .button-group {
@@ -135,6 +186,16 @@
             transform: translateY(-2px);
         }
 
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
         .message {
             padding: 15px;
             border-radius: 10px;
@@ -155,35 +216,55 @@
             border: 1px solid #f5c6cb;
         }
 
-        .login-link {
+        .message.info {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+
+        .password-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .password-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .verification-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
             text-align: center;
-            margin-top: 20px;
-            color: #666;
         }
 
-        .login-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
+        .current-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
         }
 
-        .login-link a:hover {
-            text-decoration: underline;
+        .current-info strong {
+            color: #333;
         }
 
-        /* Адаптивность */
         @media (max-width: 480px) {
-            .portal-container {
-                padding: 40px 20px;
+            .edit-container {
+                padding: 30px 20px;
                 margin: 20px;
             }
 
             .portal-logo {
-                font-size: 2.8rem;
-            }
-
-            .button-group {
-                gap: 15px;
+                font-size: 2.2rem;
             }
 
             .btn {
@@ -194,78 +275,64 @@
     </style>
 </head>
 <body>
-<div class="portal-container">
+<div class="edit-container">
     <div class="portal-logo">PORTAL</div>
-    <div class="portal-subtitle">Создайте аккаунт</div>
-
-    <%
-        String message = "";
-        String messageType = "";
-        boolean registrationSuccess = false;
-
-        if ("POST".equalsIgnoreCase(request.getMethod())) {
-            String email = request.getParameter("email");
-            String name = request.getParameter("name");
-            String password = request.getParameter("password");
-            String passwordAgain = request.getParameter("passwordAgain");
-            String address = request.getParameter("address");
-            String studyProgram = request.getParameter("studyProgram");
-            String courseStr = request.getParameter("course");
-            int course = courseStr != null ? Integer.parseInt(courseStr) : 1;
-
-            UserService userService = new UserService();
-            OperationResult<User> result = userService.registerUser(
-                    email, name, password, passwordAgain, address, studyProgram, course
-            );
-
-            if (result.isSuccess()) {
-                message = result.getMessage();
-                messageType = "success";
-                registrationSuccess = true;
-            } else {
-                message = result.getMessage();
-                messageType = "error";
-            }
-        }
-    %>
+    <div class="page-title">Редактирование профиля</div>
 
     <% if (!message.isEmpty()) { %>
     <div class="message <%= messageType %>">
-        <%= message.replace("\n", "<br>") %>
+        <%= message %>
     </div>
     <% } %>
 
-    <% if (!registrationSuccess) { %>
-    <form method="POST" action="register.jsp">
-        <div class="form-group">
-            <label for="email">Email *</label>
-            <input type="email" id="email" name="email"
-                   value="<%= request.getParameter("email") != null ? request.getParameter("email") : "" %>"
-                   placeholder="ivanov.ii@phystech.edu" required>
-        </div>
+    <% if (!canEdit) { %>
+    <!-- Секция подтверждения пароля -->
+    <div class="verification-section">
+        <h3>🔒 Подтверждение личности</h3>
+        <p>Для изменения данных профиля необходимо подтвердить ваш пароль</p>
+
+        <form method="POST" action="edit-profile.jsp">
+            <input type="hidden" name="action" value="verify">
+
+            <div class="form-group">
+                <label for="currentPassword">Текущий пароль</label>
+                <input type="password" id="currentPassword" name="currentPassword"
+                       placeholder="Введите ваш текущий пароль" required>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Подтвердить пароль</button>
+                <a href="dashboard.jsp" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+    <% } else { %>
+    <div class="current-info">
+        <strong>Текущий email:</strong> <%= user.getEmail() %><br>
+        <strong>Количество объявлений:</strong> <%= user.getAdList() != null ? user.getAdList().size() : 0 %>
+    </div>
+
+    <form method="POST" action="update-profile-handler.jsp">
+        <input type="hidden" name="action" value="update">
 
         <div class="form-group">
-            <label for="name">Имя пользователя *</label>
+            <label for="name">Имя пользователя</label>
             <input type="text" id="name" name="name"
-                   value="<%= request.getParameter("name") != null ? request.getParameter("name") : "" %>"
-                   placeholder="ivanov" required>
+                   value="<%= user.getName() %>"
+                   placeholder="Введите ваше имя" required>
         </div>
 
         <div class="form-group">
-            <label for="password">Пароль *</label>
-            <input type="password" id="password" name="password"
-                   placeholder="Минимум 8 символов" required>
+            <label for="address">Адрес</label>
+            <input type="text" id="address" name="address"
+                   value="<%= user.getAddress() != null ? user.getAddress() : "" %>"
+                   placeholder="Введите ваш адрес">
         </div>
 
         <div class="form-group">
-            <label for="passwordAgain">Подтверждение пароля *</label>
-            <input type="password" id="passwordAgain" name="passwordAgain"
-                   placeholder="Повторите пароль" required>
-        </div>
-
-        <div class="form-group">
-            <label for="studyProgram">Учебная программа *</label>
+            <label for="studyProgram">Учебная программа</label>
             <select id="studyProgram" name="studyProgram" required>
+                <option value="">Выберите программу</option>
                 <option value="Прикладная математика и информатика">Прикладная математика и информатика</option>
                 <option value="Прикладная математика и физика">Прикладная математика и физика</option>
                 <option value="Информатика и вычислительная техника">Информатика и вычислительная техника</option>
@@ -329,75 +396,49 @@
         </div>
 
         <div class="form-group">
-            <label for="course">Курс *</label>
+            <label for="course">Курс</label>
             <select id="course" name="course" required>
                 <option value="">Выберите курс</option>
                 <% for (int i = 1; i <= 6; i++) { %>
-                <option value="<%= i %>" <%= String.valueOf(i).equals(request.getParameter("course")) ? "selected" : "" %>><%= i %> курс</option>
+                <option value="<%= i %>" <%= i == user.getCourse() ? "selected" : "" %>><%= i %> курс</option>
                 <% } %>
             </select>
         </div>
-
-        <div class="form-group">
-            <label for="address">Адрес (необязательно)</label>
-            <input type="text" id="address" name="address"
-                   value="<%= request.getParameter("address") != null ? request.getParameter("address") : "" %>"
-                   placeholder="Общежитие, комната">
-        </div>
-
         <div class="button-group">
-            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-            <a href="login.jsp" class="btn btn-secondary">Войти в аккаунт</a>
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            <a href="dashboard.jsp" class="btn btn-secondary">Отмена</a>
         </div>
     </form>
-    <% } else { %>
-    <div class="button-group">
-        <a href="login.jsp" class="btn btn-primary">Войти в аккаунт</a>
-        <a href="home.jsp" class="btn btn-secondary">На главную</a>
-    </div>
     <% } %>
-
-    <div class="login-link">
-        Уже есть аккаунт? <a href="login.jsp">Войдите здесь</a>
-    </div>
 </div>
 
 <script>
-    // Добавляем небольшую анимацию при загрузке
+    // Добавляем проверку паролей в реальном времени
     document.addEventListener('DOMContentLoaded', function() {
-        const inputs = document.querySelectorAll('input, select');
-        inputs.forEach((input, index) => {
-            input.style.animationDelay = (index * 0.1) + 's';
-        });
-    });
+        const newPassword = document.getElementById('newPassword');
+        const confirmPassword = document.getElementById('confirmPassword');
 
-    // Показываем подсказку о пароле при фокусе
-    const passwordInput = document.getElementById('password');
-    if (passwordInput) {
-        passwordInput.addEventListener('focus', function() {
-            if (!this.getAttribute('data-hint-shown')) {
-                this.setAttribute('placeholder', 'Используйте буквы, цифры и спецсимволы: !?@#$%&*_-');
-                this.setAttribute('data-hint-shown', 'true');
+        if (newPassword && confirmPassword) {
+            function checkPasswords() {
+                if (newPassword.value !== confirmPassword.value && confirmPassword.value !== '') {
+                    confirmPassword.style.borderColor = '#dc3545';
+                } else {
+                    confirmPassword.style.borderColor = '#28a745';
+                }
             }
-        });
-    }
 
-    // Проверка совпадения паролей в реальном времени
-    const password = document.getElementById('password');
-    const passwordAgain = document.getElementById('passwordAgain');
-
-    if (password && passwordAgain) {
-        function checkPasswords() {
-            if (password.value !== passwordAgain.value) {
-                passwordAgain.style.borderColor = '#dc3545';
-            } else {
-                passwordAgain.style.borderColor = '#28a745';
-            }
+            newPassword.addEventListener('input', checkPasswords);
+            confirmPassword.addEventListener('input', checkPasswords);
         }
-
-        password.addEventListener('input', checkPasswords);
-        passwordAgain.addEventListener('input', checkPasswords);
-    }
+    });
 </script>
 </body>
 </html>
+
+<%
+    // Обработка отзыва доступа
+    if ("cancel".equals(request.getParameter("action"))) {
+        session.removeAttribute("canEditProfile");
+        response.sendRedirect("edit-profile.jsp");
+    }
+%>

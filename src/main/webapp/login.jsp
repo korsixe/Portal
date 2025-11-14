@@ -277,7 +277,7 @@
     <% } else { %>
     <div class="button-group">
         <a href="dashboard.jsp" class="btn btn-primary">Перейти в личный кабинет</a>
-        <a href="index.jsp" class="btn btn-secondary">На главную</a>
+        <a href="home.jsp" class="btn btn-secondary">На главную</a>
     </div>
 
     <script>

@@ -380,7 +380,7 @@
             <a href="my-ads" class="btn btn-outline">
                 <span>📋</span> Мои объявления
             </a>
-            <a href="index.jsp" class="btn btn-success">
+            <a href="home.jsp" class="btn btn-success">
                 <span>🏠</span> На главную
             </a>
         </div>
