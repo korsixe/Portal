@@ -17,6 +17,7 @@
     String conditionFilter = request.getParameter("condition");
     String minPriceStr = request.getParameter("minPrice");
     String maxPriceStr = request.getParameter("maxPrice");
+    String searchQuery = request.getParameter("searchQuery");
 
     Integer minPrice = null;
     Integer maxPrice = null;
@@ -35,12 +36,19 @@
     // Получаем все активные объявления
     AdsService adsService = new AdsService();
     AdsFilter adsFilter = new AdsFilter(adsService.getAdsRepository());
-
     List<Long> recentAdsIds = null;
     try {
         recentAdsIds = adsService.getActiveAdIds();
     } catch (SQLException e) {
         throw new RuntimeException(e);
+    }
+
+    if (searchQuery != null) {
+        try {
+            recentAdsIds = adsService.searchAdsByString(recentAdsIds, searchQuery);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
     if (categoryFilter != null && !categoryFilter.isEmpty()) {
         try {
@@ -75,6 +83,8 @@
         recentAds.add(adsService.getAd(idAd));
     }
 %>
+
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -601,11 +611,12 @@
         <div class="portal-logo">PORTAL</div>
 
         <div class="search-section">
-            <form class="search-form" method="GET" action="#">
+            <form class="search-form" method="GET" action="home.jsp">
                 <input type="text"
                        class="search-input"
                        placeholder="🔍 Поиск объявлений..."
-                       name="query">
+                       name="searchQuery"
+                       value="<%= request.getParameter("searchQuery") != null ? request.getParameter("searchQuery") : "" %>">
                 <button type="submit" class="search-btn">Найти</button>
             </form>
         </div>
@@ -626,6 +637,10 @@
         <h2 class="filters-title">🔍 Фильтры</h2>
 
         <form id="filterForm" method="GET" action="">
+            <!--Фильтр по поисковой строке-->
+            <% if (searchQuery != null && !searchQuery.isEmpty()) { %>
+            <input type="hidden" name="searchQuery" value="<%= searchQuery %>">
+            <% } %>
             <!-- Фильтр по цене -->
             <div class="filter-section">
                 <div class="filter-label">💰 Цена</div>
@@ -773,16 +788,6 @@
     document.getElementById('filterForm').reset();
     document.getElementById('filterForm').submit();
   }
-
-  // Обработка формы поиска
-  document.querySelector('.search-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const query = this.querySelector('.search-input').value.trim();
-    if (query) {
-      alert('Поиск по запросу: "' + query + '"\n\nФункция поиска будет реализована позже');
-      // Здесь будет реализация поиска
-    }
-  });
 
   // Анимация появления карточек
   document.addEventListener('DOMContentLoaded', function () {

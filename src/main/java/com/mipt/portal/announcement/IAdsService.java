@@ -19,6 +19,8 @@ public interface IAdsService {
 
   Announcement getAd(long adId); // Получить объявление
 
+  List<Long> searchAdsByString(List<Long> adsId, String query) throws SQLException;
+
   void sendToModeration(Announcement ad) throws SQLException;
 
   void activate(Announcement ad) throws SQLException;
