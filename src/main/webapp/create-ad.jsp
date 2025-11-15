@@ -354,7 +354,7 @@
         <% } %>
 
         <!-- Основная форма для создания объявления -->
-        <form action="create-ad" method="post" enctype="multipart/form-data">
+        <form id="createAdForm" action="create-ad" method="post" enctype="multipart/form-data" onsubmit="return false;">
             <!-- Основная информация -->
             <div class="form-section">
                 <h3 class="section-title">
@@ -531,12 +531,21 @@
                     <span class="icon">←</span> Отмена
                 </a>
 
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary" onclick="submitCreateAdForm()">
                     <span class="icon">✓</span> Создать объявление
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<%@ include file="profanity-check.jsp" %>
+<script>
+    function submitCreateAdForm() {
+        validateFormWithProfanity('createAdForm', ['title', 'description', 'subcategory', 'location', 'tags'], function() {
+            document.getElementById('createAdForm').submit();
+        });
+    }
+</script>
 </body>
 </html>

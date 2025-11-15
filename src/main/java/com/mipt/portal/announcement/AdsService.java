@@ -2,8 +2,11 @@ package com.mipt.portal.announcement;
 
 import com.mipt.portal.users.service.UserService;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,18 +32,44 @@ public class AdsService implements IAdsService {
   @Override
   public Announcement createAd(long userId, String title, String description, Category category,
       String subcategory, Condition condition, int price, String location, List<File> photos,
-      List<String> tags, AdvertisementStatus action) throws SQLException {
+      List<String> tags, AdvertisementStatus action) throws SQLException, IOException {
 
     Announcement ad = new Announcement(title, description, category, condition, price, location,
         userId);
     ad.setSubcategory(subcategory);
-    ad.setPhotos(photos);
+    // ad.setPhotos(photos);
     ad.setTags(tags);
     ad.setStatus(action);
     ad.setId(adsRepository.saveAd(ad));
     userService.addAnnouncementId(ad.getUserId(), ad.getId());
+
+    if (photos instanceof List) {
+      List<?> photosList = (List<?>) photos;
+      if (!photosList.isEmpty()) {
+        if (photosList.get(0) instanceof File) {
+          // Это List<File>
+          ad.setPhotos((List<File>) photos);
+        } else if (photosList.get(0) instanceof byte[]) {
+          // Это List<byte[]> - конвертируем в File
+          List<File> photoFiles = new ArrayList<>();
+          for (int i = 0; i < photosList.size(); i++) {
+            byte[] data = (byte[]) photosList.get(i);
+            File tempFile = File.createTempFile("photo_" + i + "_", ".jpg");
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+              fos.write(data);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            photoFiles.add(tempFile);
+          }
+          ad.setPhotos(photoFiles);
+        }
+      }
+    }
+
     return ad;
   }
+
 
   @Override
   public Long getUserIdByEmail(String email) throws SQLException {

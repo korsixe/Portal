@@ -439,7 +439,7 @@
         </div>
 
         <!-- Форма редактирования -->
-        <form action="edit-ad" method="post">
+        <form id="editAdForm" action="edit-ad" method="post" enctype="multipart/form-data" onsubmit="return false;">
             <input type="hidden" name="adId" value="<%= announcement.getId() %>">
 
             <!-- Основная информация -->
@@ -569,6 +569,26 @@
                 </div>
             </div>
 
+            <!-- Фотографии -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <span class="icon">📷</span> Фотографии
+                </h3>
+
+                <div class="form-group">
+                    <label for="photos">Изменить фотографии</label>
+                    <input type="file" id="photos" name="photos" class="form-control"
+                           multiple accept="image/*"
+                        <%= !announcement.canBeEdited() ? "disabled" : "" %>>
+                    <div class="tags-hint">
+                        Выберите новые фотографии. Если не выберете, существующие фотографии останутся без изменений.
+                    </div>
+                    <div class="tags-hint" style="margin-top: 10px;">
+                        <strong>Примечание:</strong> При загрузке новых фотографий старые будут заменены.
+                    </div>
+                </div>
+            </div>
+
             <!-- Теги -->
             <div class="form-section">
                 <h3 class="section-title">
@@ -612,7 +632,7 @@
                 </a>
 
                 <% if (announcement.canBeEdited()) { %>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary" onclick="submitEditAdForm()">
                     <span class="icon">💾</span> Сохранить изменения
                 </button>
                 <% } else { %>
@@ -629,5 +649,14 @@
         </form>
     </div>
 </div>
+
+<%@ include file="profanity-check.jsp" %>
+<script>
+    function submitEditAdForm() {
+        validateFormWithProfanity('editAdForm', ['title', 'description', 'subcategory', 'location', 'tags'], function() {
+            document.getElementById('editAdForm').submit();
+        });
+    }
+</script>
 </body>
 </html>
