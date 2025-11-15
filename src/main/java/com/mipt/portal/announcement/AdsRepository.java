@@ -291,6 +291,7 @@ public class AdsRepository implements IAdsRepository {
 
     // Обрабатываем теги
 
+
     // Устанавливаем даты
     Timestamp createdAt = resultSet.getTimestamp("created_at");
     Timestamp updatedAt = resultSet.getTimestamp("updated_at");

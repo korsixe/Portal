@@ -75,4 +75,14 @@ public class MediaManager {
     photos.clear();
     saveToDB();
   }
+
+  public List<byte[]> getAllPhotos() {
+    return new ArrayList<>(photos);
+  }
+
+
+  public List<byte[]> loadAndGetPhotos() throws SQLException {
+    loadFromDB();
+    return getAllPhotos();
+  }
 }
