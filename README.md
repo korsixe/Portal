@@ -19,14 +19,13 @@ docker-compose up -d
 ```
 mvn clean compile
 ```
+для заполнения бд с нуля:
 ```
-java -cp "target/classes:postgresql-42.6.0.jar" com.mipt.portal.Main
+ java -cp "target/classes:postgresql-42.6.0.jar" com.mipt.portal.database.TestData
 ```
-
 ```
 mvn jetty:run
 ```
-
 ```
 http://localhost:8080/portal/
 ```

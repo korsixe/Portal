@@ -12,6 +12,9 @@ public interface IAdsRepository {
   Long getUserIdByEmail(String email) throws SQLException;
   void updateAd(Announcement ad) throws SQLException;
   Announcement getAdById(long adId) throws SQLException;
+
+  List<Long> getActiveAdIds() throws SQLException;
+
   long saveAd(Announcement ad) throws SQLException;
   List<Long> getModerAdIds() throws SQLException;
   boolean deleteAd(long adId) throws SQLException;

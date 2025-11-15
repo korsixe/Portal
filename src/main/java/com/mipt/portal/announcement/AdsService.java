@@ -2,12 +2,9 @@ package com.mipt.portal.announcement;
 
 import com.mipt.portal.users.service.UserService;
 import java.io.File;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Scanner;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -34,7 +31,8 @@ public class AdsService implements IAdsService {
       String subcategory, Condition condition, int price, String location, List<File> photos,
       List<String> tags, AdvertisementStatus action) throws SQLException {
 
-    Announcement ad = new Announcement(title, description, category, condition, price, location, userId);
+    Announcement ad = new Announcement(title, description, category, condition, price, location,
+        userId);
     ad.setSubcategory(subcategory);
     ad.setPhotos(photos);
     ad.setTags(tags);
@@ -66,27 +64,38 @@ public class AdsService implements IAdsService {
         return null;
       }
 
-      // Подтверждение удаления
-      Scanner scanner = new Scanner(System.in);
-      System.out.println("Вы действительно хотите удалить объявление?");
-      System.out.println(ad.toString());
-      System.out.print("Введите 'да' для подтверждения: ");
-      String confirmation = scanner.nextLine();
-
-      if ("да".equalsIgnoreCase(confirmation)) {
-        boolean deleted = adsRepository.deleteAd(adId);
-        if (deleted) {
-          System.out.println("✅ Объявление успешно удалено");
-          return ad;
-        } else {
-          System.out.println("❌ Не удалось удалить объявление");
-          return null;
-        }
+      boolean deleted = adsRepository.deleteAd(adId);
+      if (deleted) {
+        System.out.println("✅ Объявление успешно удалено");
+        return ad;
       } else {
-        System.out.println("❌ Удаление отменено");
+        System.out.println("❌ Не удалось удалить объявление");
         return null;
       }
+    } catch (SQLException e) {
+      System.err.println("❌ Ошибка при удалении объявления: " + e.getMessage());
+      return null;
+    }
+  }
 
+  @Override
+  public Announcement hardDeleteAd(long adId) {
+    try {
+      Announcement ad = adsRepository.getAdById(adId);
+      if (ad == null) {
+        System.out.println("❌ Объявление с ID " + adId + " не найдено");
+        return null;
+      }
+      userService.deleteAnnouncementId(ad.getUserId(), adId);
+
+      boolean deleted = adsRepository.hardDeleteAd(adId);
+      if (deleted) {
+        System.out.println("✅ Объявление успешно удалено");
+        return ad;
+      } else {
+        System.out.println("❌ Не удалось удалить объявление");
+        return null;
+      }
     } catch (SQLException e) {
       System.err.println("❌ Ошибка при удалении объявления: " + e.getMessage());
       return null;
@@ -100,7 +109,6 @@ public class AdsService implements IAdsService {
       if (ad != null) {
         System.out.println("✅ Объявление найдено:");
         System.out.println(ad.toString());
-        ad.incrementViewCount(); // увеличиваем просмотры
       } else {
         System.out.println("❌ Объявление с ID " + adId + " не найдено");
       }
@@ -150,4 +158,9 @@ public class AdsService implements IAdsService {
   public List<Long> getModerAdIds() throws SQLException {
     return adsRepository.getModerAdIds();
   }
+
+  public List<Long> getActiveAdIds() throws SQLException {
+    return adsRepository.getActiveAdIds();
+  }
+
 }

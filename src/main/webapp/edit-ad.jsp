@@ -365,7 +365,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <div class="logo">Market<span>Place</span></div>
+        <div class="logo">Portal</div>
     </div>
 
     <div class="card">
@@ -564,10 +564,7 @@
                            value="<%= price > 0 ? price : "" %>"
                         <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                     <div class="tags-hint">
-                        <strong>Пояснение по ценам:</strong><br>
-                        • -1 = Договорная цена<br>
-                        • 0 = Бесплатно<br>
-                        • > 0 = Указать конкретную цену
+                        <strong>Напишите цену, если выбрали пункт "Указать цену"</strong>
                     </div>
                 </div>
             </div>

@@ -62,7 +62,7 @@
         font-weight: 700;
         color: white;
         margin-bottom: 10px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       .logo span {
@@ -74,7 +74,7 @@
         border-radius: 20px;
         padding: 40px;
         box-shadow: var(--shadow-lg);
-        border: 1px solid rgba(255,255,255,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
       }
 
       .card-header {
@@ -193,8 +193,14 @@
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       .btn {
@@ -326,7 +332,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <div class="logo">Market<span>Place</span></div>
+        <div class="logo">Portal</div>
     </div>
 
     <div class="card">
@@ -365,7 +371,9 @@
                 <div class="form-group">
                     <label for="description" class="required">Описание</label>
                     <textarea id="description" name="description" class="form-control"
-                              placeholder="Подробно опишите ваш товар или услугу..." required><%= request.getParameter("description") != null ? request.getParameter("description") : "" %></textarea>
+                              placeholder="Подробно опишите ваш товар или услугу..." required><%=
+                    request.getParameter("description") != null ? request.getParameter(
+                            "description") : "" %></textarea>
                 </div>
             </div>
 
@@ -381,7 +389,9 @@
                         <option value="">Выберите категорию</option>
                         <% for (Category category : Category.values()) { %>
                         <option value="<%= category.name() %>"
-                                <%= (request.getParameter("category") != null && request.getParameter("category").equals(category.name())) ? "selected" : "" %>>
+                                <%=
+                                (request.getParameter("category") != null && request.getParameter(
+                                        "category").equals(category.name())) ? "selected" : "" %>>
                             <%= category.getDisplayName() %>
                         </option>
                         <% } %>
@@ -425,25 +435,47 @@
             </div>
 
             <!-- Цена -->
-            <div class="form-group">
-                <label>Тип цены *</label>
-                <div>
-                    <input type="radio" name="priceType" value="negotiable" checked onchange="togglePriceInput()">
-                    <label style="display: inline;">Договорная</label>
-                </div>
-                <div>
-                    <input type="radio" name="priceType" value="free" onchange="togglePriceInput()">
-                    <label style="display: inline;">Бесплатно</label>
-                </div>
-                <div>
-                    <input type="radio" name="priceType" value="fixed" onchange="togglePriceInput()">
-                    <label style="display: inline;">Указать цену</label>
-                </div>
-            </div>
+            <div class="form-section">
+                <h3 class="section-title">
+                    <span class="icon">💰</span> Цена
+                </h3>
 
-            <div id="priceSection" class="form-group price-section">
-                <label for="price">Цена (руб.)</label>
-                <input type="number" id="price" name="price" min="1" max="1000000000">
+                <div class="form-group">
+                    <label class="required">Тип цены</label>
+                    <div class="radio-group">
+                        <%
+                            String currentPriceType = request.getParameter("priceType");
+                            if (currentPriceType == null) {
+                                currentPriceType = "negotiable";
+                            }
+                        %>
+                        <label class="radio-item">
+                            <input type="radio" name="priceType" value="negotiable"
+                                <%= "negotiable".equals(currentPriceType) ? "checked" : "" %>>
+                            <span class="radio-label">Договорная</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="priceType" value="free"
+                                <%= "free".equals(currentPriceType) ? "checked" : "" %>>
+                            <span class="radio-label">Бесплатно</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="priceType" value="fixed"
+                                <%= "fixed".equals(currentPriceType) ? "checked" : "" %>>
+                            <span class="radio-label">Указать цену</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Цена (руб.)</label>
+                    <input type="number" id="price" name="price" class="form-control"
+                           min="1" max="1000000000" placeholder="1000"
+                           value="<%= request.getParameter("price") != null ? request.getParameter("price") : "" %>">
+                    <div class="tags-hint">
+                        <strong>Напишите цену, если выбрали пункт "Указать цену"</strong>
+                    </div>
+                </div>
             </div>
 
             <!-- Фотографии -->

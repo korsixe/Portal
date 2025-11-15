@@ -31,4 +31,21 @@ public class CategorySelector {
       System.out.println("Введите 1 из номеров");
     }
   }
+
+  public Map<String, Object> getCategoryByName(String categoryName) {
+    if (categories == null || categoryName == null) {
+      return null;
+    }
+    for (Map<String, Object> category : categories) {
+      if (categoryName.equals(category.get("categoryName"))) {
+        return category;
+      }
+    }
+    return null;
+  }
+
+
+  public List<Map<String, Object>> getAllCategories() {
+    return categories;
+  }
 }

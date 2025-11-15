@@ -7,6 +7,7 @@
 <%@ page import="com.mipt.portal.announcement.AdvertisementStatus" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="com.mipt.portal.users.service.UserService" %>
 <%
     // Проверяем авторизацию
     User user = (User) session.getAttribute("user");
@@ -15,8 +16,14 @@
         return;
     }
 
+    UserService userService = new UserService();
+    User freshUser = userService.findUserById(user.getId()).getData();
+    session.setAttribute("user", freshUser);
+    user = freshUser; // Обновляем локальную переменную
+
     AdsService adsService = new AdsService();
     List<Announcement> userAnnouncements = new ArrayList<>();
+
 
     if (user.getAdList() != null && !user.getAdList().isEmpty()) {
         for (Long adId : user.getAdList()) {
@@ -672,8 +679,7 @@
 
                 <div class="ad-actions">
                     <a href="edit-ad?adId=<%= ad.getId() %>" class="btn btn-edit">Редактировать</a>
-                    <a href="delete-ad.jsp?id=<%= ad.getId() %>" class="btn btn-danger"
-                       onclick="return confirm('Вы уверены, что хотите удалить это объявление?')">Удалить</a>
+                    <a href="confirm-delete?adId=<%= ad.getId() %>" class="btn btn-danger">Удалить</a>
                 </div>
             </div>
             <% } %>
