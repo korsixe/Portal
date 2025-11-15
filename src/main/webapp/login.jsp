@@ -271,7 +271,7 @@
 
         <div class="button-group">
             <button type="submit" class="btn btn-primary">Войти</button>
-            <a href="register.jsp" class="btn btn-secondary">Создать аккаунт</a>
+            <a href="register.jsp" class="btn btn-secondary">Регистрация</a>
         </div>
     </form>
     <% } else { %>
@@ -279,22 +279,7 @@
         <a href="dashboard.jsp" class="btn btn-primary">Перейти в личный кабинет</a>
         <a href="home.jsp" class="btn btn-secondary">На главную</a>
     </div>
-
-    <script>
-        // Автоматический переход через 3 секунды
-        setTimeout(function() {
-            window.location.href = 'dashboard.jsp';
-        }, 3000);
-    </script>
-
-    <div class="register-link">
-        Автоматический переход через 3 секунды...
-    </div>
     <% } %>
-
-    <div class="register-link">
-        Нет аккаунта? <a href="register.jsp">Зарегистрируйтесь здесь</a>
-    </div>
 </div>
 
 <script>
