@@ -80,14 +80,14 @@ public class Announcement {
   }
 
   public void activate() {
-    if (status == AdvertisementStatus.UNDER_MODERATION) {
+    //if (status == AdvertisementStatus.UNDER_MODERATION) {
       status = AdvertisementStatus.ACTIVE;
       updatedAt = Instant.now();
-    } else {
-      throw new IllegalStateException(
-          "Можно активировать только из статуса модерации. Текущий статус: "
-              + status.getDisplayName());
-    }
+    //} else {
+    //  throw new IllegalStateException(
+    //      "Можно активировать только из статуса модерации. Текущий статус: "
+    //          + status.getDisplayName());
+    //}
   }
 
   public void archive() {
