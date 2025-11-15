@@ -121,8 +121,8 @@ public class AdsService implements IAdsService {
   }
 
   @Override
-  public List<Long> searchAds(String query) throws SQLException {
-    return getActiveAdIds().stream()
+  public List<Long> searchAdsByString(List<Long> adsId, String query) throws SQLException {
+    return adsId.stream()
         .filter(adId -> {
           Announcement ad = getAd(adId);
           if (ad == null) return false;
