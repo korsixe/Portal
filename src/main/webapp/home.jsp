@@ -75,6 +75,9 @@
         recentAds.add(adsService.getAd(idAd));
     }
 %>
+
+
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -601,11 +604,12 @@
         <div class="portal-logo">PORTAL</div>
 
         <div class="search-section">
-            <form class="search-form" method="GET" action="#">
+            <form class="search-form" method="GET" action="home.jsp">
                 <input type="text"
                        class="search-input"
                        placeholder="🔍 Поиск объявлений..."
-                       name="query">
+                       name="searchQuery"
+                       value="<%= request.getParameter("searchQuery") != null ? request.getParameter("searchQuery") : "" %>">
                 <button type="submit" class="search-btn">Найти</button>
             </form>
         </div>

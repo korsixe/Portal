@@ -5,6 +5,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -117,6 +118,19 @@ public class AdsService implements IAdsService {
       System.err.println("❌ Ошибка при получении объявления: " + e.getMessage());
       return null;
     }
+  }
+
+  @Override
+  public List<Long> searchAds(String query) throws SQLException {
+    return getActiveAdIds().stream()
+        .filter(adId -> {
+          Announcement ad = getAd(adId);
+          if (ad == null) return false;
+
+          String searchText = (ad.getTitle() + " " + ad.getDescription()).toLowerCase();
+          return searchText.contains(query.toLowerCase());
+        })
+        .collect(Collectors.toList());
   }
 
   @Override
