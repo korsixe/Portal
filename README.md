@@ -26,7 +26,6 @@ mvn clean compile
 ```
 mvn jetty:run
 ```
-
 ```
 http://localhost:8080/portal/
 ```

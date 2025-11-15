@@ -10,7 +10,7 @@ public class AdsFilter implements IAdsFilter {
 
   AdsRepository adsRepository;
 
-  AdsFilter(AdsRepository adsRepository) {
+  public AdsFilter(AdsRepository adsRepository) {
     this.adsRepository = adsRepository;
   }
 
