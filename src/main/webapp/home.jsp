@@ -2,18 +2,77 @@
 <%@ page import="com.mipt.portal.users.User" %>
 <%@ page import="com.mipt.portal.announcement.AdsService" %>
 <%@ page import="com.mipt.portal.announcement.Announcement" %>
+<%@ page import="com.mipt.portal.announcement.AdsFilter" %>
+<%@ page import="com.mipt.portal.announcement.Category" %>
+<%@ page import="com.mipt.portal.announcement.Condition" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="java.sql.SQLException" %>
 <%
     // Проверяем авторизацию пользователя
     User user = (User) session.getAttribute("user");
 
+    // Получаем параметры фильтрации
+    String categoryFilter = request.getParameter("category");
+    String conditionFilter = request.getParameter("condition");
+    String minPriceStr = request.getParameter("minPrice");
+    String maxPriceStr = request.getParameter("maxPrice");
+
+    Integer minPrice = null;
+    Integer maxPrice = null;
+
+    try {
+        if (minPriceStr != null && !minPriceStr.isEmpty()) {
+            minPrice = Integer.parseInt(minPriceStr);
+        }
+        if (maxPriceStr != null && !maxPriceStr.isEmpty()) {
+            maxPrice = Integer.parseInt(maxPriceStr);
+        }
+    } catch (NumberFormatException e) {
+        // Игнорируем неверные значения
+    }
+
     // Получаем все активные объявления
     AdsService adsService = new AdsService();
-    List<Long> recentAdsIds = adsService.getActiveAdIds();
+    AdsFilter adsFilter = new AdsFilter(adsService.getAdsRepository());
+
+    List<Long> recentAdsIds = null;
+    try {
+        recentAdsIds = adsService.getActiveAdIds();
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
+    if (categoryFilter != null && !categoryFilter.isEmpty()) {
+        try {
+            recentAdsIds = adsFilter.filterByCategory(recentAdsIds,
+                    Category.valueOf(categoryFilter));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    if (conditionFilter != null && !conditionFilter.isEmpty()) {
+        try {
+            recentAdsIds = adsFilter.filterByCondition(recentAdsIds,
+                    Condition.valueOf(conditionFilter));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    minPrice = minPrice == null ? -1 : minPrice;
+    maxPrice = maxPrice == null ? 2000000000 : maxPrice;
+
+    try {
+        recentAdsIds = adsFilter.filterByPrice(recentAdsIds, minPrice, maxPrice);
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
+
     List<Announcement> recentAds = new ArrayList<>();
-    for(long idAd: recentAdsIds){
-      recentAds.add(adsService.getAd(idAd));
+
+    for (long idAd : recentAdsIds) {
+        recentAds.add(adsService.getAd(idAd));
     }
 %>
 <!DOCTYPE html>
@@ -23,324 +82,516 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal - Главная</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            padding: 20px;
-        }
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+        padding: 20px;
+      }
 
+      .home-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 30px;
+      }
+
+      /* Шапка */
+      .header {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 30px 40px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        grid-column: 1 / -1;
+      }
+
+      .portal-logo {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 2px;
+      }
+
+      .search-section {
+        flex: 1;
+        max-width: 600px;
+        min-width: 300px;
+      }
+
+      .search-form {
+        display: flex;
+        gap: 10px;
+      }
+
+      .search-input {
+        flex: 1;
+        padding: 15px 20px;
+        border: 2px solid #e1e5e9;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .search-btn {
+        padding: 15px 25px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .search-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .auth-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      /* Боковая панель с фильтрами */
+      .filters-sidebar {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+      }
+
+      .filters-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .filter-section {
+        margin-bottom: 30px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      .filter-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .filter-label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .price-inputs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .price-input {
+        flex: 1;
+        padding: 12px 15px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+
+      .price-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+      }
+
+      .filter-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+      }
+
+      .filter-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .filter-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        padding: 8px 0;
+        transition: color 0.3s ease;
+      }
+
+      .filter-option:hover {
+        color: #667eea;
+      }
+
+      .filter-option input[type="radio"] {
+        margin: 0;
+      }
+
+      .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .btn-apply {
+        flex: 1;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-apply:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-reset {
+        padding: 12px 20px;
+        background: transparent;
+        color: #666;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-reset:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+        color: #667eea;
+      }
+
+      /* Основной контент */
+      .main-content {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        min-height: 500px;
+      }
+
+      .content-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .section-title {
+        color: #333;
+        font-size: 2rem;
+        margin: 0;
+      }
+
+      .results-count {
+        color: #666;
+        font-size: 1rem;
+      }
+
+      /* Сетка объявлений */
+      .ads-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+      }
+
+      .ad-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .ad-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      }
+
+      .ad-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 12px;
+        line-height: 1.3;
+      }
+
+      .ad-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 15px;
+      }
+
+      .ad-description {
+        color: #666;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .ad-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+
+      .ad-category {
+        background: #667eea;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .ad-condition {
+        background: #28a745;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .ad-location {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .ad-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .ad-date {
+        color: #999;
+        font-size: 0.8rem;
+      }
+
+      .ad-views {
+        color: #666;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      /* Сообщение о пустом списке */
+      .no-ads {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+        grid-column: 1 / -1;
+      }
+
+      .no-ads-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      .no-ads h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .no-ads p {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      /* Кнопки */
+      .btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: #667eea;
+        border: 2px solid #667eea;
+      }
+
+      .btn-secondary:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      /* Адаптивность */
+      @media (max-width: 1024px) {
         .home-container {
-            max-width: 1200px;
-            margin: 0 auto;
+          grid-template-columns: 1fr;
+          gap: 20px;
         }
 
-        /* Шапка */
+        .filters-sidebar {
+          position: static;
+          order: 2;
+        }
+
+        .main-content {
+          order: 1;
+        }
+      }
+
+      @media (max-width: 768px) {
         .header {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 30px 40px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .portal-logo {
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 2px;
+          flex-direction: column;
+          text-align: center;
         }
 
         .search-section {
-            flex: 1;
-            max-width: 600px;
-            min-width: 300px;
+          max-width: 100%;
         }
 
         .search-form {
-            display: flex;
-            gap: 10px;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 15px 20px;
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .search-btn {
-            padding: 15px 25px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .search-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+          flex-direction: column;
         }
 
         .auth-buttons {
-            display: flex;
-            gap: 10px;
+          justify-content: center;
         }
 
-        /* Основной контент */
-        .main-content {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            min-height: 500px;
+        .ads-grid {
+          grid-template-columns: 1fr;
         }
 
         .section-title {
-            color: #333;
-            font-size: 2rem;
-            margin-bottom: 30px;
-            text-align: center;
+          font-size: 1.7rem;
         }
 
-        /* Сетка объявлений */
-        .ads-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
+        .content-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .header {
+          padding: 20px;
         }
 
-        .ad-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            border-left: 4px solid #667eea;
-            transition: all 0.3s ease;
-            cursor: pointer;
+        .main-content {
+          padding: 25px 20px;
         }
 
-        .ad-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        .filters-sidebar {
+          padding: 20px;
         }
 
-        .ad-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 12px;
-            line-height: 1.3;
+        .portal-logo {
+          font-size: 2rem;
         }
 
-        .ad-price {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-
-        .ad-description {
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .ad-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .ad-category {
-            background: #667eea;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .ad-condition {
-            background: #28a745;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .ad-location {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .ad-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .ad-date {
-            color: #999;
-            font-size: 0.8rem;
-        }
-
-        .ad-views {
-            color: #666;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* Сообщение о пустом списке */
-        .no-ads {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .no-ads-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .no-ads h3 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .no-ads p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        /* Кнопки */
         .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
+          padding: 10px 20px;
+          font-size: 0.9rem;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        .price-inputs {
+          flex-direction: column;
         }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
-        .btn-secondary:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .search-section {
-                max-width: 100%;
-            }
-
-            .search-form {
-                flex-direction: column;
-            }
-
-            .auth-buttons {
-                justify-content: center;
-            }
-
-            .ads-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .section-title {
-                font-size: 1.7rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header {
-                padding: 20px;
-            }
-
-            .main-content {
-                padding: 25px 20px;
-            }
-
-            .portal-logo {
-                font-size: 2rem;
-            }
-
-            .btn {
-                padding: 10px 20px;
-                font-size: 0.9rem;
-            }
-        }
+      }
     </style>
 </head>
 <body>
@@ -370,19 +621,93 @@
         </div>
     </div>
 
+    <!-- Боковая панель с фильтрами -->
+    <div class="filters-sidebar">
+        <h2 class="filters-title">🔍 Фильтры</h2>
+
+        <form id="filterForm" method="GET" action="">
+            <!-- Фильтр по цене -->
+            <div class="filter-section">
+                <div class="filter-label">💰 Цена</div>
+                <div class="price-inputs">
+                    <input type="number"
+                           class="price-input"
+                           placeholder="Цена от"
+                           name="minPrice"
+                           value="<%= minPriceStr != null ? minPriceStr : "" %>">
+                </div>
+                <div class="price-inputs">
+                    <input type="number"
+                           class="price-input"
+                           placeholder="Цена до"
+                           name="maxPrice"
+                           value="<%= maxPriceStr != null ? maxPriceStr : "" %>">
+                </div>
+                <div style="color: #666; font-size: 0.8rem; margin-top: 5px;">
+                    Цена в рублях
+                </div>
+            </div>
+
+            <!-- Фильтр по категории -->
+            <div class="filter-section">
+                <div class="filter-label">📂 Категория</div>
+                <select class="filter-select" name="category">
+                    <option value="">Все категории</option>
+                    <% for (Category cat : Category.values()) { %>
+                    <option value="<%= cat.name() %>"
+                            <%= (categoryFilter != null && categoryFilter.equals(cat.name()))
+                                    ? "selected" : "" %>>
+                        <%= cat.getDisplayName() %>
+                    </option>
+                    <% } %>
+                </select>
+            </div>
+
+            <!-- Фильтр по состоянию -->
+            <div class="filter-section">
+                <div class="filter-label">🔄 Состояние</div>
+                <div class="filter-options">
+                    <label class="filter-option">
+                        <input type="radio" name="condition" value=""
+                            <%= (conditionFilter == null || conditionFilter.isEmpty()) ? "checked" : "" %>>
+                        <span>Все состояния</span>
+                    </label>
+                    <% for (Condition cond : Condition.values()) { %>
+                    <label class="filter-option">
+                        <input type="radio" name="condition" value="<%= cond.name() %>"
+                            <%= (conditionFilter != null && conditionFilter.equals(cond.name())) ? "checked" : "" %>>
+                        <span><%= cond.getDisplayName() %></span>
+                    </label>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Кнопки фильтрации -->
+            <div class="filter-actions">
+                <button type="submit" class="btn-apply">Применить фильтры</button>
+                <button type="button" class="btn-reset" onclick="resetFilters()">Сбросить</button>
+            </div>
+        </form>
+    </div>
+
     <!-- Основной контент -->
     <div class="main-content">
-        <h1 class="section-title">🎯 Последние объявления</h1>
+        <div class="content-header">
+            <h1 class="section-title">🎯 Объявления</h1>
+            <div class="results-count">
+                Найдено: <%= recentAds.size() %> объявлений
+            </div>
+        </div>
 
         <% if (recentAds.isEmpty()) { %>
         <!-- Сообщение, если объявлений нет -->
         <div class="no-ads">
             <div class="no-ads-icon">📭</div>
-            <h3>Объявлений пока нет</h3>
-            <p><em>Будьте первым, кто разместит объявление на нашей платформе!</em></p>
+            <h3>Объявлений не найдено</h3>
+            <p><em>Попробуйте изменить параметры фильтрации или сбросить фильтры</em></p>
             <% if (user != null) { %>
             <a href="create-ad.jsp" class="btn btn-primary" style="margin-top: 20px;">
-                + Создать первое объявление
+                + Создать объявление
             </a>
             <% } else { %>
             <p style="margin-top: 20px;">
@@ -395,7 +720,8 @@
         <div class="ads-grid">
             <% for (Announcement ad : recentAds) { %>
             <div class="ad-card" onclick="location.href='ad-details.jsp?id=<%= ad.getId() %>'">
-                <div class="ad-title"><%= ad.getTitle() %></div>
+                <div class="ad-title"><%= ad.getTitle() %>
+                </div>
 
                 <div class="ad-price">
                     <%= formatPrice(ad.getPrice()) %>
@@ -437,33 +763,39 @@
 </div>
 
 <script>
-    // Функция для загрузки дополнительных объявлений
-    function loadMoreAds() {
-        alert('Функция "Показать еще" будет реализована позже');
+  // Функция для загрузки дополнительных объявлений
+  function loadMoreAds() {
+    alert('Функция "Показать еще" будет реализована позже');
+  }
+
+  // Функция сброса фильтров
+  function resetFilters() {
+    document.getElementById('filterForm').reset();
+    document.getElementById('filterForm').submit();
+  }
+
+  // Обработка формы поиска
+  document.querySelector('.search-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const query = this.querySelector('.search-input').value.trim();
+    if (query) {
+      alert('Поиск по запросу: "' + query + '"\n\nФункция поиска будет реализована позже');
+      // Здесь будет реализация поиска
     }
+  });
 
-    // Обработка формы поиска
-    document.querySelector('.search-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const query = this.querySelector('.search-input').value.trim();
-        if (query) {
-            alert('Поиск по запросу: "' + query + '"\n\nФункция поиска будет реализована позже');
-            // Здесь будет реализация поиска
-        }
+  // Анимация появления карточек
+  document.addEventListener('DOMContentLoaded', function () {
+    const cards = document.querySelectorAll('.ad-card');
+    cards.forEach((card, index) => {
+      card.style.animationDelay = (index * 0.1) + 's';
+      card.style.animation = 'fadeInUp 0.6s ease-out forwards';
     });
+  });
 
-    // Анимация появления карточек
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.ad-card');
-        cards.forEach((card, index) => {
-            card.style.animationDelay = (index * 0.1) + 's';
-            card.style.animation = 'fadeInUp 0.6s ease-out forwards';
-        });
-    });
-
-    // Добавляем стили для анимации
-    const style = document.createElement('style');
-    style.textContent = `
+  // Добавляем стили для анимации
+  const style = document.createElement('style');
+  style.textContent = `
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -479,7 +811,7 @@
             opacity: 0;
         }
     `;
-    document.head.appendChild(style);
+  document.head.appendChild(style);
 </script>
 </body>
 </html>
@@ -498,7 +830,9 @@
     }
 
     private String formatDate(java.time.Instant instant) {
-        if (instant == null) return "Не указано";
+        if (instant == null) {
+            return "Не указано";
+        }
         java.time.format.DateTimeFormatter formatter =
                 java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")
                         .withZone(java.time.ZoneId.systemDefault());

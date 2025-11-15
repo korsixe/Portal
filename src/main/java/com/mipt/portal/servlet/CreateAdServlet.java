@@ -128,9 +128,10 @@ public class CreateAdServlet extends HttpServlet {
           location,
           uploadedPhotos,
           tag,
-          "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
+          "publish".equals(action) ? AdvertisementStatus.ACTIVE
               : AdvertisementStatus.DRAFT
-      );
+      );  /// TODO: пока нет модераторов объявления сразу становятся активными
+
       request.setAttribute("announcement", ad);
       request.getRequestDispatcher("/successful-create-ad.jsp").forward(request, response);
     } catch (IllegalArgumentException e) {
