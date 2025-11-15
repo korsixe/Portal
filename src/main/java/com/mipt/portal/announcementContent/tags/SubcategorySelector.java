@@ -32,6 +32,22 @@ public class SubcategorySelector {
     }
   }
 
+  public Map<String, Object> getSubcategoryByName(Map<String, Object> category, String subcategoryName) {
+    if (category == null || subcategoryName == null) {
+      return null;
+    }
+    List<Map<String, Object>> subcategories = (List<Map<String, Object>>) category.get("subcategoryTags");
+    if (subcategories == null) {
+      return null;
+    }
+    for (Map<String, Object> subcategory : subcategories) {
+      if (subcategoryName.equals(subcategory.get("subcategoryName"))) {
+        return subcategory;
+      }
+    }
+    return null;
+  }
+
   private void saveSubcategoryToDatabase(Long adId, Map<String, Object> subcategory) {
     String sql = "UPDATE ads SET subcategory = ? WHERE id = ?";
 
