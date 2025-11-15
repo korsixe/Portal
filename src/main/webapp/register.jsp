@@ -171,6 +171,35 @@
             text-decoration: underline;
         }
 
+        .password-info {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .password-info ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 8px 0 0 0;
+        }
+
+        .password-info li {
+            margin-bottom: 4px;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .password-info li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+
         /* Адаптивность */
         @media (max-width: 480px) {
             .portal-container {
@@ -253,8 +282,16 @@
 
         <div class="form-group">
             <label for="password">Пароль *</label>
+            <div class="password-info">
+                Пароль должен содержать:
+                <ul>
+                    <li>Строчные и заглавные буквы</li>
+                    <li>Цифры и специальные символы: ! ? @ # $ % & * _ -</li>
+                </ul>
+                Длина пароля не менее 8 символов
+            </div>
             <input type="password" id="password" name="password"
-                   placeholder="Минимум 8 символов" required>
+                   placeholder="Минимум 8 символов." required>
         </div>
 
         <div class="form-group">
@@ -339,7 +376,7 @@
         </div>
 
         <div class="form-group">
-            <label for="address">Адрес (необязательно)</label>
+            <label for="address">Адрес</label>
             <input type="text" id="address" name="address"
                    value="<%= request.getParameter("address") != null ? request.getParameter("address") : "" %>"
                    placeholder="Общежитие, комната">
@@ -347,7 +384,7 @@
 
         <div class="button-group">
             <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-            <a href="login.jsp" class="btn btn-secondary">Войти в аккаунт</a>
+            <a href="login.jsp" class="btn btn-secondary">Войти</a>
         </div>
     </form>
     <% } else { %>
@@ -356,10 +393,6 @@
         <a href="home.jsp" class="btn btn-secondary">На главную</a>
     </div>
     <% } %>
-
-    <div class="login-link">
-        Уже есть аккаунт? <a href="login.jsp">Войдите здесь</a>
-    </div>
 </div>
 
 <script>
@@ -376,7 +409,7 @@
     if (passwordInput) {
         passwordInput.addEventListener('focus', function() {
             if (!this.getAttribute('data-hint-shown')) {
-                this.setAttribute('placeholder', 'Используйте буквы, цифры и спецсимволы: !?@#$%&*_-');
+                this.setAttribute('placeholder', 'Введите надежный пароль');
                 this.setAttribute('data-hint-shown', 'true');
             }
         });

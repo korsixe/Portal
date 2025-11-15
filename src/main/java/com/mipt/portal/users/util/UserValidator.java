@@ -34,7 +34,7 @@ public class UserValidator {
 
     public static boolean validatePassword(String password) {
         if (password == null || password.length() < 8 || password.length() > 30) {
-            throw new IllegalArgumentException("Длина пароля должна быть от 8 до 30 символов");
+            throw new IllegalArgumentException("Длина пароля должна быть минимум 8 символов");
         }
         return true;
     }
