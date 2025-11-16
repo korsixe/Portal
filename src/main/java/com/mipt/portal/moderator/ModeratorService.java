@@ -137,7 +137,7 @@ public class ModeratorService {
     }
 
     private void deleteAd(Announcement ad) {
-        ad.delete();
+      adsService.hardDeleteAd(ad.getId());
     }
 
     private String getReasonOfRejection(int choice, Scanner scanner) {
