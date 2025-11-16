@@ -45,7 +45,9 @@ public enum AdvertisementStatus {
     return this == ACTIVE;
   }
 
-  public boolean isDelete() { return this == DELETED; }
+  public boolean isDelete() {
+    return this == DELETED;
+  }
 
   public boolean isDraft() {
     return this == DRAFT;

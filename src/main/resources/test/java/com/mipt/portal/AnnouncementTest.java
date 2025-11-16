@@ -59,9 +59,12 @@ class AnnouncementTest {
 
   @Test
   void testAnnouncementPriceFormatting() {
-    Announcement ad1 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, -1, "Loc", 1L);
-    Announcement ad2 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 0, "Loc", 1L);
-    Announcement ad3 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 500, "Loc", 1L);
+    Announcement ad1 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, -1, "Loc",
+        1L);
+    Announcement ad2 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 0, "Loc",
+        1L);
+    Announcement ad3 = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 500, "Loc",
+        1L);
 
     assertTrue(ad1.toString().contains("договорная"));
     assertTrue(ad2.toString().contains("бесплатно"));
@@ -70,7 +73,8 @@ class AnnouncementTest {
 
   @Test
   void testAnnouncementStatusWorkflow() {
-    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc",
+        1L);
 
     // Изначально черновик
     assertEquals(AdvertisementStatus.DRAFT, ad.getStatus());
@@ -96,7 +100,8 @@ class AnnouncementTest {
 
   @Test
   void testAnnouncementTags() {
-    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc",
+        1L);
 
     // Добавление тегов
     ad.addTag("тег1");
@@ -121,7 +126,8 @@ class AnnouncementTest {
 
   @Test
   void testAnnouncementViewCount() {
-    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc",
+        1L);
 
     assertEquals(0, ad.getViewCount());
 
@@ -135,7 +141,8 @@ class AnnouncementTest {
 
   @Test
   void testAnnouncementTimestamps() {
-    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc", 1L);
+    Announcement ad = new Announcement("Test", "Desc", Category.OTHER, Condition.USED, 1000, "Loc",
+        1L);
 
     assertNotNull(ad.getCreatedAt());
     assertNotNull(ad.getUpdatedAt());
@@ -151,7 +158,8 @@ class AnnouncementTest {
 
   @Test
   void testAnnouncementCopyConstructor() {
-    Announcement original = new Announcement("Original", "Desc", Category.ELECTRONICS, Condition.NEW, 5000, "Moscow", 1L);
+    Announcement original = new Announcement("Original", "Desc", Category.ELECTRONICS,
+        Condition.NEW, 5000, "Moscow", 1L);
     original.setSubcategory("Ноутбуки");
     original.addTag("техника");
     original.incrementViewCount();

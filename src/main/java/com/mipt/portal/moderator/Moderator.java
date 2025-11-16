@@ -8,6 +8,7 @@ import java.util.List;
 @Getter
 @Setter
 public class Moderator {
+
   private Long id;
   private String email;
   private String name;
