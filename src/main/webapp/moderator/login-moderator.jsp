@@ -9,7 +9,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal - Вход для модератора</title>
     <style>
-        /* Стили остаются такими же */
         * {
             margin: 0;
             padding: 0;
