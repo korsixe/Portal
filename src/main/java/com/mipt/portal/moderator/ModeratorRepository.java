@@ -1,5 +1,6 @@
 package com.mipt.portal.moderator;
 
+import com.mipt.portal.database.DatabaseConnection;
 import com.mipt.portal.moderator.Moderator;
 import java.sql.*;
 import java.util.ArrayList;
@@ -9,8 +10,8 @@ import java.util.Optional;
 public class ModeratorRepository {
     private final Connection connection;
 
-    public ModeratorRepository(Connection connection) {
-        this.connection = connection;
+    public ModeratorRepository() throws SQLException {
+        this.connection = DatabaseConnection.getConnection();
     }
 
     public Optional<Moderator> save(Moderator moderator) {

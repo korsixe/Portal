@@ -26,9 +26,15 @@ mvn clean compile
 ```
 mvn jetty:run
 ```
+Главная страница PORTAL: 
 ```
 http://localhost:8080/portal/
 ```
+Вход для модераторов:
+```
+http://localhost:8080/portal/moderator/login-moderator.jsp
+```
+
 
 ```
 sudo netstat -tulpn | grep :8080

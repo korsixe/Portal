@@ -16,8 +16,7 @@ VALUES ('shabunina.ao@phystech.edu', 'Анастасия', 'pass_strong123', 'Д
 
 
 INSERT INTO moderators (email, name, password, permissions)
-VALUES ('lvov.ap@phystech.edu', 'moderator_1', 'p8ss123', '{}'),
-       ('ivanov.ii@phystech.edu', 'moder_2', 'physics2024', '{}'),
-       ('orlov.ka@phystech.edu', 'mod_3', 'qwerty103', '{}'),
-       ('novikova.vv@phystech.edu', 'moderator4', 'anna_pass', '{}');
+VALUES ('doronina.ea@phystech.edu', 'moderator_1', 'p8ss123!#@_-', '{}'),
+       ('shabunina.ao@phystech.edu', 'moderator_2', 'physics2024!@#', '{}'),
+       ('orlova.ek@phystech.edu', 'moderator_3', 'qw$%ty103*(1!', '{}');
 
