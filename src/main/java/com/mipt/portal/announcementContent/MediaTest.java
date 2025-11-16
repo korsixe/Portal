@@ -8,11 +8,12 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class MediaTest {
+
   public static void main(String[] args) throws SQLException, IOException {
     Connection connection = DriverManager.getConnection(
-      "jdbc:postgresql://localhost:5433/myproject",
-      "myuser",
-      "mypassword"
+        "jdbc:postgresql://localhost:5433/myproject",
+        "myuser",
+        "mypassword"
     );
 
     MediaManager manager = new MediaManager(connection, 1);
@@ -43,7 +44,8 @@ public class MediaTest {
       File[] files = folder.listFiles();
       if (files != null) {
         for (File file : files) {
-          file.delete();}
+          file.delete();
+        }
       }
     }
     folder.mkdirs();

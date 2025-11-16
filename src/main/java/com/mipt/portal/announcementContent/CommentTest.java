@@ -4,6 +4,7 @@ package com.mipt.portal.announcementContent;
 import java.sql.SQLException;
 
 public class CommentTest {
+
   public static void main(String[] args) throws SQLException {
     // Создаем
     CommentManager manager = new CommentManager(1L, "Тестовый комментарий");

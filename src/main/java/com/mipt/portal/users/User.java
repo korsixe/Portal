@@ -2,11 +2,13 @@ package com.mipt.portal.users;
 
 import java.util.ArrayList;
 
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 
 public class User {
 
@@ -20,9 +22,6 @@ public class User {
   private double rating;
   private int coins;
   private ArrayList<Long> adList;
-
-  public User() {
-  }
 
   public User(String email, String name, String password) {
     this.email = email;
