@@ -35,7 +35,7 @@ public class Application {
             Connection connection = DriverManager.getConnection(url, username, password);
             System.out.println("✅ Успешное подключение к БД!");
 
-            ModeratorRepository moderatorRepository = new ModeratorRepository(connection);
+            ModeratorRepository moderatorRepository = new ModeratorRepository();
             ModeratorRegistrationImpl moderatorRegistration = new ModeratorRegistrationImpl(moderatorRepository);
             ModeratorLoginImpl moderatorLogin = new ModeratorLoginImpl(moderatorRepository);
 

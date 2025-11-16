@@ -72,7 +72,7 @@ public class ModeratorService {
 
         System.out.println("\nВыберите действие:");
         System.out.println("1. Одобрить объявление");
-        System.out.println("2. Отозвать объявление до доработку");
+        System.out.println("2. Отозвать объявление на доработку");
         System.out.println("3. Удалить объявление");
         System.out.println("4. Пропустить");
         System.out.print("Введите номер (1-4): ");
