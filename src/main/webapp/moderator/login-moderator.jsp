@@ -282,11 +282,13 @@
 
         <div class="button-group">
             <button type="submit" class="btn btn-moderator">Войти</button>
+            <a href="http://localhost:8080/portal/home.jsp" class="btn btn-secondary">На главную</a>
         </div>
     </form>
     <% } else { %>
     <div class="button-group">
         <a href="moderation-bord.jsp" class="btn btn-moderator">Личный кабинет</a>
+        <a href="http://localhost:8080/portal/home.jsp" class="btn btn-secondary">На главную</a>
     </div>
     <% } %>
 </div>
