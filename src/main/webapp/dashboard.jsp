@@ -29,7 +29,7 @@
         for (Long adId : user.getAdList()) {
             try {
                 Announcement ad = adsService.getAd(adId);
-                if (ad != null) {
+                if (ad != null && !ad.getStatus().isDelete()) {
                     userAnnouncements.add(ad);
                 }
             } catch (Exception e) {
