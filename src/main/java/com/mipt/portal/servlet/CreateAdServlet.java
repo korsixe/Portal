@@ -105,7 +105,6 @@ public class CreateAdServlet extends HttpServlet {
         return;
       }
 
-
       HttpSession session = request.getSession();
       User user = (User) session.getAttribute("user");
       if (user == null) {

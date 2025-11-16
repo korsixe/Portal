@@ -1,13 +1,16 @@
 package com.mipt.portal.moderator;
 
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+
 public class Moderator {
+
   private Long id;
   private String email;
   private String name;

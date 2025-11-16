@@ -7,12 +7,14 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 public class CategorySelector {
+
   private List<Map<String, Object>> categories;
   private Scanner scanner = new Scanner(System.in);
 
   public CategorySelector() {
     Gson gson = new Gson();
-    InputStream tagsStream = getClass().getClassLoader().getResourceAsStream("subcategoriesObjects.json");
+    InputStream tagsStream = getClass().getClassLoader()
+        .getResourceAsStream("subcategoriesObjects.json");
     Map<String, Object> response = gson.fromJson(new InputStreamReader(tagsStream), Map.class);
     categories = (List<Map<String, Object>>) response.get("categoryTags");
   }

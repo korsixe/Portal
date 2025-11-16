@@ -125,7 +125,9 @@ public class AdsService implements IAdsService {
     return adsId.stream()
         .filter(adId -> {
           Announcement ad = getAd(adId);
-          if (ad == null) return false;
+          if (ad == null) {
+            return false;
+          }
 
           String searchText = (ad.getTitle() + " " + ad.getDescription()).toLowerCase();
           return searchText.contains(query.toLowerCase());
