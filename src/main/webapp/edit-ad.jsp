@@ -3,6 +3,7 @@
 <%@ page import="com.mipt.portal.announcement.Category" %>
 <%@ page import="com.mipt.portal.announcement.Condition" %>
 <%@ page import="com.mipt.portal.announcement.AdvertisementStatus" %>
+<%@ page import="java.io.File" %>
 <%
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     response.setHeader("Pragma", "no-cache");
@@ -439,7 +440,7 @@
         </div>
 
         <!-- Форма редактирования -->
-        <form action="edit-ad" method="post">
+        <form action="edit-ad" method="post" enctype="multipart/form-data">
             <input type="hidden" name="adId" value="<%= announcement.getId() %>">
 
             <!-- Основная информация -->
@@ -569,6 +570,20 @@
                 </div>
             </div>
 
+            <!-- Секция для фотографий -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <span class="icon">📷</span> Фотографии
+                </h3>
+
+                <div class="form-group">
+                    <label for="photos">Добавить новые фотографии</label>
+                    <input type="file" id="photos" name="photos" class="form-control"
+                           multiple accept="image/*"
+                        <%= !announcement.canBeEdited() ? "disabled" : "" %>>
+                    <div class="tags-hint">Можно выбрать несколько файлов (JPEG, PNG, GIF)</div>
+                </div>
+            </div>
             <!-- Теги -->
             <div class="form-section">
                 <h3 class="section-title">

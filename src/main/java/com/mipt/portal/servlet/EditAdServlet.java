@@ -6,17 +6,26 @@ import com.mipt.portal.announcement.Category;
 import com.mipt.portal.announcement.Condition;
 
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
+import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @WebServlet("/edit-ad")
+@MultipartConfig(
+    maxFileSize = 1024 * 1024 * 10,      // 10 MB
+    maxRequestSize = 1024 * 1024 * 50    // 50 MB
+)
+
 public class EditAdServlet extends HttpServlet {
 
   private AdsService adsService;
@@ -118,7 +127,12 @@ public class EditAdServlet extends HttpServlet {
       if (tags != null && !tags.trim().isEmpty()) {
         List<String> tagList = Arrays.asList(tags.split("\\s*,\\s*"));
         existingAd.setTags(tagList);
+      } else {
+        existingAd.setTags(new ArrayList<>());
       }
+
+      // Обрабатываем фотографии
+      handlePhotos(request, existingAd);
 
       // Обновляем статус
       if ("publish".equals(action)) {
@@ -168,6 +182,39 @@ public class EditAdServlet extends HttpServlet {
       case "negotiable":
       default:
         return -1;
+    }
+  }
+
+  private void handlePhotos(HttpServletRequest request, Announcement ad) throws ServletException, IOException {
+    // ПРОСТАЯ ВЕРСИЯ - только загрузка новых фото
+    List<Part> fileParts = request.getParts().stream()
+        .filter(part -> "photos".equals(part.getName()) && part.getSize() > 0)
+        .collect(Collectors.toList());
+
+    if (!fileParts.isEmpty()) {
+      List<File> newPhotos = new ArrayList<>();
+
+      // Если есть текущие фото, добавляем к ним
+      if (ad.getPhotos() != null) {
+        newPhotos.addAll(ad.getPhotos());
+      }
+
+      // Сохраняем новые фото
+      for (Part filePart : fileParts) {
+        // Сохраняем файл на сервере
+        String uploadPath = getServletContext().getRealPath("") + File.separator + "uploads";
+        File uploadDir = new File(uploadPath);
+        if (!uploadDir.exists()) uploadDir.mkdirs();
+
+        String filePath = uploadPath + File.separator + System.currentTimeMillis() + "_photo.jpg";
+        filePart.write(filePath);
+
+        // Сохраняем File объект
+        File savedFile = new File(filePath);
+        newPhotos.add(savedFile);
+      }
+
+      ad.setPhotos(newPhotos);
     }
   }
 }
