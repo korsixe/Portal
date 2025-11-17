@@ -1,9 +1,13 @@
 package com.mipt.portal.moderator.message;
 
+import com.mipt.portal.announcement.AdsRepository;
+import com.mipt.portal.announcement.AdsService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class ModerationMessageService {
+
+    static AdsService adsService = new AdsService();
 
     private static final DateTimeFormatter formatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -31,10 +35,11 @@ public class ModerationMessageService {
 
             System.out.println("✅ Таблица moderation_messages существует, сохраняем сообщение...");
 
-            boolean saved = repository.saveModerationMessage(adId, moderatorEmail, action, reason);
+            Long idMessage = repository.saveModerationMessage(adId, moderatorEmail, action, reason);
 
-            if (saved) {
+            if (idMessage != null) {
                 System.out.println("✅ Сообщение модератора успешно сохранено в базу данных");
+                adsService.addCommentModerator(adId, idMessage);
             } else {
                 System.out.println("❌ Ошибка: сообщение модератора не было сохранено");
             }

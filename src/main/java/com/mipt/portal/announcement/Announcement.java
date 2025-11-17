@@ -32,7 +32,7 @@ public class Announcement {
   private List<File> photos;           // ссылки на фото
   private List<String> tags;           // теги объявления
   private Integer tagsCount;           // количество тегов
-
+  private Long messageId;    // комментраий от Модера, если не объявление не прошло проверку
   // Конструкторы
 
   public Announcement(Announcement other) {
@@ -52,6 +52,7 @@ public class Announcement {
     this.photos = other.photos != null ? new ArrayList<>(other.photos) : null;
     this.tags = other.tags != null ? new ArrayList<>(other.tags) : null;
     this.tagsCount = other.tagsCount;
+    this.messageId = other.messageId;
   }
 
   public Announcement(String title, String description, Category category, Condition condition,
@@ -70,6 +71,7 @@ public class Announcement {
     this.photos = new ArrayList<>();
     this.tags = new ArrayList<>();
     this.tagsCount = 0;
+    this.messageId = null;
   }
 
   // Бизнес-методы для работы со статусами

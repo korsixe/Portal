@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS ads
     tags        JSONB,
     tags_count  INTEGER                           DEFAULT 0,
     photos      BYTEA[]                          DEFAULT '{}', -- массив бинарных данных фотографий
+    message_id BIGINT,
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 

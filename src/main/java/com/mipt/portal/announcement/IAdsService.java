@@ -10,6 +10,8 @@ public interface IAdsService {
       String subcategory, Condition condition, int price, String location, List<File> photos,
       List<String> tags, AdvertisementStatus action) throws SQLException;
 
+  boolean addCommentModerator(long adId, long commentId) throws SQLException;
+
   Long getUserIdByEmail(String email) throws SQLException;
 
   Announcement editAd(Announcement ad) throws SQLException; // Изменить объявление
