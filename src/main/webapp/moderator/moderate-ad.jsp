@@ -2,6 +2,7 @@
 <%@ page import="com.mipt.portal.announcement.AdsService" %>
 <%@ page import="com.mipt.portal.announcement.Announcement" %>
 <%@ page import="com.mipt.portal.announcement.AdvertisementStatus" %>
+<%@ page import="com.mipt.portal.moderator.message.ModerationMessageService" %>
 <%
     // Проверка авторизации модератора
     if (session.getAttribute("moderator") == null) {
@@ -11,6 +12,8 @@
 
     String action = request.getParameter("action");
     String adIdParam = request.getParameter("adId");
+    String reason = request.getParameter("reason");
+    String moderatorEmail = (String) session.getAttribute("moderatorEmail");
     String message = "Действие выполнено";
     String messageType = "success";
 
@@ -21,6 +24,14 @@
             Announcement ad = adsService.getAd(adId);
 
             if (ad != null) {
+                // Используем новый сервис для логирования действий модератора
+                ModerationMessageService.logModerationAction(
+                        adId,
+                        action,
+                        reason,
+                        moderatorEmail
+                );
+
                 // Используем только существующие статусы из AdvertisementStatus
                 switch (action) {
                     case "approve":
