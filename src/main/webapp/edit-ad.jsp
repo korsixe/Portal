@@ -584,6 +584,7 @@
                     <div class="tags-hint">Можно выбрать несколько файлов (JPEG, PNG, GIF)</div>
                 </div>
             </div>
+
             <!-- Теги -->
             <div class="form-section">
                 <h3 class="section-title">
@@ -594,9 +595,23 @@
                     <label for="tags">Ключевые слова</label>
                     <input type="text" id="tags" name="tags" class="form-control"
                            placeholder="например: электроника, б/у, срочно, apple"
-                           value="<%= announcement.getTags() != null ? String.join(", ", announcement.getTags()) : "" %>"
+                           value="<%= announcement.getTags() != null && !announcement.getTags().isEmpty() ? String.join(", ", announcement.getTags()) : "" %>"
                         <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                     <div class="tags-hint">Введите теги через запятую для лучшего поиска</div>
+
+                    <!-- Показать текущие теги -->
+                    <% if (announcement.getTags() != null && !announcement.getTags().isEmpty()) { %>
+                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                        <strong>Текущие теги:</strong>
+                        <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+                            <% for (String tag : announcement.getTags()) { %>
+                            <span style="background: #667eea; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">
+                    <%= tag %>
+                </span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% } %>
                 </div>
             </div>
 
