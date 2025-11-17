@@ -15,7 +15,8 @@ public class AdsFilter implements IAdsFilter {
   }
 
   @Override
-  public List<Long> filterByTitle(List<Long> ads, String title) throws SQLException { // в тупую сравниваниваем названия
+  public List<Long> filterByTitle(List<Long> ads, String title)
+      throws SQLException { // в тупую сравниваниваем названия
     List<Long> filteredAds = new ArrayList<>();
     for (Long idAd : ads) {
       if (adsRepository.getAdById(idAd).getTitle().equalsIgnoreCase(title)) {
@@ -40,7 +41,8 @@ public class AdsFilter implements IAdsFilter {
   public List<Long> filterByPrice(List<Long> ads, int minPrice, int maxPrice) throws SQLException {
     List<Long> filteredAds = new ArrayList<>();
     for (Long idAd : ads) {
-      if (adsRepository.getAdById(idAd).getPrice() >= minPrice && adsRepository.getAdById(idAd).getPrice() <= maxPrice) {
+      if (adsRepository.getAdById(idAd).getPrice() >= minPrice
+          && adsRepository.getAdById(idAd).getPrice() <= maxPrice) {
         filteredAds.add(idAd);
       }
     }
@@ -64,7 +66,8 @@ public class AdsFilter implements IAdsFilter {
     Instant cutoffInstant = Instant.now().minusSeconds(days * 24 * 60 * 60L);
     List<Long> filteredAds = new ArrayList<>();
     for (Long idAd : ads) {
-      if (adsRepository.getAdById(idAd).getCreatedAt() != null && !adsRepository.getAdById(idAd).getCreatedAt().isBefore(cutoffInstant)) {
+      if (adsRepository.getAdById(idAd).getCreatedAt() != null && !adsRepository.getAdById(idAd)
+          .getCreatedAt().isBefore(cutoffInstant)) {
         filteredAds.add(idAd);
       }
     }
@@ -76,7 +79,8 @@ public class AdsFilter implements IAdsFilter {
   public List<Long> filterByDateAfter(List<Long> ads, Instant date) throws SQLException {
     List<Long> filteredAds = new ArrayList<>();
     for (Long idAd : ads) {
-      if (adsRepository.getAdById(idAd).getCreatedAt() != null && !adsRepository.getAdById(idAd).getCreatedAt().isBefore(date)) {
+      if (adsRepository.getAdById(idAd).getCreatedAt() != null && !adsRepository.getAdById(idAd)
+          .getCreatedAt().isBefore(date)) {
         filteredAds.add(idAd);
       }
     }
@@ -88,7 +92,8 @@ public class AdsFilter implements IAdsFilter {
   public List<Long> filterByDateBefore(List<Long> ads, Instant date) throws SQLException {
     List<Long> filteredAds = new ArrayList<>();
     for (Long idAd : ads) {
-      if (adsRepository.getAdById(idAd).getCreatedAt() != null && adsRepository.getAdById(idAd).getCreatedAt().isBefore(date)) {
+      if (adsRepository.getAdById(idAd).getCreatedAt() != null && adsRepository.getAdById(idAd)
+          .getCreatedAt().isBefore(date)) {
         filteredAds.add(idAd);
       }
     }
@@ -101,7 +106,8 @@ public class AdsFilter implements IAdsFilter {
     List<Long> sortedAds = new ArrayList<>(ads);
     sortedAds.sort((ad1, ad2) -> {
       try {
-        return Integer.compare(adsRepository.getAdById(ad1).getViewCount(), adsRepository.getAdById(ad2).getViewCount());
+        return Integer.compare(adsRepository.getAdById(ad1).getViewCount(),
+            adsRepository.getAdById(ad2).getViewCount());
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }

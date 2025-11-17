@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 public interface IAdsService {
+
   Announcement createAd(long userId, String title, String description, Category category,
       String subcategory, Condition condition, int price, String location, List<File> photos,
       List<String> tags, AdvertisementStatus action) throws SQLException;

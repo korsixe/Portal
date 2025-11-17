@@ -122,7 +122,7 @@ public class EditAdServlet extends HttpServlet {
 
       // Обновляем статус
       if ("publish".equals(action)) {
-        adsService.activate(existingAd); // пока нет модераторов объявления сразу становятся активными
+        adsService.sendToModeration(existingAd);
       } else {
         adsService.saveAsDraft(existingAd);
       }

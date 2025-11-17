@@ -45,12 +45,16 @@ public enum AdvertisementStatus {
     return this == ACTIVE;
   }
 
+  public boolean isDelete() {
+    return this == DELETED;
+  }
+
   public boolean isDraft() {
     return this == DRAFT;
   }
 
   public boolean canBeEdited() {
-    return this != DELETED;
+    return this != DELETED && this != ARCHIVED;
   }
 
   public boolean isVisibleToPublic() {
@@ -63,10 +67,6 @@ public enum AdvertisementStatus {
 
   public boolean canBeArchived() {
     return this == ACTIVE;
-  }
-
-  public boolean canBeRestored() {
-    return this == ARCHIVED;
   }
 
   public boolean isModerationRequired() {

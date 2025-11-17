@@ -12,6 +12,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 public class MediaManager {
+
   private final Connection connection;
   private final int adId;
   private List<byte[]> photos = new ArrayList<>();

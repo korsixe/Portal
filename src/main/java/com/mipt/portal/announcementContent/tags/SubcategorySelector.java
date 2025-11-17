@@ -9,11 +9,13 @@ import java.util.Scanner;
 import com.mipt.portal.database.DatabaseConnection;
 
 public class SubcategorySelector {
+
   private Scanner scanner = new Scanner(System.in);
 
   public Map<String, Object> selectSubcategory(Map<String, Object> category, Long adId) {
     System.out.println("Выберите подкатегорию для: " + category.get("categoryName"));
-    List<Map<String, Object>> subcategories = (List<Map<String, Object>>) category.get("subcategoryTags");
+    List<Map<String, Object>> subcategories = (List<Map<String, Object>>) category.get(
+        "subcategoryTags");
 
     for (int i = 0; i < subcategories.size(); i++) {
       System.out.println((i + 1) + ". " + subcategories.get(i).get("subcategoryName"));
@@ -32,11 +34,13 @@ public class SubcategorySelector {
     }
   }
 
-  public Map<String, Object> getSubcategoryByName(Map<String, Object> category, String subcategoryName) {
+  public Map<String, Object> getSubcategoryByName(Map<String, Object> category,
+      String subcategoryName) {
     if (category == null || subcategoryName == null) {
       return null;
     }
-    List<Map<String, Object>> subcategories = (List<Map<String, Object>>) category.get("subcategoryTags");
+    List<Map<String, Object>> subcategories = (List<Map<String, Object>>) category.get(
+        "subcategoryTags");
     if (subcategories == null) {
       return null;
     }
@@ -52,7 +56,7 @@ public class SubcategorySelector {
     String sql = "UPDATE ads SET subcategory = ? WHERE id = ?";
 
     try (Connection connection = DatabaseConnection.getConnection();
-         PreparedStatement statement = connection.prepareStatement(sql)) {
+        PreparedStatement statement = connection.prepareStatement(sql)) {
 
       String subcategoryName = (String) subcategory.get("subcategoryName");
       statement.setString(1, subcategoryName);

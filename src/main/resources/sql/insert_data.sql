@@ -12,7 +12,8 @@ VALUES ('shabunina.ao@phystech.edu', 'Анастасия', 'pass_strong123', 'Д
        ('novikova.vv@phystech.edu', 'Варерия Новикова', 'anna_pass', 'Москва, ул. Вавилова', 'Биофизика', 4, 4.7, 15),
        ('doronina.ea@phystech.edu', 'Елизавета', 'StrongPass123', 'Долгопрудный, ул. Первомайская', 'Программная инженерия', 1, 3.9,
         78),
-       ('orlova.ek@phystech.edu', 'Елизавета', 'lisa_orel123', 'Москва, ул. Вавилова', 'Программная инжерени', 1, 4.7, 15000);
+       ('orlova.ek@phystech.edu', 'Елизавета', 'lisa_orel123', 'Москва, ул. Вавилова', 'Программная инжерени', 1, 4.7, 15000),
+       ('smoleva.ns@phystech.edu', 'Наталия', '123LikeLikeLike', '', 'Программная инженерия', 1, 5.0, 10000000);
 
 
 INSERT INTO moderators (email, name, password, permissions)

@@ -9,7 +9,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal - Вход для модератора</title>
     <style>
-        /* Стили остаются такими же */
         * {
             margin: 0;
             padding: 0;
@@ -282,11 +281,13 @@
 
         <div class="button-group">
             <button type="submit" class="btn btn-moderator">Войти</button>
+            <a href="http://localhost:8080/portal/home.jsp" class="btn btn-secondary">На главную</a>
         </div>
     </form>
     <% } else { %>
     <div class="button-group">
         <a href="moderation-bord.jsp" class="btn btn-moderator">Личный кабинет</a>
+        <a href="http://localhost:8080/portal/home.jsp" class="btn btn-secondary">На главную</a>
     </div>
     <% } %>
 </div>

@@ -15,13 +15,16 @@ import java.util.Map;
 import java.util.Scanner;
 
 public class TagSelector {
+
   private Map<String, List<String>> tagValues;
   private Scanner scanner = new Scanner(System.in);
 
   public TagSelector() {
     Gson gson = new Gson();
     InputStream valuesStream = getClass().getClassLoader().getResourceAsStream("tagValues.json");
-    tagValues = gson.fromJson(new InputStreamReader(valuesStream), new TypeToken<Map<String, List<String>>>(){}.getType());
+    tagValues = gson.fromJson(new InputStreamReader(valuesStream),
+        new TypeToken<Map<String, List<String>>>() {
+        }.getType());
   }
 
   public List<String> selectTags(Map<String, Object> subcategory) {

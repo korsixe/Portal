@@ -227,6 +227,18 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
+        .btn-home {
+            background: #17a2b8;
+            color: white;
+            border: 2px solid #17a2b8;
+        }
+
+        .btn-home:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.3);
+        }
+
         .empty-state {
             text-align: center;
             color: #666;
@@ -445,6 +457,29 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
         .notification {
             position: fixed;
             top: 20px;
@@ -561,7 +596,8 @@
 
     <div class="navigation">
         <div class="nav-group">
-            <a href="login-moderator.jsp?logout=true" class="btn btn-logout">Выйти</a>
+            <a href="http://localhost:8080/portal/home.jsp" class="btn btn-primary">На главную</a>
+            <a href="login-moderator.jsp?logout=true" class="btn btn-secondary">Выйти</a>
         </div>
     </div>
 
