@@ -21,3 +21,4 @@ VALUES ('doronina.ea@phystech.edu', 'moderator_1', 'p8ss123!#@_-', '{}'),
        ('shabunina.ao@phystech.edu', 'moderator_2', 'physics2024!@#', '{}'),
        ('orlova.ek@phystech.edu', 'moderator_3', 'qw$%ty103*(1!', '{}');
 
+
