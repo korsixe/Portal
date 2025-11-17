@@ -108,14 +108,13 @@ public class AdsRepository implements IAdsRepository {
       }
 
       statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
-      statement.setLong(12, ad.getId());
 
       if (ad.getMessageId() != null) {
-        statement.setLong(13, ad.getMessageId());
+        statement.setLong(12, ad.getMessageId());
       } else {
-        statement.setNull(13, Types.BIGINT);
+        statement.setNull(12, Types.BIGINT);
       }
-
+      statement.setLong(13, ad.getId());
       int affectedRows = statement.executeUpdate();
       if (affectedRows == 0) {
         throw new SQLException("Обновление объявления failed, no rows affected.");

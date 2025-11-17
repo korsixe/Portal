@@ -44,14 +44,6 @@ public class AdsService implements IAdsService {
   }
 
   @Override
-  public boolean addCommentModerator(long adId, long commentId) throws SQLException {
-    Announcement ad = getAd(adId);
-    ad.setMessageId(commentId);
-    editAd(ad);
-    return true;
-  }
-
-  @Override
   public Long getUserIdByEmail(String email) throws SQLException {
     return adsRepository.getUserIdByEmail(email);
   }

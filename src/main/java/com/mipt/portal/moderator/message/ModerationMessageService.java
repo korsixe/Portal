@@ -7,50 +7,49 @@ import java.time.format.DateTimeFormatter;
 
 public class ModerationMessageService {
 
-    static AdsService adsService = new AdsService();
-
     private static final DateTimeFormatter formatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static void logModerationAction(Long adId, String action, String reason, String moderatorEmail) {
-        if (reason == null || reason.trim().isEmpty()) {
-            System.out.println("⚠️ Причина не указана, сообщение модератора не сохраняется");
-            return;
+    public static Long logModerationAction(Long adId, String action, String reason, String moderatorEmail) {
+      if (reason == null || reason.trim().isEmpty()) {
+        System.out.println("⚠️ Причина не указана, сообщение модератора не сохраняется");
+        return null;
+      }
+
+      String timestamp = LocalDateTime.now().format(formatter);
+
+      System.out.println(
+          "📝 У объявления с Id " + adId + " обновлён статус: " + action + " по причине: " + reason
+              + ". Модератор: " + moderatorEmail);
+
+      ModerationMessageRepository repository = null;
+      try {
+        repository = new ModerationMessageRepository();
+
+        // Проверяем существование таблицы
+        boolean tableExists = repository.checkTableExists();
+        if (!tableExists) {
+          System.err.println("❌ Таблица moderation_messages не существует!");
+          return null;
         }
 
-        String timestamp = LocalDateTime.now().format(formatter);
+        System.out.println("✅ Таблица moderation_messages существует, сохраняем сообщение...");
 
-        System.out.println("📝 У объявления с Id " + adId + " обновлён статус: " + action + " по причине: " + reason + ". Модератор: " + moderatorEmail);
+        Long idMessage = repository.saveModerationMessage(adId, moderatorEmail, action, reason);
 
-        ModerationMessageRepository repository = null;
-        try {
-            repository = new ModerationMessageRepository();
-
-            // Проверяем существование таблицы
-            boolean tableExists = repository.checkTableExists();
-            if (!tableExists) {
-                System.err.println("❌ Таблица moderation_messages не существует!");
-                return;
-            }
-
-            System.out.println("✅ Таблица moderation_messages существует, сохраняем сообщение...");
-
-            Long idMessage = repository.saveModerationMessage(adId, moderatorEmail, action, reason);
-
-            if (idMessage != null) {
-                System.out.println("✅ Сообщение модератора успешно сохранено в базу данных");
-                adsService.addCommentModerator(adId, idMessage);
-            } else {
-                System.out.println("❌ Ошибка: сообщение модератора не было сохранено");
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Критическая ошибка при сохранении сообщения модератора: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (repository != null) {
-                repository.close();
-            }
+        if (idMessage != null) {
+          System.out.println("✅ Сообщение модератора успешно сохранено в базу данных");
+        } else {
+          System.out.println("❌ Ошибка: сообщение модератора не было сохранено");
         }
+        repository.close();
+        return idMessage;
+      } catch (Exception e) {
+        System.err.println(
+            "❌ Критическая ошибка при сохранении сообщения модератора: " + e.getMessage());
+        e.printStackTrace();
+      }
+      return null;
     }
 
     /**

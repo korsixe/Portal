@@ -32,7 +32,7 @@ public class Announcement {
   private List<File> photos;           // ссылки на фото
   private List<String> tags;           // теги объявления
   private Integer tagsCount;           // количество тегов
-  private Long messageId;    // комментраий от Модера, если не объявление не прошло проверку
+  private Long messageId;              // комментраий от Модера, если не объявление не прошло проверку
   // Конструкторы
 
   public Announcement(Announcement other) {
