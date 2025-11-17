@@ -12,29 +12,6 @@ public class ModerationMessageRepository {
 
     public ModerationMessageRepository() throws SQLException {
         this.connection = DatabaseConnection.getConnection();
-        createTableIfNotExists();
-    }
-
-    private void createTableIfNotExists() {
-        String sql = """
-        CREATE TABLE IF NOT EXISTS moderation_messages (
-            id BIGSERIAL PRIMARY KEY,
-            ad_id BIGINT NOT NULL,
-            moderator_email TEXT NOT NULL,
-            action TEXT NOT NULL,
-            reason TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE
-        )
-        """;
-
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute(sql);
-            System.out.println("✅ Таблица moderation_messages гарантированно создана");
-        } catch (SQLException e) {
-            System.err.println("❌ Критическая ошибка при создании таблицы: " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 
     public boolean saveModerationMessage(Long adId, String moderatorEmail, String action, String reason) {
@@ -58,7 +35,7 @@ public class ModerationMessageRepository {
             e.printStackTrace();
             return false;
         } finally {
-            closeResources(null, stmt, null);
+            closeResources(stmt, null);
         }
     }
 
@@ -90,7 +67,7 @@ public class ModerationMessageRepository {
             System.err.println("❌ Ошибка при получении сообщений модератора: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            closeResources(null, stmt, rs);
+            closeResources(stmt, rs);
         }
 
         return messages;
@@ -124,7 +101,7 @@ public class ModerationMessageRepository {
             System.err.println("❌ Ошибка при получении сообщений модератора: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            closeResources(null, stmt, rs);
+            closeResources(stmt, rs);
         }
 
         return messages;
@@ -146,13 +123,10 @@ public class ModerationMessageRepository {
             e.printStackTrace();
             return false;
         } finally {
-            closeResources(null, stmt, null);
+            closeResources( stmt, null);
         }
     }
 
-    /**
-     * Проверяет существование таблицы moderation_messages
-     */
     public boolean checkTableExists() {
         try {
             DatabaseMetaData meta = connection.getMetaData();
@@ -165,11 +139,10 @@ public class ModerationMessageRepository {
     }
 
 
-    private void closeResources(Connection conn, Statement stmt, ResultSet rs) {
+    private void closeResources(Statement stmt, ResultSet rs) {
         try {
             if (rs != null) rs.close();
             if (stmt != null) stmt.close();
-            // Не закрываем connection здесь, так как он используется повторно
         } catch (SQLException e) {
             System.err.println("❌ Ошибка при закрытии соединения: " + e.getMessage());
         }
