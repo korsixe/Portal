@@ -1,70 +1,47 @@
 package com.mipt.portal.announcementContent.tags;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import lombok.RequiredArgsConstructor;
+import java.sql.*;
+import java.util.*;
 import com.mipt.portal.database.DatabaseConnection;
 
+@RequiredArgsConstructor
 public class SubcategorySelector {
 
-  private Scanner scanner = new Scanner(System.in);
+  public List<Map<String, Object>> getSubcategoriesByCategory(Long categoryId) throws SQLException {
+    List<Map<String, Object>> subcategories = new ArrayList<>();
+    String sql = "SELECT id, name FROM categories WHERE parent_id = ? ORDER BY name";
 
-  public Map<String, Object> selectSubcategory(Map<String, Object> category, Long adId) {
-    System.out.println("Выберите подкатегорию для: " + category.get("categoryName"));
-    List<Map<String, Object>> subcategories = (List<Map<String, Object>>) category.get(
-        "subcategoryTags");
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-    for (int i = 0; i < subcategories.size(); i++) {
-      System.out.println((i + 1) + ". " + subcategories.get(i).get("subcategoryName"));
-    }
-
-    while (true) {
-      int choice = Integer.parseInt(scanner.nextLine());
-      if (choice > 0 && choice <= subcategories.size()) {
-        Map<String, Object> selectedSubcategory = subcategories.get(choice - 1);
-
-        saveSubcategoryToDatabase(adId, selectedSubcategory);
-
-        return selectedSubcategory;
-      }
-      System.out.println("Введите 1 из предложенных номеров");
-    }
-  }
-
-  public Map<String, Object> getSubcategoryByName(Map<String, Object> category,
-      String subcategoryName) {
-    if (category == null || subcategoryName == null) {
-      return null;
-    }
-    List<Map<String, Object>> subcategories = (List<Map<String, Object>>) category.get(
-        "subcategoryTags");
-    if (subcategories == null) {
-      return null;
-    }
-    for (Map<String, Object> subcategory : subcategories) {
-      if (subcategoryName.equals(subcategory.get("subcategoryName"))) {
-        return subcategory;
+      stmt.setLong(1, categoryId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          Map<String, Object> subcategory = new HashMap<>();
+          subcategory.put("id", rs.getLong("id"));
+          subcategory.put("name", rs.getString("name"));
+          subcategories.add(subcategory);
+        }
       }
     }
-    return null;
+    return subcategories;
   }
 
-  private void saveSubcategoryToDatabase(Long adId, Map<String, Object> subcategory) {
-    String sql = "UPDATE ads SET subcategory = ? WHERE id = ?";
+  public boolean isServiceSubcategory(Long subcategoryId) throws SQLException {
+    String sql = """
+            SELECT c.is_service FROM categories sc 
+            JOIN categories c ON sc.parent_id = c.id 
+            WHERE sc.id = ?
+            """;
 
-    try (Connection connection = DatabaseConnection.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql)) {
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-      String subcategoryName = (String) subcategory.get("subcategoryName");
-      statement.setString(1, subcategoryName);
-      statement.setLong(2, adId);
-      statement.executeUpdate();
-
-    } catch (SQLException e) {
-      System.err.println("Ошибка при сохранении субкатегории в БД: " + e.getMessage());
+      stmt.setLong(1, subcategoryId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        return rs.next() && rs.getBoolean("is_service");
+      }
     }
   }
 }

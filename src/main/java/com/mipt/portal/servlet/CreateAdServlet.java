@@ -5,9 +5,13 @@ import com.mipt.portal.announcement.Announcement;
 import com.mipt.portal.announcement.Category;
 import com.mipt.portal.announcement.Condition;
 import com.mipt.portal.announcement.AdvertisementStatus;
-
+import com.mipt.portal.announcementContent.tags.TagSelector;
 import com.mipt.portal.users.User;
+
+import java.sql.SQLException;
 import java.util.logging.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -32,6 +36,8 @@ import java.util.*;
 public class CreateAdServlet extends HttpServlet {
 
   private AdsService adsService;
+  private TagSelector tagSelector;
+  private ObjectMapper objectMapper;
   private static final String UPLOAD_DIR = "uploads";
   private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif");
   private static final Logger logger = Logger.getLogger(CreateAdServlet.class.getName());
@@ -46,6 +52,10 @@ public class CreateAdServlet extends HttpServlet {
       this.adsService = new AdsService();
       System.out.println("✅ AdsService создан успешно");
 
+      this.tagSelector = new TagSelector();
+      this.objectMapper = new ObjectMapper();
+      System.out.println("✅ TagSelector и ObjectMapper созданы успешно");
+
       logger.info("AdsService initialized successfully");
       System.out.println("🎉 ========== ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА ==========");
 
@@ -55,6 +65,20 @@ public class CreateAdServlet extends HttpServlet {
       e.printStackTrace();
       logger.severe("Error initializing AdsService: " + e.getMessage());
       throw new ServletException("Error initializing AdsService", e);
+    }
+  }
+
+  private void testTagsLoading() {
+    try {
+      System.out.println("🧪 Testing tags loading during init...");
+      List<Map<String, Object>> testTags = tagSelector.getTagsWithValues();
+      System.out.println("✅ INIT TEST: Loaded " + testTags.size() + " tags");
+      if (!testTags.isEmpty()) {
+        System.out.println("✅ INIT TEST: First tag - " + testTags.get(0).get("name"));
+      }
+    } catch (Exception e) {
+      System.err.println("❌ INIT TEST: Failed to load tags: " + e.getMessage());
+      e.printStackTrace();
     }
   }
 
@@ -79,7 +103,7 @@ public class CreateAdServlet extends HttpServlet {
       String priceType = request.getParameter("priceType");
       String priceStr = request.getParameter("price");
       String action = request.getParameter("action");
-      String tags = request.getParameter("tags");
+      String selectedTagsJson = request.getParameter("selectedTags");
 
       // Валидация обязательных полей
       if (title == null || title.trim().isEmpty() ||
@@ -94,7 +118,15 @@ public class CreateAdServlet extends HttpServlet {
       }
 
       // Преобразуем категорию и состояние
-      Category category = Category.valueOf(categoryStr);
+      Category category;
+      try {
+        category = Category.fromDisplayName(categoryStr.trim());
+      } catch (Exception e) {
+        request.setAttribute("error", "Некорректная категория: " + categoryStr);
+        request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
+        return;
+      }
+
       Condition condition = Condition.valueOf(conditionStr);
 
       // Обрабатываем цену
@@ -113,8 +145,45 @@ public class CreateAdServlet extends HttpServlet {
       }
       Long userId = user.getId();
 
+      // Обрабатываем теги
+      List<String> selectedTagsForAnnouncement = new ArrayList<>();
+      List<Map<String, Object>> tagSelectionsForDB = new ArrayList<>();
+
+      if (selectedTagsJson != null && !selectedTagsJson.trim().isEmpty()) {
+        try {
+          List<Map<String, Object>> tagSelections = objectMapper.readValue(
+            selectedTagsJson,
+            objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class)
+          );
+
+          // Преобразуем для Announcement и для БД
+          for (Map<String, Object> tagSelection : tagSelections) {
+            String tagName = (String) tagSelection.get("tagName");
+            String valueName = (String) tagSelection.get("valueName");
+            if (tagName != null && valueName != null) {
+              // Для Announcement (старый формат)
+              selectedTagsForAnnouncement.add(tagName + ": " + valueName);
+              // Для сохранения в БД (новый формат)
+              tagSelectionsForDB.add(tagSelection);
+            }
+          }
+        } catch (Exception e) {
+          System.err.println("❌ Error parsing tags JSON: " + e.getMessage());
+          // Если JSON не парсится, используем старый формат
+          String oldTags = request.getParameter("tags");
+          if (oldTags != null && !oldTags.trim().isEmpty()) {
+            String[] tagsArray = oldTags.split("\\s*,\\s*");
+            for (String tag : tagsArray) {
+              String trimmedTag = tag.trim();
+              if (!trimmedTag.isEmpty()) {
+                selectedTagsForAnnouncement.add(trimmedTag);
+              }
+            }
+          }
+        }
+      }
+
       List<File> uploadedPhotos = new ArrayList<>(); // Обрабатываем загрузку фотографий - Лиза О
-      List<String> tag = new ArrayList<>(); // Обрабатываем теги - Лиза О
 
       Announcement ad = adsService.createAd(
           userId,
@@ -126,13 +195,24 @@ public class CreateAdServlet extends HttpServlet {
           price,
           location,
           uploadedPhotos,
-          tag,
+          selectedTagsForAnnouncement,
           "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
               : AdvertisementStatus.DRAFT
       );
 
       request.setAttribute("announcement", ad);
       request.getRequestDispatcher("/successful-create-ad.jsp").forward(request, response);
+      // Сохраняем теги в БД
+      if (!tagSelectionsForDB.isEmpty()) {
+        try {
+          tagSelector.saveAdTags(ad.getId(), tagSelectionsForDB);
+          System.out.println("✅ Tags saved to database for ad " + ad.getId());
+        } catch (SQLException e) {
+          System.err.println("❌ Error saving tags to database: " + e.getMessage());
+          // Продолжаем выполнение, даже если теги не сохранились в БД
+        }
+      }
+
     } catch (IllegalArgumentException e) {
       request.setAttribute("error", "Некорректные данные: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);

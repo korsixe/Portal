@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
 
@@ -290,6 +291,29 @@ public class AdsRepository implements IAdsRepository {
     }
 
     // Обрабатываем теги
+    String tagsString = resultSet.getString("tags");
+    if (tagsString != null && !tagsString.trim().isEmpty()) {
+      List<String> tags = Arrays.asList(tagsString.split("\\s*,\\s*"));
+      ad.setTags(tags);
+    } else {
+      ad.setTags(new ArrayList<>());
+    }
+
+    // Обрабатываем фото
+    String photosString = resultSet.getString("photos");
+    if (photosString != null && !photosString.trim().isEmpty()) {
+      List<File> photos = new ArrayList<>();
+      String[] photoPaths = photosString.split("\\s*,\\s*");
+      for (String photoPath : photoPaths) {
+        File photoFile = new File(photoPath);
+        if (photoFile.exists()) {
+          photos.add(photoFile);
+        }
+      }
+      ad.setPhotos(photos);
+    } else {
+      ad.setPhotos(new ArrayList<>());
+    }
 
     // Устанавливаем даты
     Timestamp createdAt = resultSet.getTimestamp("created_at");

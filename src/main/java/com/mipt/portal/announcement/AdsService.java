@@ -37,6 +37,7 @@ public class AdsService implements IAdsService {
     ad.setSubcategory(subcategory);
     ad.setPhotos(photos);
     ad.setTags(tags);
+    ad.setTagsCount(tags != null ? tags.size() : 0);
     ad.setStatus(action);
     ad.setId(adsRepository.saveAd(ad));
     userService.addAnnouncementId(ad.getUserId(), ad.getId());

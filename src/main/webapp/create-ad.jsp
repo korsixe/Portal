@@ -1,6 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.mipt.portal.announcement.Category" %>
 <%@ page import="com.mipt.portal.announcement.Condition" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.List" %>
+
 <%
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     response.setHeader("Pragma", "no-cache");
@@ -320,13 +323,101 @@
         }
       }
 
-      .icon {
-        display: inline-block;
-        width: 24px;
-        height: 24px;
-        text-align: center;
-        line-height: 24px;
-      }
+        .icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            line-height: 24px;
+        }
+
+        /* Стили для новой системы тегов */
+        .tag-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+        }
+
+        .tag-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tag-name {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 1.1em;
+        }
+
+        .tag-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .tag-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .selected-tags-container {
+            min-height: 50px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .selected-tags-container:focus-within {
+            border-color: var(--primary);
+        }
+
+        .selected-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            box-shadow: var(--shadow);
+        }
+
+        .no-tags-message, .select-subcategory-message {
+            color: var(--gray);
+            font-style: italic;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .remove-tag-btn {
+            background: none;
+            border: none;
+            color: white;
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-tag-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -387,22 +478,109 @@
                     <label for="category" class="required">Основная категория</label>
                     <select id="category" name="category" class="form-control" required>
                         <option value="">Выберите категорию</option>
-                        <% for (Category category : Category.values()) { %>
-                        <option value="<%= category.name() %>"
-                                <%=
-                                (request.getParameter("category") != null && request.getParameter(
-                                        "category").equals(category.name())) ? "selected" : "" %>>
-                            <%= category.getDisplayName() %>
+                        <%
+                            // Получаем категории из БД
+                            try {
+                                com.mipt.portal.announcementContent.tags.CategorySelector categorySelector =
+                                        new com.mipt.portal.announcementContent.tags.CategorySelector();
+                                java.util.List<java.util.Map<String, Object>> categories = categorySelector.getAllCategories();
+
+                                String currentCategoryParam = request.getParameter("category");
+
+                                for (java.util.Map<String, Object> category : categories) {
+                                    String categoryName = (String) category.get("name");
+                                    boolean isSelected = categoryName.equals(currentCategoryParam);
+                        %>
+                        <option value="<%= categoryName %>" <%= isSelected ? "selected" : "" %>>
+                            <%= categoryName %>
                         </option>
-                        <% } %>
+                        <%
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error loading categories: " + e.getMessage());
+                            e.printStackTrace();
+                        %>
+                        <option value="">Ошибка загрузки категорий</option>
+                        <%
+                            }
+                        %>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="subcategory">Подкатегория</label>
-                    <input type="text" id="subcategory" name="subcategory" class="form-control"
-                           placeholder="Например: Смартфоны и телефоны"
-                           value="<%= request.getParameter("subcategory") != null ? request.getParameter("subcategory") : "" %>">
+                    <label for="subcategory" class="required">Подкатегория</label>
+                    <select id="subcategory" name="subcategory" class="form-control" required>
+                        <%
+                            // Используем другое имя переменной чтобы избежать конфликта
+                            String chosenCategory = request.getParameter("category");
+                            if (chosenCategory == null || chosenCategory.isEmpty()) {
+                        %>
+                        <option value="">Сначала выберите категорию</option>
+                        <%
+                        } else {
+                            try {
+                                // Загружаем категории и находим ID выбранной
+                                com.mipt.portal.announcementContent.tags.CategorySelector categorySelector =
+                                        new com.mipt.portal.announcementContent.tags.CategorySelector();
+                                java.util.List<java.util.Map<String, Object>> allCategories = categorySelector.getAllCategories();
+                                Long categoryId = null;
+
+                                // ДЕБАГ: выводим в консоль
+                                System.out.println("=== LOADING SUBCATEGORIES FOR: " + chosenCategory + " ===");
+
+                                for (java.util.Map<String, Object> category : allCategories) {
+                                    String catName = (String) category.get("name");
+                                    if (catName.equals(chosenCategory)) {
+                                        categoryId = (Long) category.get("id");
+                                        System.out.println("Found category ID: " + categoryId + " for name: " + chosenCategory);
+                                        break;
+                                    }
+                                }
+
+                                if (categoryId != null) {
+                                    // Загружаем подкатегории
+                                    com.mipt.portal.announcementContent.tags.SubcategorySelector subcategorySelector =
+                                            new com.mipt.portal.announcementContent.tags.SubcategorySelector();
+                                    java.util.List<java.util.Map<String, Object>> subcategories =
+                                            subcategorySelector.getSubcategoriesByCategory(categoryId);
+
+                                    System.out.println("Loaded " + (subcategories != null ? subcategories.size() : 0) + " subcategories");
+
+                                    String currentSubcategoryParam = request.getParameter("subcategory");
+
+                                    if (subcategories != null && !subcategories.isEmpty()) {
+                        %>
+                        <option value="">Выберите подкатегорию</option>
+                        <%
+                            for (java.util.Map<String, Object> subcategory : subcategories) {
+                                String subcategoryName = (String) subcategory.get("name");
+                                boolean isSelected = subcategoryName.equals(currentSubcategoryParam);
+                        %>
+                        <option value="<%= subcategoryName %>" <%= isSelected ? "selected" : "" %>>
+                            <%= subcategoryName %>
+                        </option>
+                        <%
+                            }
+                        } else {
+                        %>
+                        <option value="">Нет доступных подкатегорий</option>
+                        <%
+                            }
+                        } else {
+                        %>
+                        <option value="">Категория не найдена в БД</option>
+                        <%
+                            }
+                        } catch (Exception e) {
+                            System.err.println("ERROR loading subcategories: " + e.getMessage());
+                            e.printStackTrace();
+                        %>
+                        <option value="">Ошибка загрузки подкатегорий</option>
+                        <%
+                                }
+                            }
+                        %>
+                    </select>
                 </div>
             </div>
 
@@ -498,12 +676,69 @@
                     <span class="icon">🏷️</span> Теги
                 </h3>
 
+                <!-- Скрытое поле для хранения выбранных тегов в JSON -->
+                <input type="hidden" id="selectedTags" name="selectedTags" value="">
+
+                <!-- Контейнер для выбранных тегов -->
                 <div class="form-group">
-                    <label for="tags">Ключевые слова</label>
-                    <input type="text" id="tags" name="tags" class="form-control"
-                           placeholder="например: электроника, б/у, срочно, apple"
-                           value="<%= request.getParameter("tags") != null ? request.getParameter("tags") : "" %>">
-                    <div class="tags-hint">Введите теги через запятую для лучшего поиска</div>
+                    <label>Выбранные теги:</label>
+                    <div id="selectedTagsContainer" class="selected-tags-container">
+                        <div class="no-tags-message">Теги не выбраны</div>
+                    </div>
+                </div>
+
+                <!-- Контейнер для тегов с выпадающими списками -->
+                <div class="form-group">
+                    <label>Доступные теги:</label>
+                    <div id="tagsContainer" class="tags-container">
+                        <%
+                            if (request.getAttribute("availableTags") != null) {
+                                List<Map<String, Object>> availableTags = (List<Map<String, Object>>) request.getAttribute("availableTags");
+                                if (availableTags != null && !availableTags.isEmpty()) {
+                                    for (Map<String, Object> tag : availableTags) {
+                                        String tagName = (String) tag.get("name");
+                                        Long tagId = (Long) tag.get("id");
+                                        List<Map<String, Object>> values = (List<Map<String, Object>>) tag.get("values");
+                        %>
+                        <div class="tag-row" data-tag-id="<%= tagId %>">
+                            <div class="tag-header">
+                                <span class="tag-name"><%= tagName %></span>
+                            </div>
+                            <select class="tag-select" data-tag-id="<%= tagId %>" data-tag-name="<%= tagName %>">
+                                <option value="">Не выбрано</option>
+                                <%
+                                    if (values != null && !values.isEmpty()) {
+                                        for (Map<String, Object> value : values) {
+                                            String valueName = (String) value.get("name");
+                                            Long valueId = (Long) value.get("id");
+                                %>
+                                <option value="<%= valueId %>" data-value-name="<%= valueName %>">
+                                    <%= valueName %>
+                                </option>
+                                <%
+                                    }
+                                } else {
+                                %>
+                                <option value="">Нет доступных значений</option>
+                                <%
+                                    }
+                                %>
+                            </select>
+                        </div>
+                        <%
+                            }
+                        } else {
+                        %>
+                        <div class="no-tags-message">Нет доступных тегов в базе данных</div>
+                        <%
+                            }
+                        } else {
+                        %>
+                        <div class="no-tags-message">Теги не загружены (availableTags = null)</div>
+                        <%
+                            }
+                        %>
+                    </div>
                 </div>
             </div>
 
@@ -538,5 +773,267 @@
         </form>
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const categorySelect = document.getElementById('category');
+        const subcategorySelect = document.getElementById('subcategory');
+
+        // При изменении категории перезагружаем страницу
+        categorySelect.addEventListener('change', function() {
+            submitFormWithCategory(this.value);
+        });
+
+        function submitFormWithCategory(categoryValue) {
+            // Создаем временную форму для отправки данных
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = '<%= request.getRequestURI() %>';
+
+            // Добавляем выбранную категорию
+            addHiddenField(form, 'category', categoryValue);
+
+            // Сохраняем другие поля формы
+            const fieldsToSave = ['title', 'description', 'location', 'priceType', 'price'];
+            fieldsToSave.forEach(fieldName => {
+                const field = document.querySelector('[name="' + fieldName + '"]');
+                if (field && (field.value || field.checked)) {
+                    if (field.type === 'radio') {
+                        const checkedRadio = document.querySelector('[name="' + fieldName + '"]:checked');
+                        if (checkedRadio) {
+                            addHiddenField(form, fieldName, checkedRadio.value);
+                        }
+                    } else {
+                        addHiddenField(form, fieldName, field.value);
+                    }
+                }
+            });
+
+            // Сохраняем выбранные теги
+            const selectedTagsField = document.getElementById('selectedTags');
+            if (selectedTagsField && selectedTagsField.value) {
+                addHiddenField(form, 'selectedTags', selectedTagsField.value);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function addHiddenField(form, name, value) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+        }
+
+        // Обработка типа цены
+        const priceTypeRadios = document.querySelectorAll('input[name="priceType"]');
+        const priceInput = document.getElementById('price');
+
+        function updatePriceFieldVisibility() {
+            const selectedType = document.querySelector('input[name="priceType"]:checked');
+            if (selectedType && selectedType.value === 'fixed') {
+                priceInput.style.display = 'block';
+                priceInput.required = true;
+            } else {
+                priceInput.style.display = 'none';
+                priceInput.required = false;
+                if (priceInput) priceInput.value = '';
+            }
+        }
+
+        // Инициализация обработчиков цены
+        if (priceTypeRadios.length > 0) {
+            priceTypeRadios.forEach(radio => {
+                radio.addEventListener('change', updatePriceFieldVisibility);
+            });
+            updatePriceFieldVisibility();
+        }
+
+        // === СИСТЕМА ТЕГОВ С ВЫПАДАЮЩИМИ СПИСКАМИ ===
+        let selectedTags = [];
+
+        // Восстанавливаем выбранные теги если они есть
+        const hiddenTagsField = document.getElementById('selectedTags');
+        if (hiddenTagsField && hiddenTagsField.value) {
+            try {
+                selectedTags = JSON.parse(hiddenTagsField.value);
+                restoreSelectedTags();
+                updateSelectedTagsDisplay();
+            } catch (e) {
+                console.error('Error parsing saved tags:', e);
+            }
+        }
+
+        // Обработчик изменения выпадающих списков тегов
+        const tagSelects = document.querySelectorAll('.tag-select');
+        tagSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                const tagId = this.getAttribute('data-tag-id');
+                const tagName = this.getAttribute('data-tag-name');
+                const valueId = this.value;
+                const valueName = this.options[this.selectedIndex]?.getAttribute('data-value-name');
+
+                if (valueId && valueName) {
+                    // Добавляем или обновляем тег
+                    const existingIndex = selectedTags.findIndex(tag => tag.tagId == tagId);
+
+                    if (existingIndex !== -1) {
+                        // Обновляем существующий тег
+                        selectedTags[existingIndex] = {
+                            tagId: parseInt(tagId),
+                            tagName: tagName,
+                            valueId: parseInt(valueId),
+                            valueName: valueName
+                        };
+                    } else {
+                        // Добавляем новый тег
+                        selectedTags.push({
+                            tagId: parseInt(tagId),
+                            tagName: tagName,
+                            valueId: parseInt(valueId),
+                            valueName: valueName
+                        });
+                    }
+                } else {
+                    // Удаляем тег если выбран "Не выбрано"
+                    const index = selectedTags.findIndex(tag => tag.tagId == tagId);
+                    if (index !== -1) {
+                        selectedTags.splice(index, 1);
+                    }
+                }
+
+                updateSelectedTagsDisplay();
+                updateHiddenFields();
+            });
+        });
+
+        // Восстановление выбранных тегов в выпадающих списках
+        function restoreSelectedTags() {
+            selectedTags.forEach(tag => {
+                const select = document.querySelector(`.tag-select[data-tag-id="${tag.tagId}"]`);
+                if (select) {
+                    select.value = tag.valueId;
+                }
+            });
+        }
+
+        // Удаление выбранного тега
+        function removeSelectedTag(tagId) {
+            const index = selectedTags.findIndex(tag => tag.tagId == tagId);
+            if (index !== -1) {
+                selectedTags.splice(index, 1);
+
+                // Сбрасываем соответствующий выпадающий список
+                const select = document.querySelector(`.tag-select[data-tag-id="${tagId}"]`);
+                if (select) {
+                    select.value = '';
+                }
+
+                updateSelectedTagsDisplay();
+                updateHiddenFields();
+            }
+        }
+
+        // Обновление отображения выбранных тегов
+        function updateSelectedTagsDisplay() {
+            const container = document.getElementById('selectedTagsContainer');
+
+            if (selectedTags.length === 0) {
+                container.innerHTML = '<div class="no-tags-message">Теги не выбраны</div>';
+                return;
+            }
+
+            let html = '';
+            selectedTags.forEach(tag => {
+                html += `
+                    <div class="selected-tag">
+                        ${tag.tagName}: ${tag.valueName}
+                        <button type="button" class="remove-tag-btn" onclick="removeSelectedTag(${tag.tagId})">
+                            ×
+                        </button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Обновление скрытых полей
+        function updateHiddenFields() {
+            const hiddenField = document.getElementById('selectedTags');
+            hiddenField.value = JSON.stringify(selectedTags);
+        }
+    });
+
+    // Глобальные функции для обработки тегов
+    function removeSelectedTag(tagId) {
+        // Находим текущий контекст выполнения
+        const event = new Event('tagRemoval');
+        document.dispatchEvent(event);
+
+        // Используем setTimeout чтобы дать время на обновление контекста
+        setTimeout(() => {
+            const selects = document.querySelectorAll('.tag-select');
+            let selectedTags = [];
+
+            // Восстанавливаем selectedTags из скрытого поля
+            const hiddenField = document.getElementById('selectedTags');
+            if (hiddenField && hiddenField.value) {
+                try {
+                    selectedTags = JSON.parse(hiddenField.value);
+                } catch (e) {
+                    console.error('Error parsing tags:', e);
+                }
+            }
+
+            // Удаляем тег
+            const index = selectedTags.findIndex(tag => tag.tagId == tagId);
+            if (index !== -1) {
+                selectedTags.splice(index, 1);
+
+                // Сбрасываем выпадающий список
+                const select = document.querySelector(`.tag-select[data-tag-id="${tagId}"]`);
+                if (select) {
+                    select.value = '';
+                }
+
+                // Обновляем отображение
+                updateSelectedTagsDisplay(selectedTags);
+                updateHiddenFields(selectedTags);
+            }
+        }, 0);
+    }
+
+    function updateSelectedTagsDisplay(selectedTags) {
+        const container = document.getElementById('selectedTagsContainer');
+
+        if (!selectedTags || selectedTags.length === 0) {
+            container.innerHTML = '<div class="no-tags-message">Теги не выбраны</div>';
+            return;
+        }
+
+        let html = '';
+        selectedTags.forEach(tag => {
+            html += `
+                <div class="selected-tag">
+                    ${tag.tagName}: ${tag.valueName}
+                    <button type="button" class="remove-tag-btn" onclick="removeSelectedTag(${tag.tagId})">
+                        ×
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function updateHiddenFields(selectedTags) {
+        const hiddenField = document.getElementById('selectedTags');
+        if (hiddenField && selectedTags) {
+            hiddenField.value = JSON.stringify(selectedTags);
+        }
+    }
+</script>
 </body>
 </html>
