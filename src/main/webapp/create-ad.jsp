@@ -4,6 +4,12 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.List" %>
 
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.mipt.portal.announcement.Category" %>
+<%@ page import="com.mipt.portal.announcement.Condition" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.List" %>
+
 <%
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     response.setHeader("Pragma", "no-cache");
@@ -15,7 +21,25 @@
     if (priceType == null) {
         priceType = "negotiable"; // значение по умолчанию
     }
+
+    // Загружаем теги если они еще не загружены
+    if (request.getAttribute("availableTags") == null) {
+        try {
+            com.mipt.portal.announcementContent.tags.TagSelector tagSelector =
+                    new com.mipt.portal.announcementContent.tags.TagSelector();
+            java.util.List<java.util.Map<String, Object>> availableTags = tagSelector.getTagsWithValues();
+            request.setAttribute("availableTags", availableTags);
+        } catch (Exception e) {
+            System.err.println("Error loading tags in create-ad.jsp: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 %>
+
+<html>
+<head>
+    <title>Создать объявление • Portal</title>
+    <!-- остальной код -->
 <html>
 <head>
     <title>Создать объявление • Portal</title>
@@ -964,76 +988,10 @@
             const hiddenField = document.getElementById('selectedTags');
             hiddenField.value = JSON.stringify(selectedTags);
         }
+
+        // Делаем функцию глобальной для использования в onclick
+        window.removeSelectedTag = removeSelectedTag;
     });
-
-    // Глобальные функции для обработки тегов
-    function removeSelectedTag(tagId) {
-        // Находим текущий контекст выполнения
-        const event = new Event('tagRemoval');
-        document.dispatchEvent(event);
-
-        // Используем setTimeout чтобы дать время на обновление контекста
-        setTimeout(() => {
-            const selects = document.querySelectorAll('.tag-select');
-            let selectedTags = [];
-
-            // Восстанавливаем selectedTags из скрытого поля
-            const hiddenField = document.getElementById('selectedTags');
-            if (hiddenField && hiddenField.value) {
-                try {
-                    selectedTags = JSON.parse(hiddenField.value);
-                } catch (e) {
-                    console.error('Error parsing tags:', e);
-                }
-            }
-
-            // Удаляем тег
-            const index = selectedTags.findIndex(tag => tag.tagId == tagId);
-            if (index !== -1) {
-                selectedTags.splice(index, 1);
-
-                // Сбрасываем выпадающий список
-                const select = document.querySelector(`.tag-select[data-tag-id="${tagId}"]`);
-                if (select) {
-                    select.value = '';
-                }
-
-                // Обновляем отображение
-                updateSelectedTagsDisplay(selectedTags);
-                updateHiddenFields(selectedTags);
-            }
-        }, 0);
-    }
-
-    function updateSelectedTagsDisplay(selectedTags) {
-        const container = document.getElementById('selectedTagsContainer');
-
-        if (!selectedTags || selectedTags.length === 0) {
-            container.innerHTML = '<div class="no-tags-message">Теги не выбраны</div>';
-            return;
-        }
-
-        let html = '';
-        selectedTags.forEach(tag => {
-            html += `
-                <div class="selected-tag">
-                    ${tag.tagName}: ${tag.valueName}
-                    <button type="button" class="remove-tag-btn" onclick="removeSelectedTag(${tag.tagId})">
-                        ×
-                    </button>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-    }
-
-    function updateHiddenFields(selectedTags) {
-        const hiddenField = document.getElementById('selectedTags');
-        if (hiddenField && selectedTags) {
-            hiddenField.value = JSON.stringify(selectedTags);
-        }
-    }
 </script>
 </body>
 </html>

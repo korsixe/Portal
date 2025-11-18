@@ -50,54 +50,19 @@
                     String tagsJson = rs.getString("tags");
                     if (tagsJson != null && !tagsJson.equals("null")) {
                         List<String> tags = new ArrayList<>();
-
-                        // Обработка структурированных тегов вида {tagId:X tagName:Y valueId:Z valueName:W}
-                        try {
-                            // Разделяем на отдельные объекты тегов
-                            String[] tagObjects = tagsJson.split("\\},\\s*\\{");
-
-                            for (String tagObj : tagObjects) {
-                                // Очищаем фигурные скобки и пробелы
-                                String cleanTagObj = tagObj.replace("{", "").replace("}", "").trim();
-
-                                // Парсим пары ключ-значение
-                                String tagName = "";
-                                String valueName = "";
-
-                                // Разделяем по пробелам и обрабатываем пары
-                                String[] pairs = cleanTagObj.split("\\s+");
-                                for (int i = 0; i < pairs.length; i++) {
-                                    if (pairs[i].equals("tagName:") && i + 1 < pairs.length) {
-                                        tagName = pairs[i + 1];
-                                    }
-                                    if (pairs[i].equals("valueName:") && i + 1 < pairs.length) {
-                                        valueName = pairs[i + 1];
-                                    }
+                        // Простая обработка JSON массива
+                        if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
+                            String[] tagArray = tagsJson.substring(1, tagsJson.length() - 1).split(",");
+                            for (String tag : tagArray) {
+                                String cleanTag = tag.trim().replace("\"", "");
+                                if (!cleanTag.isEmpty()) {
+                                    tags.add(cleanTag);
                                 }
-
-                                if (!tagName.isEmpty() && !valueName.isEmpty()) {
-                                    tags.add(tagName + ": " + valueName);
-                                }
-                            }
-                        } catch (Exception e) {
-                            System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
-                            // Fallback: простая обработка как строки
-                            if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
-                                String[] tagArray = tagsJson.substring(1, tagsJson.length() - 1).split(",");
-                                for (String tag : tagArray) {
-                                    String cleanTag = tag.trim().replace("\"", "");
-                                    if (!cleanTag.isEmpty()) {
-                                        tags.add(cleanTag);
-                                    }
-                                }
-                            } else {
-                                tags.add(tagsJson);
                             }
                         }
                         announcement.setTags(tags);
                     }
 
-                    // Обработка фотографий
                     Array photosArray = rs.getArray("photos");
                     if (photosArray != null) {
                         Object[] photosData = (Object[]) photosArray.getArray();
@@ -106,6 +71,7 @@
                                 if (photoData instanceof byte[]) {
                                     byte[] imageBytes = (byte[]) photoData;
                                     if (imageBytes.length > 0) {
+                                        // Конвертируем byte[] в Base64 строку
                                         String base64Image = Base64.getEncoder().encodeToString(imageBytes);
                                         photoBase64List.add(base64Image);
                                     }
@@ -153,7 +119,33 @@
             e.printStackTrace();
         }
     }
-%>
+
+    // Обработка добавления нового комментария
+    if ("POST".equalsIgnoreCase(request.getMethod()) && "addComment".equals(request.getParameter("action"))) {
+        User user = (User) session.getAttribute("user");
+        if (user != null && announcement != null) {
+            String commentText = request.getParameter("commentText");
+            if (commentText != null && !commentText.trim().isEmpty()) {
+                com.mipt.portal.announcementContent.ProfanityChecker profanityChecker =
+                    new com.mipt.portal.announcementContent.ProfanityChecker();
+                if (profanityChecker.containsProfanity(commentText)) {
+                    request.setAttribute("profanityError", "Комментарий содержит недопустимые слова и не может быть сохранен.");
+                } else {
+                    try {
+                        CommentManager commentManager = new CommentManager(announcement.getId(), commentText.trim());
+                        Comment newComment = commentManager.create();
+                        comments.add(0, newComment); // Добавляем в начало списка
+
+                        // Перенаправляем
+                        response.sendRedirect("ad-details.jsp?id=" + announcement.getId());
+                        return;
+                    } catch (SQLException e) {
+                        System.err.println("Ошибка при создании комментария: " + e.getMessage());
+                    }
+                }
+            }
+        }
+    }
 %>
 
 <!DOCTYPE html>
