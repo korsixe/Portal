@@ -75,7 +75,10 @@ public class CreateAdServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
-      throws ServletException, IOException {
+    throws ServletException, IOException {
+
+    // ОБЪЯВЛЯЕМ uploadedPhotos ЗДЕСЬ ДЛЯ ДОСТУПА В БЛОКЕ CATCH
+    List<File> uploadedPhotos = new ArrayList<>();
 
     try {
       // Получаем параметры из формы
@@ -92,10 +95,10 @@ public class CreateAdServlet extends HttpServlet {
 
       // Валидация обязательных полей
       if (title == null || title.trim().isEmpty() ||
-          description == null || description.trim().isEmpty() ||
-          categoryStr == null || categoryStr.trim().isEmpty() ||
-          conditionStr == null || conditionStr.trim().isEmpty() ||
-          location == null || location.trim().isEmpty()) {
+        description == null || description.trim().isEmpty() ||
+        categoryStr == null || categoryStr.trim().isEmpty() ||
+        conditionStr == null || conditionStr.trim().isEmpty() ||
+        location == null || location.trim().isEmpty()) {
 
         request.setAttribute("error", "Пожалуйста, заполните все обязательные поля");
         request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
@@ -130,8 +133,8 @@ public class CreateAdServlet extends HttpServlet {
       }
       long userId = user.getId();
 
-      // СОЗДАЕМ ОБЪЯВЛЕНИЕ БЕЗ ФОТО И ТЕГОВ
-      List<File> uploadedPhotos = processUploadedPhotos(request);
+      // ОБРАБОТКА ФОТО ДО СОЗДАНИЯ ОБЪЯВЛЕНИЯ
+      uploadedPhotos = processUploadedPhotos(request);
       System.out.println("📸 Processed " + uploadedPhotos.size() + " uploaded photos");
 
       // СОЗДАЕМ ОБЪЯВЛЕНИЕ С ПУСТЫМИ ФОТО И ТЕГАМИ
@@ -150,10 +153,9 @@ public class CreateAdServlet extends HttpServlet {
           : AdvertisementStatus.DRAFT
       );
 
-
       System.out.println("✅ Announcement created with ID: " + ad.getId());
 
-      // ПОСЛЕ СОЗДАНИЯ ОБЪЯВЛЕНИЯ СОХРАНЯЕМ ФОТОГРАФИИ
+      // ПОСЛЕ СОЗДАНИЯ ОБЪЯВЛЕНИЯ СОХРАНЯЕМ ФОТОГРАФИИ В БАЗУ ДАННЫХ
       if (ad.getId() != 0 && !uploadedPhotos.isEmpty()) {
         System.out.println("💾 Starting photo save process for ad " + ad.getId());
 
@@ -169,6 +171,13 @@ public class CreateAdServlet extends HttpServlet {
           }
         }
 
+        // Сохраняем фото в базу данных
+        try {
+          adsService.getAdsRepository().saveAdPhotosBytes(ad.getId(), photoBytes);
+          System.out.println("✅ Photos saved to database for ad " + ad.getId());
+        } catch (SQLException e) {
+          System.err.println("❌ Error saving photos to database: " + e.getMessage());
+        }
 
         // Удаляем временные файлы после сохранения в БД
         for (File photo : uploadedPhotos) {
@@ -181,7 +190,6 @@ public class CreateAdServlet extends HttpServlet {
             System.err.println("⚠️ Could not delete temporary file: " + e.getMessage());
           }
         }
-
       }
 
       // ПОСЛЕ СОХРАНЕНИЯ ФОТО СОХРАНЯЕМ ТЕГИ
@@ -223,7 +231,6 @@ public class CreateAdServlet extends HttpServlet {
 
         } catch (Exception e) {
           System.err.println("❌ Error parsing tags JSON: " + e.getMessage());
-
         }
       }
 
@@ -232,17 +239,43 @@ public class CreateAdServlet extends HttpServlet {
 
     } catch (IllegalArgumentException e) {
       System.err.println("❌ IllegalArgumentException: " + e.getMessage());
+
+      // ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ ПРИ ОШИБКЕ
+      cleanupUploadedPhotos(uploadedPhotos);
+
       request.setAttribute("error", "Некорректные данные: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
     } catch (IllegalStateException e) {
       System.err.println("❌ IllegalStateException: " + e.getMessage());
+
+      // ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ ПРИ ОШИБКЕ
+      cleanupUploadedPhotos(uploadedPhotos);
+
       request.setAttribute("error", "Ошибка статуса: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
     } catch (Exception e) {
       System.err.println("❌ General Exception: " + e.getMessage());
+      e.printStackTrace();
+
+      // ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ ПРИ ОШИБКЕ
+      cleanupUploadedPhotos(uploadedPhotos);
 
       request.setAttribute("error", "Произошла ошибка при создании объявления: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
+    }
+  }
+
+  // ДОБАВЬТЕ ЭТОТ ВСПОМОГАТЕЛЬНЫЙ МЕТОД В КЛАСС
+  private void cleanupUploadedPhotos(List<File> uploadedPhotos) {
+    for (File photo : uploadedPhotos) {
+      try {
+        if (photo.exists()) {
+          Files.delete(photo.toPath());
+          System.out.println("🗑️ Cleaned up temporary file after error: " + photo.getName());
+        }
+      } catch (IOException ioException) {
+        System.err.println("⚠️ Could not delete temporary file during cleanup: " + ioException.getMessage());
+      }
     }
   }
 
@@ -276,6 +309,11 @@ public class CreateAdServlet extends HttpServlet {
     String appPath = request.getServletContext().getRealPath("");
     String uploadPath = appPath + File.separator + UPLOAD_DIR;
 
+    File uploadDir = new File(uploadPath);
+    if (!uploadDir.exists()) {
+      uploadDir.mkdirs();
+      System.out.println("✅ Created upload directory: " + uploadPath);
+    }
 
     // Обрабатываем каждое загруженное фото
     for (Part part : request.getParts()) {
@@ -284,20 +322,27 @@ public class CreateAdServlet extends HttpServlet {
 
         // Проверяем расширение файла
         if (isValidFileExtension(fileName)) {
-          String filePath = uploadPath + File.separator + System.currentTimeMillis() + "_" + fileName;
+          // Создаем безопасное имя файла
+          String safeFileName = System.currentTimeMillis() + "_" +
+            fileName.replaceAll("[^a-zA-Z0-9.-]", "_");
+          String filePath = uploadPath + File.separator + safeFileName;
           File photoFile = new File(filePath);
 
           // Сохраняем файл на диск
           try (InputStream input = part.getInputStream()) {
             Files.copy(input, photoFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            uploadedPhotos.add(photoFile);
+            System.out.println("✅ Photo saved: " + filePath + " (" + part.getSize() + " bytes)");
+          } catch (Exception e) {
+            System.err.println("❌ Error saving photo: " + e.getMessage());
           }
-
-          uploadedPhotos.add(photoFile);
-          System.out.println("✅ Photo saved: " + filePath);
+        } else {
+          System.err.println("❌ Invalid file extension: " + fileName);
         }
       }
     }
 
+    System.out.println("📸 Total processed photos: " + uploadedPhotos.size());
     return uploadedPhotos;
   }
 
