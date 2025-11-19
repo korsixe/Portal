@@ -45,7 +45,7 @@ public class AdsRepository implements IAdsRepository {
   }
 
   private void resetSequences() throws SQLException {
-    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq"};
+    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq", "moderation_messages_id_seq"};
 
     for (String seq : sequences) {
       try (Statement stmt = connection.createStatement()) {
@@ -95,7 +95,7 @@ public class AdsRepository implements IAdsRepository {
             UPDATE ads
             SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
                 price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
-                view_count = ?, tags = ?::JSONB, tags_count = ?
+                view_count = ?, tags = ?::JSONB, tags_count = ?, photos = ?
             WHERE id = ?
         """;
 
@@ -110,27 +110,54 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(8, ad.getStatus().name());
       statement.setInt(9, ad.getViewCount());
 
+      // Обработка тегов (по тому же принципу что и в saveAd)
+      System.out.println("=== DEBUG UPDATE AD ===");
+      System.out.println("Tags list: " + ad.getTags());
+
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
         try {
           String tagsJson = objectMapper.writeValueAsString(ad.getTags());
-          System.out.println("Update - Generated JSON: " + tagsJson);
-          statement.setString(10, tagsJson); // tags - параметр 10
+          System.out.println("Generated JSON: " + tagsJson);
+          statement.setString(10, tagsJson);
         } catch (Exception e) {
           System.err.println("❌ Error converting tags to JSON in update: " + e.getMessage());
           String tagsJson = convertTagsToJson(ad.getTags());
           statement.setString(10, tagsJson);
         }
       } else {
-        statement.setNull(10, Types.VARCHAR); // tags - параметр 10
+        System.out.println("No tags to update");
+        statement.setNull(10, Types.VARCHAR);
       }
 
-      statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0); // tags_count - параметр 11
-      statement.setLong(12, ad.getId()); // id - параметр 12
+      statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
 
+      // Обработка фото (по тому же принципу что и в saveAdPhotosBytes)
+      List<byte[]> photos = getAdPhotosBytes(ad.getId()); // Получаем текущие фото из БД
+      if (photos != null && !photos.isEmpty()) {
+        byte[][] photosArray = photos.toArray(new byte[0][]);
+        Array sqlArray = connection.createArrayOf("bytea", photosArray);
+        statement.setArray(12, sqlArray);
+      } else {
+        statement.setNull(12, Types.ARRAY);
+      }
+
+      statement.setLong(13, ad.getId());
+
+      if (ad.getMessageId() != null) {
+        statement.setLong(12, ad.getMessageId());
+      } else {
+        statement.setNull(12, Types.BIGINT);
+      }
+      statement.setLong(13, ad.getId());
       int affectedRows = statement.executeUpdate();
       if (affectedRows == 0) {
         throw new SQLException("Обновление объявления failed, no rows affected.");
       }
+      System.out.println("✅ Объявление успешно обновлено в БД");
+    } catch (Exception e) {
+      System.err.println("❌ FULL ERROR in updateAd:");
+      e.printStackTrace();
+      throw new SQLException("Error updating ad", e);
     }
   }
 
@@ -162,7 +189,7 @@ public class AdsRepository implements IAdsRepository {
     List<Long> ids = new ArrayList<>();
 
     try (PreparedStatement statement = connection.prepareStatement(sql);
-        ResultSet resultSet = statement.executeQuery()) {
+         ResultSet resultSet = statement.executeQuery()) {
 
       while (resultSet.next()) {
         ids.add(resultSet.getLong("id"));
@@ -179,7 +206,7 @@ public class AdsRepository implements IAdsRepository {
     List<Long> ids = new ArrayList<>();
 
     try (PreparedStatement statement = connection.prepareStatement(sql);
-        ResultSet resultSet = statement.executeQuery()) {
+         ResultSet resultSet = statement.executeQuery()) {
 
       while (resultSet.next()) {
         ids.add(resultSet.getLong("id"));
@@ -196,7 +223,7 @@ public class AdsRepository implements IAdsRepository {
     List<Long> ids = new ArrayList<>();
 
     try (PreparedStatement statement = connection.prepareStatement(sql);
-        ResultSet resultSet = statement.executeQuery()) {
+         ResultSet resultSet = statement.executeQuery()) {
 
       while (resultSet.next()) {
         ids.add(resultSet.getLong("id"));
@@ -210,8 +237,8 @@ public class AdsRepository implements IAdsRepository {
   public long saveAd(Announcement ad) throws SQLException {
     String sql = """
             INSERT INTO ads (title, description, category, subcategory, condition, price,
-                            location, user_id, status, view_count, tags, tags_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
+                            location, user_id, status, view_count, tags, tags_count, message_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?, ?)
             RETURNING id
         """;
 
@@ -247,11 +274,20 @@ public class AdsRepository implements IAdsRepository {
       }
 
       statement.setInt(12, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
+      if (ad.getMessageId() != null) {
+        statement.setLong(13, ad.getMessageId());
+      } else {
+        statement.setNull(13, Types.BIGINT);
+      }
 
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {
-        return resultSet.getLong(1);
-
+        long generatedId = resultSet.getLong(1);
+        // Сохраняем фото если они есть
+        if (ad.getPhotos() != null && !ad.getPhotos().isEmpty()) {
+          //saveAdPhotos(generatedId, ad.getPhotos());
+        }
+        return generatedId;
       }
       throw new SQLException("Failed to get generated ID");
     } catch (Exception e) {
@@ -286,13 +322,13 @@ public class AdsRepository implements IAdsRepository {
   private Announcement mapResultSetToAd(ResultSet resultSet) throws SQLException {
     // Создаем объявление с базовыми полями
     Announcement ad = new Announcement(
-        resultSet.getString("title"),
-        resultSet.getString("description"),
-        Category.values()[resultSet.getInt("category")],
-        Condition.values()[resultSet.getInt("condition")],
-        resultSet.getInt("price"),
-        resultSet.getString("location"),
-        resultSet.getLong("user_id")
+      resultSet.getString("title"),
+      resultSet.getString("description"),
+      Category.values()[resultSet.getInt("category")],
+      Condition.values()[resultSet.getInt("condition")],
+      resultSet.getInt("price"),
+      resultSet.getString("location"),
+      resultSet.getLong("user_id")
     );
 
     // Устанавливаем дополнительные поля
@@ -368,6 +404,7 @@ public class AdsRepository implements IAdsRepository {
     if (updatedAt != null) {
       ad.setUpdatedAt(updatedAt.toInstant());
     }
+    ad.setMessageId(resultSet.getLong("message_id"));
 
     return ad;
   }
@@ -427,43 +464,20 @@ public class AdsRepository implements IAdsRepository {
   }
 
   public void saveAdPhotosBytes(long adId, List<byte[]> photos) throws SQLException {
-    if (photos == null || photos.isEmpty()) {
-      // Если фото нет - устанавливаем NULL
-      String sql = "UPDATE ads SET photos = NULL WHERE id = ?";
-      try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-        stmt.setLong(1, adId);
-        stmt.executeUpdate();
-      }
-      return;
-    }
-
     String sql = "UPDATE ads SET photos = ? WHERE id = ?";
+
     try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-      // Фильтруем только валидные изображения
-      List<byte[]> validPhotos = photos.stream()
-        .filter(this::isValidImageData)
-        .collect(Collectors.toList());
-
-      if (validPhotos.isEmpty()) {
-        System.out.println("⚠️ No valid photos to save for ad " + adId);
-        return;
-      }
-
-      // Создаем массив для PostgreSQL
-      byte[][] photosArray = validPhotos.toArray(new byte[validPhotos.size()][]);
-      Array sqlArray = connection.createArrayOf("bytea", photosArray);
-
-      stmt.setArray(1, sqlArray);
-      stmt.setLong(2, adId);
-
-      int affectedRows = stmt.executeUpdate();
-
-      if (affectedRows > 0) {
-        System.out.println("✅ Successfully saved " + validPhotos.size() + " photos for ad " + adId);
+      if (photos == null || photos.isEmpty()) {
+        stmt.setNull(1, Types.ARRAY);
       } else {
-        System.err.println("❌ Failed to save photos for ad " + adId);
+        // Просто сохраняем все фото без сложных проверок
+        byte[][] photosArray = photos.toArray(new byte[0][]);
+        Array sqlArray = connection.createArrayOf("bytea", photosArray);
+        stmt.setArray(1, sqlArray);
       }
+      stmt.setLong(2, adId);
+      stmt.executeUpdate();
+      System.out.println("✅ Photos saved to database for ad " + adId);
     }
   }
 
@@ -501,7 +515,7 @@ public class AdsRepository implements IAdsRepository {
 
   private boolean isValidImageData(byte[] data) {
     return data != null && data.length > 1000; // минимальный размер для изображения
-}
+  }
 
   public Connection getConnection() {
     return this.connection;

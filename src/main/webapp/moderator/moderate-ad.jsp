@@ -16,7 +16,6 @@
     String moderatorEmail = (String) session.getAttribute("moderatorEmail");
     String message = "Действие выполнено";
     String messageType = "success";
-
     if (action != null && adIdParam != null) {
         try {
             Long adId = Long.parseLong(adIdParam);
@@ -25,13 +24,13 @@
 
             if (ad != null) {
                 // Используем новый сервис для логирования действий модератора
-                ModerationMessageService.logModerationAction(
+                Long messageId = ModerationMessageService.logModerationAction(
                         adId,
                         action,
                         reason,
                         moderatorEmail
                 );
-
+                ad.setMessageId(messageId);
                 // Используем только существующие статусы из AdvertisementStatus
                 switch (action) {
                     case "approve":
