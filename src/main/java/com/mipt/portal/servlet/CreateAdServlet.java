@@ -11,9 +11,6 @@ import com.mipt.portal.users.User;
 import java.sql.SQLException;
 import java.util.logging.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Array;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -65,7 +62,6 @@ public class CreateAdServlet extends HttpServlet {
     } catch (Exception e) {
       System.err.println("❌ ========== ОШИБКА ИНИЦИАЛИЗАЦИИ ==========");
       System.err.println("❌ Ошибка: " + e.getMessage());
-      e.printStackTrace();
       logger.severe("Error initializing AdsService: " + e.getMessage());
       throw new ServletException("Error initializing AdsService", e);
     }
@@ -132,7 +128,7 @@ public class CreateAdServlet extends HttpServlet {
         response.sendRedirect("login.jsp");
         return;
       }
-      Long userId = user.getId();
+      long userId = user.getId();
 
       // СОЗДАЕМ ОБЪЯВЛЕНИЕ БЕЗ ФОТО И ТЕГОВ
       List<File> uploadedPhotos = processUploadedPhotos(request);
@@ -140,10 +136,14 @@ public class CreateAdServlet extends HttpServlet {
 
       // СОЗДАЕМ ОБЪЯВЛЕНИЕ С ПУСТЫМИ ФОТО И ТЕГАМИ
       Announcement ad = adsService.createAd(
-          uploadedPhotos,
-          selectedTagsForAnnouncement,
-          "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
-              : AdvertisementStatus.DRAFT
+        userId,
+        title,
+        description,
+        category,
+        subcategory,
+        condition,
+        price,
+        location,
         new ArrayList<>(), // ПУСТОЙ список фото на начальном этапе
         new ArrayList<>(), // ПУСТОЙ список тегов на начальном этапе
         "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
@@ -154,7 +154,7 @@ public class CreateAdServlet extends HttpServlet {
       System.out.println("✅ Announcement created with ID: " + ad.getId());
 
       // ПОСЛЕ СОЗДАНИЯ ОБЪЯВЛЕНИЯ СОХРАНЯЕМ ФОТОГРАФИИ
-      if (ad != null && ad.getId() != 0 && !uploadedPhotos.isEmpty()) {
+      if (ad.getId() != 0 && !uploadedPhotos.isEmpty()) {
         System.out.println("💾 Starting photo save process for ad " + ad.getId());
 
         // Создаем список байтовых массивов
@@ -223,7 +223,7 @@ public class CreateAdServlet extends HttpServlet {
 
         } catch (Exception e) {
           System.err.println("❌ Error parsing tags JSON: " + e.getMessage());
-          e.printStackTrace();
+
         }
       }
 
@@ -240,7 +240,7 @@ public class CreateAdServlet extends HttpServlet {
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
     } catch (Exception e) {
       System.err.println("❌ General Exception: " + e.getMessage());
-      e.printStackTrace();
+
       request.setAttribute("error", "Произошла ошибка при создании объявления: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
     }
@@ -276,10 +276,6 @@ public class CreateAdServlet extends HttpServlet {
     String appPath = request.getServletContext().getRealPath("");
     String uploadPath = appPath + File.separator + UPLOAD_DIR;
 
-    File uploadDir = new File(uploadPath);
-    if (!uploadDir.exists()) {
-      uploadDir.mkdirs();
-    }
 
     // Обрабатываем каждое загруженное фото
     for (Part part : request.getParts()) {
@@ -303,32 +299,6 @@ public class CreateAdServlet extends HttpServlet {
     }
 
     return uploadedPhotos;
-  }
-
-  // ИСПРАВЛЕННЫЙ МЕТОД ДЛЯ СОХРАНЕНИЯ ФОТОГРАФИЙ В БАЗУ ДАННЫХ
-  private void savePhotosToDatabaseNew(Long adId, List<File> photos) throws SQLException {
-    if (photos == null || photos.isEmpty()) {
-      System.out.println("⚠️ No photos to save");
-      return;
-    }
-    try {
-      // Создаем список байтовых массивов
-      List<byte[]> photoBytes = new ArrayList<>();
-      for (File photo : photos) {
-        try {
-          byte[] fileData = Files.readAllBytes(photo.toPath());
-          photoBytes.add(fileData);
-          System.out.println("✅ Photo read: " + photo.getName() + " (" + fileData.length + " bytes)");
-        } catch (IOException e) {
-          System.err.println("❌ Error reading photo file: " + e.getMessage());
-        }
-      }
-
-    } catch (Exception e) {
-      System.err.println("❌ Error in savePhotosToDatabase: " + e.getMessage());
-      e.printStackTrace();
-      throw new SQLException("Failed to save photos", e);
-    }
   }
 
 
