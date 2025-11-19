@@ -45,7 +45,7 @@ public class AdsRepository implements IAdsRepository {
   }
 
   private void resetSequences() throws SQLException {
-    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq"};
+    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq", "moderation_messages_id_seq"};
 
     for (String seq : sequences) {
       try (Statement stmt = connection.createStatement()) {
@@ -143,6 +143,12 @@ public class AdsRepository implements IAdsRepository {
 
       statement.setLong(13, ad.getId());
 
+      if (ad.getMessageId() != null) {
+        statement.setLong(12, ad.getMessageId());
+      } else {
+        statement.setNull(12, Types.BIGINT);
+      }
+      statement.setLong(13, ad.getId());
       int affectedRows = statement.executeUpdate();
       if (affectedRows == 0) {
         throw new SQLException("Обновление объявления failed, no rows affected.");
@@ -231,8 +237,8 @@ public class AdsRepository implements IAdsRepository {
   public long saveAd(Announcement ad) throws SQLException {
     String sql = """
             INSERT INTO ads (title, description, category, subcategory, condition, price,
-                            location, user_id, status, view_count, tags, tags_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
+                            location, user_id, status, view_count, tags, tags_count, message_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?, ?)
             RETURNING id
         """;
 
@@ -268,11 +274,20 @@ public class AdsRepository implements IAdsRepository {
       }
 
       statement.setInt(12, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
+      if (ad.getMessageId() != null) {
+        statement.setLong(13, ad.getMessageId());
+      } else {
+        statement.setNull(13, Types.BIGINT);
+      }
 
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {
-        return resultSet.getLong(1);
-
+        long generatedId = resultSet.getLong(1);
+        // Сохраняем фото если они есть
+        if (ad.getPhotos() != null && !ad.getPhotos().isEmpty()) {
+          //saveAdPhotos(generatedId, ad.getPhotos());
+        }
+        return generatedId;
       }
       throw new SQLException("Failed to get generated ID");
     } catch (Exception e) {
@@ -389,6 +404,7 @@ public class AdsRepository implements IAdsRepository {
     if (updatedAt != null) {
       ad.setUpdatedAt(updatedAt.toInstant());
     }
+    ad.setMessageId(resultSet.getLong("message_id"));
 
     return ad;
   }

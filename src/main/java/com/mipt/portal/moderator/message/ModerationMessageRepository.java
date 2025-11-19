@@ -1,5 +1,6 @@
 package com.mipt.portal.moderator.message;
 
+import com.mipt.portal.announcement.AdsService;
 import com.mipt.portal.database.DatabaseConnection;
 
 import java.sql.*;
@@ -14,30 +15,33 @@ public class ModerationMessageRepository {
         this.connection = DatabaseConnection.getConnection();
     }
 
-    public boolean saveModerationMessage(Long adId, String moderatorEmail, String action, String reason) {
-        PreparedStatement stmt = null;
+  public Long saveModerationMessage(Long adId, String moderatorEmail, String action, String reason) {
+    PreparedStatement stmt = null;
 
-        try {
-            String sql = "INSERT INTO moderation_messages (ad_id, moderator_email, action, reason) " +
-                    "VALUES (?, ?, ?, ?)";
+    try {
+      String sql = "INSERT INTO moderation_messages (ad_id, moderator_email, action, reason) " +
+          "VALUES (?, ?, ?, ?) RETURNING id";
 
-            stmt = connection.prepareStatement(sql);
-            stmt.setLong(1, adId);
-            stmt.setString(2, moderatorEmail);
-            stmt.setString(3, action);
-            stmt.setString(4, reason);
+      stmt = connection.prepareStatement(sql);
+      stmt.setLong(1, adId);
+      stmt.setString(2, moderatorEmail);
+      stmt.setString(3, action);
+      stmt.setString(4, reason);
 
-            int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+      ResultSet resultSet = stmt.executeQuery();
+      if (resultSet.next()) {
+        return resultSet.getLong("id");
+      }
 
-        } catch (SQLException e) {
-            System.err.println("❌ Ошибка при сохранении сообщения модератора: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        } finally {
-            closeResources(stmt, null);
-        }
+    } catch (SQLException e) {
+      System.err.println("❌ Ошибка при сохранении сообщения модератора: " + e.getMessage());
+      e.printStackTrace();
+      return null;
+    } finally {
+      closeResources(stmt, null);
     }
+    return null;
+  }
 
     public List<ModerationMessage> getMessagesByAdId(Long adId) {
         List<ModerationMessage> messages = new ArrayList<>();
