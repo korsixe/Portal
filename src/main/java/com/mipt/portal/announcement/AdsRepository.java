@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.mipt.portal.servlet.HexConverterTest;
 
 import lombok.AllArgsConstructor;
 
@@ -73,6 +72,21 @@ public class AdsRepository implements IAdsRepository {
     } catch (Exception e) {
       e.printStackTrace();
     }
+
+    try {
+      String sql = readSqlFile("sql/insert_category_tables.sql");
+      executeSql(sql);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    try {
+      String sql = readSqlFile("sql/insert_data_comments.sql");
+      executeSql(sql);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
   }
 
   @Override
