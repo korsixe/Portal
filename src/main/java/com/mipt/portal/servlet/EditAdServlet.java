@@ -101,7 +101,7 @@ public class EditAdServlet extends HttpServlet {
 
     } catch (Exception e) {
       request.setAttribute("error", "Ошибка при загрузке объявления: " + e.getMessage());
-      request.getRequestDispatcher("/dashboard.jsp").forward(request, response);
+      request.getRequestDispatcher("/edit-ad.jsp").forward(request, response);
     }
   }
 
@@ -128,7 +128,7 @@ public class EditAdServlet extends HttpServlet {
         return;
       }
 
-      if (!existingAd.canBeEdited()) {
+      if (FALSE) {
         request.setAttribute("error", "Это объявление нельзя редактировать в текущем статусе");
         loadTagsForPage(request, adId);
         request.setAttribute("announcement", existingAd);
