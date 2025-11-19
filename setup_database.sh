@@ -27,5 +27,7 @@ docker exec -i postgres-db psql -U myuser -d myproject < ./src/main/resources/sq
 docker exec -i postgres-db psql -U myuser -d myproject < ./src/main/resources/sql/insert_data.sql
 docker exec -i postgres-db psql -U myuser -d myproject < ./src/main/resources/sql/insert_data_ads.sql
 docker exec -i postgres-db psql -U myuser -d myproject < ./src/main/resources/sql/insert_category_tables.sql
+docker exec -i postgres-db psql -U myuser -d myproject < ./src/main/resources/sql/insert_data_comments.sql
+
 
 echo "✅ Database setup complete!"

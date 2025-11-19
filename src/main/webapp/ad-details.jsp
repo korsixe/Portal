@@ -7,6 +7,8 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.sql.*" %>
 <%@ page import="java.util.Base64" %>
+<%@ page import="com.fasterxml.jackson.databind.ObjectMapper" %>
+<%@ page import="java.util.Map" %>
 <%
     // Получаем ID объявления из параметра
     String adIdParam = request.getParameter("id");
@@ -46,22 +48,49 @@
                     // Получаем имя автора
                     authorName = rs.getString("author_name");
 
-                    // Обрабатываем теги из JSONB
-                    String tagsJson = rs.getString("tags");
-                    if (tagsJson != null && !tagsJson.equals("null")) {
-                        List<String> tags = new ArrayList<>();
-                        // Простая обработка JSON массива
-                        if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
-                            String[] tagArray = tagsJson.substring(1, tagsJson.length() - 1).split(",");
-                            for (String tag : tagArray) {
-                                String cleanTag = tag.trim().replace("\"", "");
-                                if (!cleanTag.isEmpty()) {
-                                    tags.add(cleanTag);
-                                }
-                            }
+                    // ВРЕМЕННАЯ ОТЛАДКА - добавьте эти строки:
+                    String rawTags = rs.getString("tags");
+                    System.out.println("RAW TAGS FROM DB: " + rawTags);
+                    System.out.println("Tags is null: " + (rawTags == null));
+                    System.out.println("Tags is 'null': " + "null".equals(rawTags));
+
+                    // Обрабатываем теги из JSONB с использованием Jackson
+            String tagsJson = rs.getString("tags");
+    List<String> tags = new ArrayList<>();
+    if (tagsJson != null && !tagsJson.equals("null") && !tagsJson.trim().isEmpty()) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object>[] tagArray = mapper.readValue(tagsJson, Map[].class);
+
+            for (Map<String, Object> tagObj : tagArray) {
+                String valueName = (String) tagObj.get("valueName");
+                if (valueName != null && !valueName.trim().isEmpty()) {
+                    tags.add(valueName.trim());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
+            e.printStackTrace();
+
+            // Fallback: простой парсинг
+            if (tagsJson.contains("valueName")) {
+                String[] parts = tagsJson.split("\"valueName\"");
+                for (int i = 1; i < parts.length; i++) {
+                    String part = parts[i];
+                    int startQuote = part.indexOf("\"") + 1;
+                    int endQuote = part.indexOf("\"", startQuote);
+                    if (startQuote > 0 && endQuote > startQuote) {
+                        String valueName = part.substring(startQuote, endQuote).trim();
+                        if (!valueName.isEmpty()) {
+                            tags.add(valueName);
                         }
-                        announcement.setTags(tags);
                     }
+                }
+            }
+        }
+    }
+
+                    announcement.setTags(tags);
 
                     Array photosArray = rs.getArray("photos");
                     if (photosArray != null) {
@@ -679,6 +708,28 @@
                 height: 60px;
             }
         }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -781,16 +832,23 @@
             </div>
 
             <!-- Теги -->
-            <% if (announcement.getTags() != null && !announcement.getTags().isEmpty()) { %>
+            <%
+                List<String> tags = announcement.getTags();
+                boolean hasTags = tags != null && !tags.isEmpty() && !(tags.size() == 1 && tags.get(0).isEmpty());
+            %>
+            <% if (hasTags) { %>
             <div class="tags-section">
                 <h3 class="section-title">🏷️ Теги</h3>
                 <div class="tags-container">
-                    <% for (String tag : announcement.getTags()) { %>
-                    <span class="tag"><%= tag %></span>
-                    <% } %>
+                    <% for (String tag : tags) {
+                        if (tag != null && !tag.trim().isEmpty()) {
+                    %>
+                    <span class="tag">#<%= tag.trim() %></span>
+                    <% } } %>
                 </div>
             </div>
             <% } %>
+
 
             <!-- Дополнительная информация -->
             <div class="ad-info">
