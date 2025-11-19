@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS ads CASCADE;
+DROP TABLE IF EXISTS comments CASCADE;
 
 -- Создание таблицы пользователей
 CREATE TABLE IF NOT EXISTS users
@@ -73,7 +74,7 @@ CREATE TABLE IF NOT EXISTS moderation_messages (
 );
 
 -- Создание таблицы категорий и подкатегорий
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
                             id SERIAL PRIMARY KEY,
                             name VARCHAR(100) NOT NULL,
                             parent_id INTEGER REFERENCES categories(id),
@@ -82,14 +83,14 @@ CREATE TABLE categories (
 );
 
 -- Создание таблицы тегов
-CREATE TABLE tags (
+CREATE TABLE IF NOT EXISTS tags (
                       id SERIAL PRIMARY KEY,
                       name VARCHAR(50) NOT NULL,
                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Создание таблицы значений тегов
-CREATE TABLE tag_values (
+CREATE TABLE IF NOT EXISTS tag_values (
                             id SERIAL PRIMARY KEY,
                             tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
                             value VARCHAR(100) NOT NULL,

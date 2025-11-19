@@ -45,7 +45,8 @@ public class AdsRepository implements IAdsRepository {
   }
 
   private void resetSequences() throws SQLException {
-    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq", "moderation_messages_id_seq"};
+    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq",
+        "moderation_messages_id_seq", "categories_id_seq", "tags_id_seq", "tag_values_id_seq"};
 
     for (String seq : sequences) {
       try (Statement stmt = connection.createStatement()) {
@@ -187,7 +188,7 @@ public class AdsRepository implements IAdsRepository {
     List<Long> ids = new ArrayList<>();
 
     try (PreparedStatement statement = connection.prepareStatement(sql);
-         ResultSet resultSet = statement.executeQuery()) {
+        ResultSet resultSet = statement.executeQuery()) {
 
       while (resultSet.next()) {
         ids.add(resultSet.getLong("id"));
@@ -204,7 +205,7 @@ public class AdsRepository implements IAdsRepository {
     List<Long> ids = new ArrayList<>();
 
     try (PreparedStatement statement = connection.prepareStatement(sql);
-         ResultSet resultSet = statement.executeQuery()) {
+        ResultSet resultSet = statement.executeQuery()) {
 
       while (resultSet.next()) {
         ids.add(resultSet.getLong("id"));
@@ -221,7 +222,7 @@ public class AdsRepository implements IAdsRepository {
     List<Long> ids = new ArrayList<>();
 
     try (PreparedStatement statement = connection.prepareStatement(sql);
-         ResultSet resultSet = statement.executeQuery()) {
+        ResultSet resultSet = statement.executeQuery()) {
 
       while (resultSet.next()) {
         ids.add(resultSet.getLong("id"));
@@ -318,13 +319,13 @@ public class AdsRepository implements IAdsRepository {
   private Announcement mapResultSetToAd(ResultSet resultSet) throws SQLException {
     // Создаем объявление с базовыми полями
     Announcement ad = new Announcement(
-      resultSet.getString("title"),
-      resultSet.getString("description"),
-      Category.values()[resultSet.getInt("category")],
-      Condition.values()[resultSet.getInt("condition")],
-      resultSet.getInt("price"),
-      resultSet.getString("location"),
-      resultSet.getLong("user_id")
+        resultSet.getString("title"),
+        resultSet.getString("description"),
+        Category.values()[resultSet.getInt("category")],
+        Condition.values()[resultSet.getInt("condition")],
+        resultSet.getInt("price"),
+        resultSet.getString("location"),
+        resultSet.getLong("user_id")
     );
 
     // Устанавливаем дополнительные поля
@@ -349,8 +350,8 @@ public class AdsRepository implements IAdsRepository {
 
         // Парсим JSON массив обратно в List<String>
         List<String> tags = objectMapper.readValue(
-          tagsJson,
-          objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
+            tagsJson,
+            objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
         );
         ad.setTags(tags);
 
@@ -375,14 +376,16 @@ public class AdsRepository implements IAdsRepository {
         // Создаем временные файлы для каждого фото
         for (int i = 0; i < photoBytes.size(); i++) {
           byte[] photoData = photoBytes.get(i);
-          File tempFile = File.createTempFile("ad_photo_" + resultSet.getLong("id") + "_" + i, ".jpg");
+          File tempFile = File.createTempFile("ad_photo_" + resultSet.getLong("id") + "_" + i,
+              ".jpg");
           Files.write(tempFile.toPath(), photoData);
           // Удаляем файл при выходе из JVM
           tempFile.deleteOnExit();
           photos.add(tempFile);
         }
         ad.setPhotos(photos);
-        System.out.println("✅ Loaded " + photos.size() + " photos for ad " + resultSet.getLong("id"));
+        System.out.println(
+            "✅ Loaded " + photos.size() + " photos for ad " + resultSet.getLong("id"));
       } else {
         ad.setPhotos(new ArrayList<>());
       }
@@ -443,14 +446,16 @@ public class AdsRepository implements IAdsRepository {
 
     StringBuilder json = new StringBuilder("[");
     for (int i = 0; i < tags.size(); i++) {
-      if (i > 0) json.append(",");
+      if (i > 0) {
+        json.append(",");
+      }
       // Правильное экранирование для JSON
       String escaped = tags.get(i)
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-        .replace("\t", "\\t");
+          .replace("\\", "\\\\")
+          .replace("\"", "\\\"")
+          .replace("\n", "\\n")
+          .replace("\r", "\\r")
+          .replace("\t", "\\t");
       json.append("\"").append(escaped).append("\"");
     }
     json.append("]");
@@ -523,7 +528,6 @@ public class AdsRepository implements IAdsRepository {
   }
 
 
-
   // Специальный метод для парсинга PostgreSQL hex формата
   private byte[] parsePostgresHexString(String hexString) {
     try {
@@ -556,7 +560,8 @@ public class AdsRepository implements IAdsRepository {
       }
     } catch (Exception e) {
       System.err.println("❌ Error parsing PostgreSQL hex string: " + e.getMessage());
-      System.err.println("   - input: " + (hexString != null ? hexString.substring(0, Math.min(100, hexString.length())) : "null"));
+      System.err.println("   - input: " + (hexString != null ? hexString.substring(0,
+          Math.min(100, hexString.length())) : "null"));
       return null;
     }
   }
