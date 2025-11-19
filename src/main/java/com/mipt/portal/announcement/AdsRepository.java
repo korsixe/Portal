@@ -2,17 +2,18 @@ package com.mipt.portal.announcement;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mipt.portal.database.DatabaseConnection;
-import java.io.File;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.io.InputStream;
-import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
@@ -281,14 +282,6 @@ public class AdsRepository implements IAdsRepository {
     }
   }
 
-  // метод для сохранения фото
-  private void saveAdPhotos(long adId, List<File> photos) throws SQLException {
-  }
-
-  // метод для загрузки фото объявления
-  public List<String> getAdPhotos(long adId) throws SQLException {
-    return null;
-  }
 
   private Announcement mapResultSetToAd(ResultSet resultSet) throws SQLException {
     // Создаем объявление с базовыми полями
@@ -316,7 +309,7 @@ public class AdsRepository implements IAdsRepository {
       ad.setStatus(AdvertisementStatus.DRAFT);
     }
 
-    // 🔥 ИСПРАВЛЕННАЯ ЧАСТЬ: Правильное чтение тегов из JSON
+    // Правильное чтение тегов из JSON
     String tagsJson = resultSet.getString("tags");
     if (tagsJson != null && !tagsJson.trim().isEmpty()) {
       try {
@@ -341,19 +334,28 @@ public class AdsRepository implements IAdsRepository {
       ad.setTags(new ArrayList<>());
     }
 
-    // Обрабатываем фото
-    String photosString = resultSet.getString("photos");
-    if (photosString != null && !photosString.trim().isEmpty()) {
-      List<File> photos = new ArrayList<>();
-      String[] photoPaths = photosString.split("\\s*,\\s*");
-      for (String photoPath : photoPaths) {
-        File photoFile = new File(photoPath);
-        if (photoFile.exists()) {
-          photos.add(photoFile);
+    // Загружаем фото из БД
+    try {
+      List<byte[]> photoBytes = getAdPhotosBytes(resultSet.getLong("id"));
+      if (!photoBytes.isEmpty()) {
+        List<File> photos = new ArrayList<>();
+
+        // Создаем временные файлы для каждого фото
+        for (int i = 0; i < photoBytes.size(); i++) {
+          byte[] photoData = photoBytes.get(i);
+          File tempFile = File.createTempFile("ad_photo_" + resultSet.getLong("id") + "_" + i, ".jpg");
+          Files.write(tempFile.toPath(), photoData);
+          // Удаляем файл при выходе из JVM
+          tempFile.deleteOnExit();
+          photos.add(tempFile);
         }
+        ad.setPhotos(photos);
+        System.out.println("✅ Loaded " + photos.size() + " photos for ad " + resultSet.getLong("id"));
+      } else {
+        ad.setPhotos(new ArrayList<>());
       }
-      ad.setPhotos(photos);
-    } else {
+    } catch (Exception e) {
+      System.err.println("❌ Error loading photos for ad: " + e.getMessage());
       ad.setPhotos(new ArrayList<>());
     }
 
@@ -423,4 +425,86 @@ public class AdsRepository implements IAdsRepository {
     System.out.println("Fallback JSON: " + json.toString());
     return json.toString();
   }
+
+  public void saveAdPhotosBytes(long adId, List<byte[]> photos) throws SQLException {
+    if (photos == null || photos.isEmpty()) {
+      // Если фото нет - устанавливаем NULL
+      String sql = "UPDATE ads SET photos = NULL WHERE id = ?";
+      try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        stmt.setLong(1, adId);
+        stmt.executeUpdate();
+      }
+      return;
+    }
+
+    String sql = "UPDATE ads SET photos = ? WHERE id = ?";
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+      // Фильтруем только валидные изображения
+      List<byte[]> validPhotos = photos.stream()
+        .filter(this::isValidImageData)
+        .collect(Collectors.toList());
+
+      if (validPhotos.isEmpty()) {
+        System.out.println("⚠️ No valid photos to save for ad " + adId);
+        return;
+      }
+
+      // Создаем массив для PostgreSQL
+      byte[][] photosArray = validPhotos.toArray(new byte[validPhotos.size()][]);
+      Array sqlArray = connection.createArrayOf("bytea", photosArray);
+
+      stmt.setArray(1, sqlArray);
+      stmt.setLong(2, adId);
+
+      int affectedRows = stmt.executeUpdate();
+
+      if (affectedRows > 0) {
+        System.out.println("✅ Successfully saved " + validPhotos.size() + " photos for ad " + adId);
+      } else {
+        System.err.println("❌ Failed to save photos for ad " + adId);
+      }
+    }
+  }
+
+
+  public List<byte[]> getAdPhotosBytes(long adId) throws SQLException {
+    String sql = "SELECT photos FROM ads WHERE id = ?";
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setLong(1, adId);
+      ResultSet rs = stmt.executeQuery();
+
+      List<byte[]> photos = new ArrayList<>();
+
+      if (rs.next()) {
+        Array photosArray = rs.getArray("photos");
+        if (photosArray != null) {
+          Object[] dbPhotos = (Object[]) photosArray.getArray();
+          if (dbPhotos != null) {
+            for (Object photoData : dbPhotos) {
+              if (photoData instanceof byte[]) {
+                byte[] imageData = (byte[]) photoData;
+                // Фильтруем только валидные изображения
+                if (isValidImageData(imageData)) {
+                  photos.add(imageData);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      System.out.println("📸 Loaded " + photos.size() + " valid photos for ad " + adId);
+      return photos;
+    }
+  }
+
+  private boolean isValidImageData(byte[] data) {
+    return data != null && data.length > 1000; // минимальный размер для изображения
+}
+
+  public Connection getConnection() {
+    return this.connection;
+  }
+
 }

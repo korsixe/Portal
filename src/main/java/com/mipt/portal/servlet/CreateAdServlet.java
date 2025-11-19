@@ -11,6 +11,9 @@ import com.mipt.portal.users.User;
 import java.sql.SQLException;
 import java.util.logging.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Array;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -65,20 +68,6 @@ public class CreateAdServlet extends HttpServlet {
       e.printStackTrace();
       logger.severe("Error initializing AdsService: " + e.getMessage());
       throw new ServletException("Error initializing AdsService", e);
-    }
-  }
-
-  private void testTagsLoading() {
-    try {
-      System.out.println("🧪 Testing tags loading during init...");
-      List<Map<String, Object>> testTags = tagSelector.getTagsWithValues();
-      System.out.println("✅ INIT TEST: Loaded " + testTags.size() + " tags");
-      if (!testTags.isEmpty()) {
-        System.out.println("✅ INIT TEST: First tag - " + testTags.get(0).get("name"));
-      }
-    } catch (Exception e) {
-      System.err.println("❌ INIT TEST: Failed to load tags: " + e.getMessage());
-      e.printStackTrace();
     }
   }
 
@@ -145,10 +134,57 @@ public class CreateAdServlet extends HttpServlet {
       }
       Long userId = user.getId();
 
-      // Обрабатываем теги
-      List<String> selectedTagsForAnnouncement = new ArrayList<>();
-      List<Map<String, Object>> tagSelectionsForDB = new ArrayList<>();
+      // СОЗДАЕМ ОБЪЯВЛЕНИЕ БЕЗ ФОТО И ТЕГОВ
+      List<File> uploadedPhotos = processUploadedPhotos(request);
+      System.out.println("📸 Processed " + uploadedPhotos.size() + " uploaded photos");
 
+      // СОЗДАЕМ ОБЪЯВЛЕНИЕ С ПУСТЫМИ ФОТО И ТЕГАМИ
+      Announcement ad = adsService.createAd(
+          uploadedPhotos,
+          selectedTagsForAnnouncement,
+          "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
+              : AdvertisementStatus.DRAFT
+        new ArrayList<>(), // ПУСТОЙ список фото на начальном этапе
+        new ArrayList<>(), // ПУСТОЙ список тегов на начальном этапе
+        "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
+          : AdvertisementStatus.DRAFT
+      );
+
+
+      System.out.println("✅ Announcement created with ID: " + ad.getId());
+
+      // ПОСЛЕ СОЗДАНИЯ ОБЪЯВЛЕНИЯ СОХРАНЯЕМ ФОТОГРАФИИ
+      if (ad != null && ad.getId() != 0 && !uploadedPhotos.isEmpty()) {
+        System.out.println("💾 Starting photo save process for ad " + ad.getId());
+
+        // Создаем список байтовых массивов
+        List<byte[]> photoBytes = new ArrayList<>();
+        for (File photo : uploadedPhotos) {
+          try {
+            byte[] fileData = Files.readAllBytes(photo.toPath());
+            photoBytes.add(fileData);
+            System.out.println("✅ Photo read: " + photo.getName() + " (" + fileData.length + " bytes)");
+          } catch (IOException e) {
+            System.err.println("❌ Error reading photo file: " + e.getMessage());
+          }
+        }
+
+
+        // Удаляем временные файлы после сохранения в БД
+        for (File photo : uploadedPhotos) {
+          try {
+            if (photo.exists()) {
+              Files.delete(photo.toPath());
+              System.out.println("🗑️ Temporary file deleted: " + photo.getName());
+            }
+          } catch (IOException e) {
+            System.err.println("⚠️ Could not delete temporary file: " + e.getMessage());
+          }
+        }
+
+      }
+
+      // ПОСЛЕ СОХРАНЕНИЯ ФОТО СОХРАНЯЕМ ТЕГИ
       if (selectedTagsJson != null && !selectedTagsJson.trim().isEmpty()) {
         try {
           List<Map<String, Object>> tagSelections = objectMapper.readValue(
@@ -156,28 +192,34 @@ public class CreateAdServlet extends HttpServlet {
             objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class)
           );
 
-          // Преобразуем для Announcement и для БД
-          for (Map<String, Object> tagSelection : tagSelections) {
-            String tagName = (String) tagSelection.get("tagName");
-            String valueName = (String) tagSelection.get("valueName");
-            Object tagId = tagSelection.get("tagId");
-            Object valueId = tagSelection.get("valueId");
+          // Сохраняем теги в БД
+          if (!tagSelections.isEmpty()) {
+            try {
+              tagSelector.saveAdTags(ad.getId(), tagSelections);
+              System.out.println("✅ Tags saved to database for ad " + ad.getId());
 
-            if (tagName != null && valueName != null) {
-              String tagString = tagName + ": " + valueName;
-              selectedTagsForAnnouncement.add(tagString);
+              // ОБНОВЛЯЕМ ТЕГИ В ОСНОВНОЙ ЗАПИСИ ОБЪЯВЛЕНИЯ
+              List<String> selectedTagsForAnnouncement = new ArrayList<>();
+              for (Map<String, Object> tagSelection : tagSelections) {
+                String tagName = (String) tagSelection.get("tagName");
+                String valueName = (String) tagSelection.get("valueName");
+                if (tagName != null && valueName != null) {
+                  String tagString = tagName + ": " + valueName;
+                  selectedTagsForAnnouncement.add(tagString);
+                }
+              }
 
-              // Для сохранения в БД через TagSelector (оставляем как есть)
-              Map<String, Object> dbTag = new HashMap<>();
-              dbTag.put("tagId", tagId);
-              dbTag.put("tagName", tagName);
-              dbTag.put("valueId", valueId);
-              dbTag.put("valueName", valueName);
-              tagSelectionsForDB.add(dbTag);
+              // Обновляем объявление с тегами
+              ad.setTags(selectedTagsForAnnouncement);
+              ad.setTagsCount(selectedTagsForAnnouncement.size());
+              adsService.editAd(ad);
+              System.out.println("✅ Announcement updated with tags");
+
+            } catch (SQLException e) {
+              System.err.println("❌ Error saving tags to database: " + e.getMessage());
+              // Продолжаем выполнение, даже если теги не сохранились в БД
             }
           }
-
-          System.out.println("✅ Tags prepared for DB: " + selectedTagsForAnnouncement);
 
         } catch (Exception e) {
           System.err.println("❌ Error parsing tags JSON: " + e.getMessage());
@@ -185,47 +227,25 @@ public class CreateAdServlet extends HttpServlet {
         }
       }
 
-      List<File> uploadedPhotos = new ArrayList<>(); // Обрабатываем загрузку фотографий - Лиза О
-
-      Announcement ad = adsService.createAd(
-          userId,
-          title,
-          description,
-          category,
-          subcategory,
-          condition,
-          price,
-          location,
-          uploadedPhotos,
-          selectedTagsForAnnouncement,
-          "publish".equals(action) ? AdvertisementStatus.UNDER_MODERATION
-              : AdvertisementStatus.DRAFT
-      );
-
       request.setAttribute("announcement", ad);
       request.getRequestDispatcher("/successful-create-ad.jsp").forward(request, response);
-      // Сохраняем теги в БД
-      if (!tagSelectionsForDB.isEmpty()) {
-        try {
-          tagSelector.saveAdTags(ad.getId(), tagSelectionsForDB);
-          System.out.println("✅ Tags saved to database for ad " + ad.getId());
-        } catch (SQLException e) {
-          System.err.println("❌ Error saving tags to database: " + e.getMessage());
-          // Продолжаем выполнение, даже если теги не сохранились в БД
-        }
-      }
 
     } catch (IllegalArgumentException e) {
+      System.err.println("❌ IllegalArgumentException: " + e.getMessage());
       request.setAttribute("error", "Некорректные данные: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
     } catch (IllegalStateException e) {
+      System.err.println("❌ IllegalStateException: " + e.getMessage());
       request.setAttribute("error", "Ошибка статуса: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
     } catch (Exception e) {
+      System.err.println("❌ General Exception: " + e.getMessage());
+      e.printStackTrace();
       request.setAttribute("error", "Произошла ошибка при создании объявления: " + e.getMessage());
       request.getRequestDispatcher("/create-ad.jsp").forward(request, response);
     }
   }
+
 
   private int processPrice(String priceType, String priceStr) {
     if (priceType == null) {
@@ -247,6 +267,92 @@ public class CreateAdServlet extends HttpServlet {
         return -1;
     }
   }
+
+  // МЕТОД ДЛЯ ОБРАБОТКИ ЗАГРУЖЕННЫХ ФОТОГРАФИЙ
+  private List<File> processUploadedPhotos(HttpServletRequest request) throws IOException, ServletException {
+    List<File> uploadedPhotos = new ArrayList<>();
+
+    // Создаем директорию для загрузок, если её нет
+    String appPath = request.getServletContext().getRealPath("");
+    String uploadPath = appPath + File.separator + UPLOAD_DIR;
+
+    File uploadDir = new File(uploadPath);
+    if (!uploadDir.exists()) {
+      uploadDir.mkdirs();
+    }
+
+    // Обрабатываем каждое загруженное фото
+    for (Part part : request.getParts()) {
+      if (part.getName().equals("photos") && part.getSize() > 0) {
+        String fileName = extractFileName(part);
+
+        // Проверяем расширение файла
+        if (isValidFileExtension(fileName)) {
+          String filePath = uploadPath + File.separator + System.currentTimeMillis() + "_" + fileName;
+          File photoFile = new File(filePath);
+
+          // Сохраняем файл на диск
+          try (InputStream input = part.getInputStream()) {
+            Files.copy(input, photoFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+          }
+
+          uploadedPhotos.add(photoFile);
+          System.out.println("✅ Photo saved: " + filePath);
+        }
+      }
+    }
+
+    return uploadedPhotos;
+  }
+
+  // ИСПРАВЛЕННЫЙ МЕТОД ДЛЯ СОХРАНЕНИЯ ФОТОГРАФИЙ В БАЗУ ДАННЫХ
+  private void savePhotosToDatabaseNew(Long adId, List<File> photos) throws SQLException {
+    if (photos == null || photos.isEmpty()) {
+      System.out.println("⚠️ No photos to save");
+      return;
+    }
+    try {
+      // Создаем список байтовых массивов
+      List<byte[]> photoBytes = new ArrayList<>();
+      for (File photo : photos) {
+        try {
+          byte[] fileData = Files.readAllBytes(photo.toPath());
+          photoBytes.add(fileData);
+          System.out.println("✅ Photo read: " + photo.getName() + " (" + fileData.length + " bytes)");
+        } catch (IOException e) {
+          System.err.println("❌ Error reading photo file: " + e.getMessage());
+        }
+      }
+
+    } catch (Exception e) {
+      System.err.println("❌ Error in savePhotosToDatabase: " + e.getMessage());
+      e.printStackTrace();
+      throw new SQLException("Failed to save photos", e);
+    }
+  }
+
+
+  // Вспомогательные методы
+  private String extractFileName(Part part) {
+    String contentDisp = part.getHeader("content-disposition");
+    String[] items = contentDisp.split(";");
+    for (String s : items) {
+      if (s.trim().startsWith("filename")) {
+        return s.substring(s.indexOf("=") + 2, s.length() - 1);
+      }
+    }
+    return "";
+  }
+
+  private boolean isValidFileExtension(String fileName) {
+    if (fileName == null || fileName.isEmpty()) {
+      return false;
+    }
+    String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+    return ALLOWED_EXTENSIONS.contains(extension);
+  }
+
+
 
 
 }

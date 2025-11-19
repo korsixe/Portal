@@ -183,4 +183,9 @@ public class AdsService implements IAdsService {
     return this.adsRepository;
   }
 
+
+  public List<byte[]> getAdPhotosBytes(long adId) throws SQLException {
+    return adsRepository.getAdPhotosBytes(adId);
+  }
+
 }

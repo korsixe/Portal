@@ -1,11 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="com.mipt.portal.announcement.Category" %>
 <%@ page import="com.mipt.portal.announcement.Condition" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.List" %>
 
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="com.mipt.portal.announcement.Category" %>
 <%@ page import="com.mipt.portal.announcement.Condition" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.List" %>
@@ -210,14 +208,6 @@
         color: var(--dark);
       }
 
-      .price-section {
-        margin-top: 15px;
-        padding: 15px;
-        background: white;
-        border-radius: 10px;
-        border: 2px solid var(--primary);
-        animation: fadeIn 0.5s ease;
-      }
 
       @keyframes fadeIn {
         from {
@@ -264,16 +254,6 @@
       .btn-outline:hover {
         border-color: var(--primary);
         color: var(--primary);
-      }
-
-      .btn-preview {
-        background: var(--warning);
-        color: white;
-      }
-
-      .btn-preview:hover {
-        background: #e68900;
-        transform: translateY(-2px);
       }
 
       .form-actions {
@@ -408,40 +388,20 @@
             border-color: var(--primary);
         }
 
-        .selected-tag {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 8px 15px;
-            margin: 5px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: 500;
-            box-shadow: var(--shadow);
-        }
-
-        .no-tags-message, .select-subcategory-message {
+        .no-tags-message{
             color: var(--gray);
             font-style: italic;
             text-align: center;
             padding: 10px;
         }
 
-        .remove-tag-btn {
-            background: none;
-            border: none;
-            color: white;
-            margin-left: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 50%;
-            transition: background-color 0.3s ease;
-        }
-
-        .remove-tag-btn:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
+      .photo-preview-container {
+          margin-top: 15px;
+          padding: 15px;
+          background: var(--light);
+          border-radius: 10px;
+          border: 2px dashed var(--border);
+      }
     </style>
 </head>
 <body>
@@ -689,10 +649,21 @@
                 <div class="form-group">
                     <label for="photos">Добавить фотографии</label>
                     <input type="file" id="photos" name="photos" class="form-control"
-                           multiple accept="image/*">
-                    <div class="tags-hint">Можно выбрать несколько файлов (JPEG, PNG, GIF)</div>
+                           multiple accept="image/*" style="padding: 8px;">
+                    <div class="tags-hint">
+                        Можно выбрать несколько файлов. Максимум 10 фотографий.
+                    </div>
+                </div>
+
+                <!-- Контейнер для предпросмотра фотографий -->
+                <div id="photoPreview" class="photo-preview-container" style="display: none;">
+                    <div class="preview-note">
+                        <strong>Предпросмотр фотографий:</strong> Выбранные фотографии появятся здесь после загрузки.
+                    </div>
+                    <div id="previewImages" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;"></div>
                 </div>
             </div>
+
 
             <!-- Теги -->
             <div class="form-section">
@@ -988,6 +959,90 @@
             const hiddenField = document.getElementById('selectedTags');
             hiddenField.value = JSON.stringify(selectedTags);
         }
+
+        // === ОБРАБОТКА ПРЕДПРОСМОТРА ФОТОГРАФИЙ ===
+        const photoInput = document.getElementById('photos');
+        const photoPreview = document.getElementById('photoPreview');
+        const previewImages = document.getElementById('previewImages');
+
+        if (photoInput) {
+            photoInput.addEventListener('change', function(e) {
+                const files = e.target.files;
+                previewImages.innerHTML = '';
+
+                if (files.length > 0) {
+                    photoPreview.style.display = 'block';
+
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+
+                            reader.onload = function(e) {
+                                const imgContainer = document.createElement('div');
+                                imgContainer.style.position = 'relative';
+                                imgContainer.style.width = '100px';
+                                imgContainer.style.height = '100px';
+
+                                const img = document.createElement('img');
+                                img.src = e.target.result;
+                                img.style.width = '100%';
+                                img.style.height = '100%';
+                                img.style.objectFit = 'cover';
+                                img.style.borderRadius = '8px';
+                                img.style.border = '2px solid var(--border)';
+
+                                const removeBtn = document.createElement('button');
+                                removeBtn.type = 'button';
+                                removeBtn.innerHTML = '×';
+                                removeBtn.style.position = 'absolute';
+                                removeBtn.style.top = '-8px';
+                                removeBtn.style.right = '-8px';
+                                removeBtn.style.background = 'var(--danger)';
+                                removeBtn.style.color = 'white';
+                                removeBtn.style.border = 'none';
+                                removeBtn.style.borderRadius = '50%';
+                                removeBtn.style.width = '20px';
+                                removeBtn.style.height = '20px';
+                                removeBtn.style.cursor = 'pointer';
+                                removeBtn.style.fontSize = '12px';
+                                removeBtn.style.fontWeight = 'bold';
+
+                                removeBtn.addEventListener('click', function() {
+                                    imgContainer.remove();
+                                    updateFileInput(files, i);
+
+                                    if (previewImages.children.length === 0) {
+                                        photoPreview.style.display = 'none';
+                                    }
+                                });
+
+                                imgContainer.appendChild(img);
+                                imgContainer.appendChild(removeBtn);
+                                previewImages.appendChild(imgContainer);
+                            };
+
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                } else {
+                    photoPreview.style.display = 'none';
+                }
+            });
+        }
+
+        function updateFileInput(originalFiles, indexToRemove) {
+            const dt = new DataTransfer();
+
+            for (let i = 0; i < originalFiles.length; i++) {
+                if (i !== indexToRemove) {
+                    dt.items.add(originalFiles[i]);
+                }
+            }
+
+            photoInput.files = dt.files;
+        }
+        // === КОНЕЦ ОБРАБОТКИ ФОТОГРАФИЙ ===
 
         // Делаем функцию глобальной для использования в onclick
         window.removeSelectedTag = removeSelectedTag;

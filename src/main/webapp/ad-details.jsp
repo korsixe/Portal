@@ -9,13 +9,15 @@
 <%@ page import="java.util.Base64" %>
 <%@ page import="com.fasterxml.jackson.databind.ObjectMapper" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="com.mipt.portal.announcement.AdsService" %>
 <%
     // Получаем ID объявления из параметра
     String adIdParam = request.getParameter("id");
     Announcement announcement = null;
     List<Comment> comments = new ArrayList<>();
     String authorName = "Неизвестный пользователь";
-    List<String> photoBase64List = new ArrayList<>(); // Список для хранения фото в Base64
+    int photoCount = 0;
+    AdsService adsService = new AdsService();
 
     if (adIdParam != null && !adIdParam.trim().isEmpty()) {
         try {
@@ -48,65 +50,52 @@
                     // Получаем имя автора
                     authorName = rs.getString("author_name");
 
-                    // ВРЕМЕННАЯ ОТЛАДКА - добавьте эти строки:
-                    String rawTags = rs.getString("tags");
-                    System.out.println("RAW TAGS FROM DB: " + rawTags);
-                    System.out.println("Tags is null: " + (rawTags == null));
-                    System.out.println("Tags is 'null': " + "null".equals(rawTags));
-
                     // Обрабатываем теги из JSONB с использованием Jackson
-            String tagsJson = rs.getString("tags");
-    List<String> tags = new ArrayList<>();
-    if (tagsJson != null && !tagsJson.equals("null") && !tagsJson.trim().isEmpty()) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object>[] tagArray = mapper.readValue(tagsJson, Map[].class);
+                    String tagsJson = rs.getString("tags");
+                    List<String> tags = new ArrayList<>();
+                    if (tagsJson != null && !tagsJson.equals("null") && !tagsJson.trim().isEmpty()) {
+                        try {
+                            ObjectMapper mapper = new ObjectMapper();
+                            Map<String, Object>[] tagArray = mapper.readValue(tagsJson, Map[].class);
 
-            for (Map<String, Object> tagObj : tagArray) {
-                String valueName = (String) tagObj.get("valueName");
-                if (valueName != null && !valueName.trim().isEmpty()) {
-                    tags.add(valueName.trim());
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
-            e.printStackTrace();
+                            for (Map<String, Object> tagObj : tagArray) {
+                                String valueName = (String) tagObj.get("valueName");
+                                if (valueName != null && !valueName.trim().isEmpty()) {
+                                    tags.add(valueName.trim());
+                                }
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
+                            e.printStackTrace();
 
-            // Fallback: простой парсинг
-            if (tagsJson.contains("valueName")) {
-                String[] parts = tagsJson.split("\"valueName\"");
-                for (int i = 1; i < parts.length; i++) {
-                    String part = parts[i];
-                    int startQuote = part.indexOf("\"") + 1;
-                    int endQuote = part.indexOf("\"", startQuote);
-                    if (startQuote > 0 && endQuote > startQuote) {
-                        String valueName = part.substring(startQuote, endQuote).trim();
-                        if (!valueName.isEmpty()) {
-                            tags.add(valueName);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-                    announcement.setTags(tags);
-
-                    Array photosArray = rs.getArray("photos");
-                    if (photosArray != null) {
-                        Object[] photosData = (Object[]) photosArray.getArray();
-                        if (photosData != null && photosData.length > 0) {
-                            for (Object photoData : photosData) {
-                                if (photoData instanceof byte[]) {
-                                    byte[] imageBytes = (byte[]) photoData;
-                                    if (imageBytes.length > 0) {
-                                        // Конвертируем byte[] в Base64 строку
-                                        String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-                                        photoBase64List.add(base64Image);
+                            // Fallback: простой парсинг
+                            if (tagsJson.contains("valueName")) {
+                                String[] parts = tagsJson.split("\"valueName\"");
+                                for (int i = 1; i < parts.length; i++) {
+                                    String part = parts[i];
+                                    int startQuote = part.indexOf("\"") + 1;
+                                    int endQuote = part.indexOf("\"", startQuote);
+                                    if (startQuote > 0 && endQuote > startQuote) {
+                                        String valueName = part.substring(startQuote, endQuote).trim();
+                                        if (!valueName.isEmpty()) {
+                                            tags.add(valueName);
+                                        }
                                     }
                                 }
                             }
                         }
+                    }
+
+                    announcement.setTags(tags);
+
+                    // Получаем количество фото через AdsService
+                    try {
+                        List<byte[]> photos = adsService.getAdPhotosBytes(adId);
+                        photoCount = photos != null ? photos.size() : 0;
+                        System.out.println("✅ Loaded " + photoCount + " photos for ad " + adId);
+                    } catch (Exception e) {
+                        System.err.println("❌ Error loading photos: " + e.getMessage());
+                        photoCount = 0;
                     }
 
                     // Увеличиваем счетчик просмотров
@@ -156,7 +145,7 @@
             String commentText = request.getParameter("commentText");
             if (commentText != null && !commentText.trim().isEmpty()) {
                 com.mipt.portal.announcementContent.ProfanityChecker profanityChecker =
-                    new com.mipt.portal.announcementContent.ProfanityChecker();
+                        new com.mipt.portal.announcementContent.ProfanityChecker();
                 if (profanityChecker.containsProfanity(commentText)) {
                     request.setAttribute("profanityError", "Комментарий содержит недопустимые слова и не может быть сохранен.");
                 } else {
@@ -426,7 +415,7 @@
             border-color: #667eea;
         }
 
-        .thumbnail.active {
+        .thumbnail{
             border-color: #667eea;
             box-shadow: 0 0 0 2px #667eea;
         }
@@ -783,9 +772,9 @@
 
             <!-- Фотографии -->
             <div class="photos-section">
-                <h3 class="section-title">📷 Фотографии (<%= photoBase64List.size() %>)</h3>
+                <h3 class="section-title">📷 Фотографии (<%= photoCount %>)</h3>
 
-                <% if (photoBase64List.isEmpty()) { %>
+                <% if (photoCount == 0) { %>
                 <div class="main-photo">
                     <div class="photo-placeholder">📷</div>
                     <div style="text-align: center; color: #666; position: absolute; bottom: 20px; width: 100%;">
@@ -795,10 +784,12 @@
                 <% } else { %>
                 <!-- Основное фото с навигацией -->
                 <div class="main-photo">
-                    <img id="mainPhoto" src="data:image/jpeg;base64,<%= photoBase64List.get(0) %>"
-                         alt="Фото объявления">
+                    <img id="mainPhoto" src="/ad-photo?adId=<%= announcement.getId() %>&photoIndex=0&t=<%= System.currentTimeMillis() %>"
+                         alt="Фото объявления"
+                         onerror="handlePhotoError(this)">
+                    <div class="photo-placeholder" style="display: none;">📷</div>
                     <div class="photo-counter">
-                        <span id="currentPhoto">1</span> / <%= photoBase64List.size() %>
+                        <span id="currentPhoto">1</span> / <%= photoCount %>
                     </div>
                     <div class="photo-navigation">
                         <button class="nav-btn" onclick="prevPhoto()" id="prevBtn">❮</button>
@@ -807,14 +798,15 @@
                 </div>
 
                 <!-- Миниатюры -->
-                <% if (photoBase64List.size() > 1) { %>
+                <% if (photoCount > 1) { %>
                 <div class="photo-thumbnails">
-                    <% for (int i = 0; i < photoBase64List.size(); i++) { %>
+                    <% for (int i = 0; i < photoCount; i++) { %>
                     <div class="thumbnail <%= i == 0 ? "active" : "" %>"
                          onclick="showPhoto(<%= i %>)"
                          data-index="<%= i %>">
-                        <img src="data:image/jpeg;base64,<%= photoBase64List.get(i) %>"
-                             alt="Миниатюра <%= i + 1 %>">
+                        <img src="/ad-photo?adId=<%= announcement.getId() %>&photoIndex=<%= i %>&t=<%= System.currentTimeMillis() %>"
+                             alt="Миниатюра <%= i + 1 %>"
+                             onerror="handleThumbnailError(this)">
                     </div>
                     <% } %>
                 </div>
@@ -848,7 +840,6 @@
                 </div>
             </div>
             <% } %>
-
 
             <!-- Дополнительная информация -->
             <div class="ad-info">
@@ -943,24 +934,26 @@
     </div>
     <% } %>
 </div>
-
 <script>
-    // 🔥 ФУНКЦИИ ДЛЯ РАБОТЫ С ФОТОГРАФИЯМИ 🔥
+    // 🔥 ОБНОВЛЕННЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ФОТОГРАФИЯМИ 🔥
     let currentPhotoIndex = 0;
-    const totalPhotos = <%= photoBase64List.size() %>;
+    const totalPhotos = <%= photoCount %>;
+    const adId = <%= announcement != null ? announcement.getId() : 0 %>;
 
     function showPhoto(index) {
-        if (index >= 0 && index < totalPhotos) {
+        if (index >= 0 && index < totalPhotos && adId > 0) {
             currentPhotoIndex = index;
 
-            // Получаем Base64 строку из глобального массива
-            const photoBase64List = [
-                <% for (int i = 0; i < photoBase64List.size(); i++) { %>
-                '<%= photoBase64List.get(i) %>'<%= i < photoBase64List.size() - 1 ? "," : "" %>
-                <% } %>
-            ];
+            // Обновляем основное фото через сервлет
+            const mainPhoto = document.getElementById('mainPhoto');
+            const timestamp = new Date().getTime();
+            mainPhoto.src = '/ad-photo?adId=' + adId + '&photoIndex=' + index + '&t=' + timestamp;
+            mainPhoto.style.display = 'block';
 
-            document.getElementById('mainPhoto').src = 'data:image/jpeg;base64,' + photoBase64List[index];
+            // Скрываем placeholder если он показан
+            const placeholder = document.querySelector('.photo-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+
             document.getElementById('currentPhoto').textContent = index + 1;
 
             // Обновляем активную миниатюру
@@ -987,9 +980,31 @@
 
     function updateNavigationButtons() {
         if (totalPhotos > 1) {
-            document.getElementById('prevBtn').disabled = currentPhotoIndex === 0;
-            document.getElementById('nextBtn').disabled = currentPhotoIndex === totalPhotos - 1;
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            if (prevBtn) prevBtn.disabled = currentPhotoIndex === 0;
+            if (nextBtn) nextBtn.disabled = currentPhotoIndex === totalPhotos - 1;
         }
+    }
+
+    // Обработка ошибок загрузки фото
+    function handlePhotoError(img) {
+        img.style.display = 'none';
+        const placeholder = document.querySelector('.main-photo .photo-placeholder');
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.innerHTML = '❌<div style="text-align: center; margin-top: 10px; font-size: 1rem;">Ошибка загрузки фото</div>';
+        }
+    }
+
+    function handleThumbnailError(img) {
+        img.style.display = 'none';
+        const thumbnail = img.parentElement;
+        thumbnail.innerHTML = '❌';
+        thumbnail.style.alignItems = 'center';
+        thumbnail.style.justifyContent = 'center';
+        thumbnail.style.fontSize = '1.5rem';
+        thumbnail.style.color = '#ccc';
     }
 
     // Инициализация навигации
@@ -1068,6 +1083,7 @@
                 java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
         return formatter.format(dateTime);
     }
+
     // Метод для получения соединения с БД
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection(
