@@ -179,5 +179,8 @@ public class AdsService implements IAdsService {
   public List<Long> getActiveAdIds() throws SQLException {
     return adsRepository.getActiveAdIds();
   }
+  public AdsRepository getAdsRepository() {
+    return this.adsRepository;
+  }
 
 }

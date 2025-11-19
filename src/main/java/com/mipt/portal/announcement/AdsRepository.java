@@ -1,5 +1,6 @@
 package com.mipt.portal.announcement;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mipt.portal.database.DatabaseConnection;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -18,9 +19,17 @@ import lombok.AllArgsConstructor;
 public class AdsRepository implements IAdsRepository {
 
   private Connection connection;
+  private ObjectMapper objectMapper;
+
 
   public AdsRepository() throws SQLException {
     this.connection = DatabaseConnection.getConnection();
+    this.objectMapper = new ObjectMapper();
+  }
+
+  public AdsRepository(Connection connection) throws SQLException {
+    this.connection = connection;
+    this.objectMapper = new ObjectMapper(); // Добавляем инициализацию ObjectMapper
   }
 
   @Override
@@ -100,16 +109,22 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(8, ad.getStatus().name());
       statement.setInt(9, ad.getViewCount());
 
-      // Преобразуем список тегов в JSON
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
-        String tagsJson = "[\"" + String.join("\",\"", ad.getTags()) + "\"]";
-        statement.setString(10, tagsJson);
+        try {
+          String tagsJson = objectMapper.writeValueAsString(ad.getTags());
+          System.out.println("Update - Generated JSON: " + tagsJson);
+          statement.setString(10, tagsJson); // tags - параметр 10
+        } catch (Exception e) {
+          System.err.println("❌ Error converting tags to JSON in update: " + e.getMessage());
+          String tagsJson = convertTagsToJson(ad.getTags());
+          statement.setString(10, tagsJson);
+        }
       } else {
-        statement.setNull(10, Types.VARCHAR);
+        statement.setNull(10, Types.VARCHAR); // tags - параметр 10
       }
 
-      statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
-      statement.setLong(12, ad.getId());
+      statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0); // tags_count - параметр 11
+      statement.setLong(12, ad.getId()); // id - параметр 12
 
       int affectedRows = statement.executeUpdate();
       if (affectedRows == 0) {
@@ -117,6 +132,7 @@ public class AdsRepository implements IAdsRepository {
       }
     }
   }
+
 
   @Override
   public Announcement getAdById(long adId) throws SQLException {
@@ -210,27 +226,37 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(9, ad.getStatus().name());
       statement.setInt(10, ad.getViewCount());
 
-      // Преобразуем список тегов в JSON - пока так, чтобы запускался код (часть Лизы О)
+      // Преобразуем список тегов в JSON
+      System.out.println("=== DEBUG SAVE AD ===");
+      System.out.println("Tags list: " + ad.getTags());
+
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
-        String tagsJson = "[\"" + String.join("\",\"", ad.getTags()) + "\"]";
-        statement.setString(11, tagsJson);
+        try {
+          String tagsJson = objectMapper.writeValueAsString(ad.getTags());
+          System.out.println("Generated JSON: " + tagsJson);
+          statement.setString(11, tagsJson); // для saveAd
+        } catch (Exception e) {
+          System.err.println("❌ Error converting tags to JSON: " + e.getMessage());
+          String tagsJson = convertTagsToJson(ad.getTags());
+          statement.setString(11, tagsJson);
+        }
       } else {
-        statement.setNull(11, Types.VARCHAR);
+        System.out.println("No tags to save");
+        statement.setNull(11, Types.VARCHAR); // для saveAd
       }
 
       statement.setInt(12, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
 
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {
-        long generatedId = resultSet.getLong(1);
-        // Сохраняем фото если они есть
-        if (ad.getPhotos() != null && !ad.getPhotos().isEmpty()) {
-          //saveAdPhotos(generatedId, ad.getPhotos());
-        }
+        return resultSet.getLong(1);
 
-        return generatedId;
       }
       throw new SQLException("Failed to get generated ID");
+    } catch (Exception e) {
+      System.err.println("❌ FULL ERROR in saveAd:");
+      e.printStackTrace();
+      throw new SQLException("Error saving ad with tags", e);
     }
   }
 
@@ -290,11 +316,27 @@ public class AdsRepository implements IAdsRepository {
       ad.setStatus(AdvertisementStatus.DRAFT);
     }
 
-    // Обрабатываем теги
-    String tagsString = resultSet.getString("tags");
-    if (tagsString != null && !tagsString.trim().isEmpty()) {
-      List<String> tags = Arrays.asList(tagsString.split("\\s*,\\s*"));
-      ad.setTags(tags);
+    // 🔥 ИСПРАВЛЕННАЯ ЧАСТЬ: Правильное чтение тегов из JSON
+    String tagsJson = resultSet.getString("tags");
+    if (tagsJson != null && !tagsJson.trim().isEmpty()) {
+      try {
+        System.out.println("📥 Reading tags from DB: " + tagsJson);
+
+        // Парсим JSON массив обратно в List<String>
+        List<String> tags = objectMapper.readValue(
+          tagsJson,
+          objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
+        );
+        ad.setTags(tags);
+
+        System.out.println("✅ Successfully parsed " + tags.size() + " tags");
+
+      } catch (Exception e) {
+        System.err.println("❌ Error parsing tags JSON from DB: " + e.getMessage());
+        System.err.println("❌ Raw JSON: " + tagsJson);
+        e.printStackTrace();
+        ad.setTags(new ArrayList<>()); // Fallback: пустой список
+      }
     } else {
       ad.setTags(new ArrayList<>());
     }
@@ -357,5 +399,28 @@ public class AdsRepository implements IAdsRepository {
         }
       }
     }
+  }
+
+  private String convertTagsToJson(List<String> tags) {
+    if (tags == null || tags.isEmpty()) {
+      return "[]";
+    }
+
+    StringBuilder json = new StringBuilder("[");
+    for (int i = 0; i < tags.size(); i++) {
+      if (i > 0) json.append(",");
+      // Правильное экранирование для JSON
+      String escaped = tags.get(i)
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t");
+      json.append("\"").append(escaped).append("\"");
+    }
+    json.append("]");
+
+    System.out.println("Fallback JSON: " + json.toString());
+    return json.toString();
   }
 }

@@ -160,26 +160,28 @@ public class CreateAdServlet extends HttpServlet {
           for (Map<String, Object> tagSelection : tagSelections) {
             String tagName = (String) tagSelection.get("tagName");
             String valueName = (String) tagSelection.get("valueName");
+            Object tagId = tagSelection.get("tagId");
+            Object valueId = tagSelection.get("valueId");
+
             if (tagName != null && valueName != null) {
-              // Для Announcement (старый формат)
-              selectedTagsForAnnouncement.add(tagName + ": " + valueName);
-              // Для сохранения в БД (новый формат)
-              tagSelectionsForDB.add(tagSelection);
+              String tagString = tagName + ": " + valueName;
+              selectedTagsForAnnouncement.add(tagString);
+
+              // Для сохранения в БД через TagSelector (оставляем как есть)
+              Map<String, Object> dbTag = new HashMap<>();
+              dbTag.put("tagId", tagId);
+              dbTag.put("tagName", tagName);
+              dbTag.put("valueId", valueId);
+              dbTag.put("valueName", valueName);
+              tagSelectionsForDB.add(dbTag);
             }
           }
+
+          System.out.println("✅ Tags prepared for DB: " + selectedTagsForAnnouncement);
+
         } catch (Exception e) {
           System.err.println("❌ Error parsing tags JSON: " + e.getMessage());
-          // Если JSON не парсится, используем старый формат
-          String oldTags = request.getParameter("tags");
-          if (oldTags != null && !oldTags.trim().isEmpty()) {
-            String[] tagsArray = oldTags.split("\\s*,\\s*");
-            for (String tag : tagsArray) {
-              String trimmedTag = tag.trim();
-              if (!trimmedTag.isEmpty()) {
-                selectedTagsForAnnouncement.add(trimmedTag);
-              }
-            }
-          }
+          e.printStackTrace();
         }
       }
 
@@ -245,5 +247,6 @@ public class CreateAdServlet extends HttpServlet {
         return -1;
     }
   }
+
 
 }
