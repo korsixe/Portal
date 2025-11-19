@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.mipt.portal.servlet.HexConverterTest;
 
 import lombok.AllArgsConstructor;
 
@@ -95,7 +96,7 @@ public class AdsRepository implements IAdsRepository {
             UPDATE ads
             SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
                 price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
-                view_count = ?, tags = ?::JSONB, tags_count = ?, photos = ?
+                view_count = ?, tags = ?::JSONB, tags_count = ?
             WHERE id = ?
         """;
 
@@ -110,7 +111,7 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(8, ad.getStatus().name());
       statement.setInt(9, ad.getViewCount());
 
-      // Обработка тегов (по тому же принципу что и в saveAd)
+      // Обработка тегов
       System.out.println("=== DEBUG UPDATE AD ===");
       System.out.println("Tags list: " + ad.getTags());
 
@@ -130,25 +131,8 @@ public class AdsRepository implements IAdsRepository {
       }
 
       statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
+      statement.setLong(12, ad.getId());
 
-      // Обработка фото (по тому же принципу что и в saveAdPhotosBytes)
-      List<byte[]> photos = getAdPhotosBytes(ad.getId()); // Получаем текущие фото из БД
-      if (photos != null && !photos.isEmpty()) {
-        byte[][] photosArray = photos.toArray(new byte[0][]);
-        Array sqlArray = connection.createArrayOf("bytea", photosArray);
-        statement.setArray(12, sqlArray);
-      } else {
-        statement.setNull(12, Types.ARRAY);
-      }
-
-      statement.setLong(13, ad.getId());
-
-      if (ad.getMessageId() != null) {
-        statement.setLong(12, ad.getMessageId());
-      } else {
-        statement.setNull(12, Types.BIGINT);
-      }
-      statement.setLong(13, ad.getId());
       int affectedRows = statement.executeUpdate();
       if (affectedRows == 0) {
         throw new SQLException("Обновление объявления failed, no rows affected.");
@@ -235,10 +219,16 @@ public class AdsRepository implements IAdsRepository {
 
   @Override
   public long saveAd(Announcement ad) throws SQLException {
+    System.out.println("=== 🚀 SAVE AD DEBUG ===");
+    System.out.println("Title: " + ad.getTitle());
+    System.out.println("Tags: " + ad.getTags());
+    System.out.println("Tags count: " + ad.getTagsCount());
+
+    // ИСПРАВЛЕННЫЙ SQL - только 12 столбцов
     String sql = """
             INSERT INTO ads (title, description, category, subcategory, condition, price,
-                            location, user_id, status, view_count, tags, tags_count, message_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?, ?)
+                            location, user_id, status, view_count, tags, tags_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
             RETURNING id
         """;
 
@@ -274,19 +264,11 @@ public class AdsRepository implements IAdsRepository {
       }
 
       statement.setInt(12, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
-      if (ad.getMessageId() != null) {
-        statement.setLong(13, ad.getMessageId());
-      } else {
-        statement.setNull(13, Types.BIGINT);
-      }
 
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {
         long generatedId = resultSet.getLong(1);
-        // Сохраняем фото если они есть
-        if (ad.getPhotos() != null && !ad.getPhotos().isEmpty()) {
-          //saveAdPhotos(generatedId, ad.getPhotos());
-        }
+        System.out.println("✅ Ad saved successfully with ID: " + generatedId);
         return generatedId;
       }
       throw new SQLException("Failed to get generated ID");
@@ -481,7 +463,6 @@ public class AdsRepository implements IAdsRepository {
     }
   }
 
-
   public List<byte[]> getAdPhotosBytes(long adId) throws SQLException {
     String sql = "SELECT photos FROM ads WHERE id = ?";
     try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -495,12 +476,14 @@ public class AdsRepository implements IAdsRepository {
         if (photosArray != null) {
           Object[] dbPhotos = (Object[]) photosArray.getArray();
           if (dbPhotos != null) {
-            for (Object photoData : dbPhotos) {
-              if (photoData instanceof byte[]) {
-                byte[] imageData = (byte[]) photoData;
-                // Фильтруем только валидные изображения
-                if (isValidImageData(imageData)) {
-                  photos.add(imageData);
+            for (Object photoObj : dbPhotos) {
+              if (photoObj instanceof byte[]) {
+                photos.add((byte[]) photoObj);
+              } else if (photoObj instanceof Object[]) {
+                // Вложенный массив - берем первый элемент
+                Object[] nested = (Object[]) photoObj;
+                if (nested.length > 0 && nested[0] instanceof byte[]) {
+                  photos.add((byte[]) nested[0]);
                 }
               }
             }
@@ -508,8 +491,59 @@ public class AdsRepository implements IAdsRepository {
         }
       }
 
-      System.out.println("📸 Loaded " + photos.size() + " valid photos for ad " + adId);
+      // Если фото не загрузились - очищаем неправильный формат
+      if (photos.isEmpty()) {
+        cleanupPhotosFormat(adId);
+      }
+
       return photos;
+    }
+  }
+
+  private void cleanupPhotosFormat(long adId) throws SQLException {
+    String sql = "UPDATE ads SET photos = NULL WHERE id = ?";
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setLong(1, adId);
+      stmt.executeUpdate();
+    }
+  }
+
+
+
+  // Специальный метод для парсинга PostgreSQL hex формата
+  private byte[] parsePostgresHexString(String hexString) {
+    try {
+      if (hexString == null || hexString.length() < 2) {
+        return null;
+      }
+
+      // PostgreSQL hex формат начинается с \x
+      if (hexString.startsWith("\\x")) {
+        // Убираем префикс \x
+        String cleanHex = hexString.substring(2);
+
+        // Проверяем что строка имеет четную длину
+        if (cleanHex.length() % 2 != 0) {
+          System.err.println("   - warning: hex string has odd length, padding with 0");
+          cleanHex = "0" + cleanHex;
+        }
+
+        // Конвертируем hex в byte[]
+        byte[] data = new byte[cleanHex.length() / 2];
+        for (int i = 0; i < cleanHex.length(); i += 2) {
+          String byteStr = cleanHex.substring(i, i + 2);
+          data[i / 2] = (byte) Integer.parseInt(byteStr, 16);
+        }
+
+        return data;
+      } else {
+        System.err.println("   - not a PostgreSQL hex string, missing \\x prefix");
+        return null;
+      }
+    } catch (Exception e) {
+      System.err.println("❌ Error parsing PostgreSQL hex string: " + e.getMessage());
+      System.err.println("   - input: " + (hexString != null ? hexString.substring(0, Math.min(100, hexString.length())) : "null"));
+      return null;
     }
   }
 

@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import static java.lang.Boolean.TRUE;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -197,7 +199,7 @@ public class Announcement {
   }
 
   public boolean canBeEdited() {
-    return status.canBeEdited();
+    return true; // Всегда разрешено редактирование
   }
 
   public boolean isDraft() {

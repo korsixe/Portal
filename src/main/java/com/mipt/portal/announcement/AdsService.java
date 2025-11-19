@@ -4,6 +4,7 @@ import com.mipt.portal.users.service.UserService;
 import java.io.File;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -188,7 +189,14 @@ public class AdsService implements IAdsService {
 
 
   public List<byte[]> getAdPhotosBytes(long adId) throws SQLException {
-    return adsRepository.getAdPhotosBytes(adId);
+    try {
+      List<byte[]> photos = adsRepository.getAdPhotosBytes(adId);
+      System.out.println("✅ AdsService loaded " + (photos != null ? photos.size() : 0) + " photos for ad " + adId);
+      return photos != null ? photos : new ArrayList<>();
+    } catch (Exception e) {
+      System.err.println("❌ Error in AdsService.getAdPhotosBytes: " + e.getMessage());
+      return new ArrayList<>();
+    }
   }
 
 }

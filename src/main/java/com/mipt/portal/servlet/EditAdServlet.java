@@ -23,6 +23,8 @@ import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.util.*;
 
+import static java.lang.Boolean.FALSE;
+
 @WebServlet("/edit-ad")
 @MultipartConfig(
   maxFileSize = 1024 * 1024 * 10,      // 10 MB max file size

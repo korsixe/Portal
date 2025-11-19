@@ -8,11 +8,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.SQLException;
+import java.util.List;
 
 @WebServlet("/ad-photo")
 public class AdPhotoServlet extends HttpServlet {
-
   private AdsService adsService;
 
   @Override
@@ -24,10 +23,15 @@ public class AdPhotoServlet extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
 
+    System.out.println("🚀 AdPhotoServlet: START - " + request.getQueryString());
+
     String adIdParam = request.getParameter("adId");
     String photoIndexParam = request.getParameter("photoIndex");
 
+    System.out.println("📋 Parameters - adId: " + adIdParam + ", photoIndex: " + photoIndexParam);
+
     if (adIdParam == null || photoIndexParam == null) {
+      System.err.println("❌ Missing parameters");
       response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing parameters: adId and photoIndex required");
       return;
     }
@@ -36,58 +40,49 @@ public class AdPhotoServlet extends HttpServlet {
       long adId = Long.parseLong(adIdParam);
       int photoIndex = Integer.parseInt(photoIndexParam);
 
-      // Получаем фото из базы данных
-      var photos = adsService.getAdPhotosBytes(adId);
+      System.out.println("🔍 Loading photos for adId: " + adId);
 
-      if (photos != null && photoIndex < photos.size()) {
-        byte[] photoData = photos.get(photoIndex);
+      // Получаем все фото для объявления
+      List<byte[]> photos = adsService.getAdPhotosBytes(adId);
 
-        // Определяем Content-Type на основе сигнатуры изображения
-        String contentType = determineContentType(photoData);
+      System.out.println("📸 Photos loaded: " + (photos != null ? photos.size() : "null"));
 
-        // Устанавливаем заголовки
-        response.setContentType(contentType);
-        response.setContentLength(photoData.length);
-        response.setHeader("Cache-Control", "max-age=3600"); // Кэшируем на 1 час
-
-        // Отправляем фото
-        response.getOutputStream().write(photoData);
-
-        System.out.println("✅ Sent photo " + photoIndex + " for ad " + adId + " (" + photoData.length + " bytes, " + contentType + ")");
-      } else {
-        System.err.println("❌ Photo not found: adId=" + adId + ", index=" + photoIndex + ", available=" + (photos != null ? photos.size() : 0));
+      if (photos == null || photos.isEmpty() || photoIndex >= photos.size()) {
+        System.err.println("❌ Photo not found - index: " + photoIndex + ", total: " +
+          (photos != null ? photos.size() : 0));
         response.sendError(HttpServletResponse.SC_NOT_FOUND, "Photo not found");
+        return;
       }
 
+      byte[] photoData = photos.get(photoIndex);
+
+      if (photoData == null || photoData.length == 0) {
+        System.err.println("❌ Photo data is empty");
+        response.sendError(HttpServletResponse.SC_NOT_FOUND, "Photo data is empty");
+        return;
+      }
+
+      System.out.println("✅ Photo data size: " + photoData.length + " bytes");
+
+      // Устанавливаем заголовки для правильного отображения изображения
+      response.setContentType("image/jpeg");
+      response.setContentLength(photoData.length);
+      response.setHeader("Cache-Control", "max-age=3600"); // Кэшируем на 1 час
+      response.setHeader("Content-Disposition", "inline; filename=\"photo.jpg\"");
+
+      // Записываем данные изображения в ответ
+      response.getOutputStream().write(photoData);
+      response.getOutputStream().flush();
+
+      System.out.println("✅ Photo sent successfully");
+
     } catch (NumberFormatException e) {
-      response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid parameters: adId and photoIndex must be numbers");
-    } catch (SQLException e) {
-      System.err.println("❌ Database error: " + e.getMessage());
-      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error");
+      System.err.println("❌ Number format error: " + e.getMessage());
+      response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid number format");
     } catch (Exception e) {
-      System.err.println("❌ Unexpected error: " + e.getMessage());
+      System.err.println("❌ Error serving photo: " + e.getMessage());
       e.printStackTrace();
-      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unexpected error");
+      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error loading photo");
     }
-  }
-
-  // 🔥 Определяем Content-Type по сигнатуре изображения
-  private String determineContentType(byte[] data) {
-    if (data == null || data.length < 4) return "image/jpeg"; // fallback
-
-    // JPEG: FF D8 FF
-    if ((data[0] & 0xFF) == 0xFF && (data[1] & 0xFF) == 0xD8 && (data[2] & 0xFF) == 0xFF) {
-      return "image/jpeg";
-    }
-    // PNG: 89 50 4E 47
-    if ((data[0] & 0xFF) == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47) {
-      return "image/png";
-    }
-    // GIF: 47 49 46 38
-    if (data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x38) {
-      return "image/gif";
-    }
-
-    return "image/jpeg"; // fallback to JPEG
   }
 }

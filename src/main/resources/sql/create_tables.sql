@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS comments (
                                         user_id BIGINT NOT NULL,
                                         user_name TEXT NOT NULL,
                                         content TEXT NOT NULL,
-                                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
                                         FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

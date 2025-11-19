@@ -10,6 +10,8 @@
 <%@ page import="com.fasterxml.jackson.databind.ObjectMapper" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="com.mipt.portal.announcement.AdsService" %>
+
+
 <%
     // Получаем ID объявления из параметра
     String adIdParam = request.getParameter("id");
@@ -56,37 +58,54 @@
                     if (tagsJson != null && !tagsJson.equals("null") && !tagsJson.trim().isEmpty()) {
                         try {
                             ObjectMapper mapper = new ObjectMapper();
-                            Map<String, Object>[] tagArray = mapper.readValue(tagsJson, Map[].class);
 
-                            for (Map<String, Object> tagObj : tagArray) {
-                                String valueName = (String) tagObj.get("valueName");
-                                if (valueName != null && !valueName.trim().isEmpty()) {
-                                    tags.add(valueName.trim());
+                            // Пробуем разные варианты парсинга
+                            if (tagsJson.startsWith("[")) {
+                                // Это массив объектов
+                                Map<String, Object>[] tagArray = mapper.readValue(tagsJson, Map[].class);
+                                for (Map<String, Object> tagObj : tagArray) {
+                                    String valueName = (String) tagObj.get("valueName");
+                                    if (valueName != null && !valueName.trim().isEmpty()) {
+                                        tags.add(valueName.trim());
+                                    }
+                                }
+                            } else if (tagsJson.startsWith("\"")) {
+                                // Это простая строка (возможно закодированный JSON)
+                                String decodedTags = mapper.readValue(tagsJson, String.class);
+                                if (decodedTags.startsWith("[")) {
+                                    Map<String, Object>[] tagArray = mapper.readValue(decodedTags, Map[].class);
+                                    for (Map<String, Object> tagObj : tagArray) {
+                                        String valueName = (String) tagObj.get("valueName");
+                                        if (valueName != null && !valueName.trim().isEmpty()) {
+                                            tags.add(valueName.trim());
+                                        }
+                                    }
                                 }
                             }
                         } catch (Exception e) {
                             System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
                             e.printStackTrace();
 
-                            // Fallback: простой парсинг
-                            if (tagsJson.contains("valueName")) {
-                                String[] parts = tagsJson.split("\"valueName\"");
-                                for (int i = 1; i < parts.length; i++) {
-                                    String part = parts[i];
-                                    int startQuote = part.indexOf("\"") + 1;
-                                    int endQuote = part.indexOf("\"", startQuote);
-                                    if (startQuote > 0 && endQuote > startQuote) {
-                                        String valueName = part.substring(startQuote, endQuote).trim();
-                                        if (!valueName.isEmpty()) {
-                                            tags.add(valueName);
+                            // Fallback: пробуем извлечь теги простым способом
+                            try {
+                                // Если теги хранятся как простой массив строк
+                                if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
+                                    String[] simpleTags = tagsJson.substring(1, tagsJson.length() - 1).split(",");
+                                    for (String tag : simpleTags) {
+                                        String cleanedTag = tag.trim().replace("\"", "");
+                                        if (!cleanedTag.isEmpty()) {
+                                            tags.add(cleanedTag);
                                         }
                                     }
                                 }
+                            } catch (Exception e2) {
+                                System.err.println("Fallback парсинг тоже не удался: " + e2.getMessage());
                             }
                         }
                     }
 
                     announcement.setTags(tags);
+
 
                     // Получаем количество фото через AdsService
                     try {
@@ -116,11 +135,16 @@
                 ResultSet rs = stmt.executeQuery();
 
                 while (rs.next()) {
+                    // Получаем Timestamp и конвертируем в LocalDateTime
+                    Timestamp timestamp = rs.getTimestamp("created_at");
+                    java.time.LocalDateTime createdAt = timestamp != null ?
+                            timestamp.toLocalDateTime() : java.time.LocalDateTime.now();
+
                     Comment comment = new Comment(
                             rs.getLong("id"),
                             rs.getString("user_name"),
                             rs.getString("content"),
-                            rs.getTimestamp("created_at").toLocalDateTime(),
+                            createdAt,
                             rs.getLong("ad_id")
                     );
                     comments.add(comment);
@@ -149,22 +173,40 @@
                 if (profanityChecker.containsProfanity(commentText)) {
                     request.setAttribute("profanityError", "Комментарий содержит недопустимые слова и не может быть сохранен.");
                 } else {
-                    try {
-                        CommentManager commentManager = new CommentManager(announcement.getId(), commentText.trim());
-                        Comment newComment = commentManager.create();
-                        comments.add(0, newComment); // Добавляем в начало списка
+                    try (Connection conn = getConnection();
+                         PreparedStatement stmt = conn.prepareStatement(
+                                 "INSERT INTO comments (ad_id, user_id, user_name, content, created_at) VALUES (?, ?, ?, ?, ?)",
+                                 Statement.RETURN_GENERATED_KEYS)) {
 
-                        // Перенаправляем
-                        response.sendRedirect("ad-details.jsp?id=" + announcement.getId());
-                        return;
+                        stmt.setLong(1, announcement.getId());
+                        stmt.setLong(2, user.getId());
+                        stmt.setString(3, user.getName());
+                        stmt.setString(4, commentText.trim());
+                        stmt.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
+
+                        int affectedRows = stmt.executeUpdate();
+
+                        if (affectedRows > 0) {
+                            // Перенаправляем для предотвращения повторной отправки
+                            response.sendRedirect("ad-details.jsp?id=" + announcement.getId());
+                            return;
+                        }
                     } catch (SQLException e) {
                         System.err.println("Ошибка при создании комментария: " + e.getMessage());
+                        e.printStackTrace();
+                        request.setAttribute("error", "Ошибка при сохранении комментария: " + e.getMessage());
                     }
                 }
+            } else {
+                request.setAttribute("error", "Комментарий не может быть пустым");
             }
+        } else {
+            request.setAttribute("error", "Для добавления комментария необходимо авторизоваться");
         }
     }
 %>
+%>
+
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -723,6 +765,7 @@
 </head>
 <body>
 <div class="container">
+
     <!-- Шапка -->
     <div class="header">
         <div class="portal-logo">PORTAL</div>
@@ -784,17 +827,21 @@
                 <% } else { %>
                 <!-- Основное фото с навигацией -->
                 <div class="main-photo">
-                    <img id="mainPhoto" src="/ad-photo?adId=<%= announcement.getId() %>&photoIndex=0&t=<%= System.currentTimeMillis() %>"
+                    <img id="mainPhoto"
+                         src="<%= request.getContextPath() %>/ad-photo?adId=<%= announcement.getId() %>&photoIndex=0&t=<%= System.currentTimeMillis() %>"
                          alt="Фото объявления"
-                         onerror="handlePhotoError(this)">
+                         onerror="handlePhotoError(this)"
+                         style="display: block;">
                     <div class="photo-placeholder" style="display: none;">📷</div>
                     <div class="photo-counter">
                         <span id="currentPhoto">1</span> / <%= photoCount %>
                     </div>
+                    <% if (photoCount > 1) { %>
                     <div class="photo-navigation">
-                        <button class="nav-btn" onclick="prevPhoto()" id="prevBtn">❮</button>
-                        <button class="nav-btn" onclick="nextPhoto()" id="nextBtn">❯</button>
+                        <button class="nav-btn" onclick="prevPhoto()" id="prevBtn" disabled>❮</button>
+                        <button class="nav-btn" onclick="nextPhoto()" id="nextBtn" <%= photoCount > 1 ? "" : "disabled" %>>❯</button>
                     </div>
+                    <% } %>
                 </div>
 
                 <!-- Миниатюры -->
@@ -804,9 +851,10 @@
                     <div class="thumbnail <%= i == 0 ? "active" : "" %>"
                          onclick="showPhoto(<%= i %>)"
                          data-index="<%= i %>">
-                        <img src="/ad-photo?adId=<%= announcement.getId() %>&photoIndex=<%= i %>&t=<%= System.currentTimeMillis() %>"
+                        <img src="<%= request.getContextPath() %>/ad-photo?adId=<%= announcement.getId() %>&photoIndex=<%= i %>&t=<%= System.currentTimeMillis() %>"
                              alt="Миниатюра <%= i + 1 %>"
-                             onerror="handleThumbnailError(this)">
+                             onerror="handleThumbnailError(this)"
+                             loading="lazy">
                     </div>
                     <% } %>
                 </div>
@@ -947,12 +995,32 @@
             // Обновляем основное фото через сервлет
             const mainPhoto = document.getElementById('mainPhoto');
             const timestamp = new Date().getTime();
-            mainPhoto.src = '/ad-photo?adId=' + adId + '&photoIndex=' + index + '&t=' + timestamp;
-            mainPhoto.style.display = 'block';
 
-            // Скрываем placeholder если он показан
-            const placeholder = document.querySelector('.photo-placeholder');
-            if (placeholder) placeholder.style.display = 'none';
+            // Используем contextPath из JSP
+            const contextPath = '<%= request.getContextPath() %>'; // Это вернет "/portal"
+            const newSrc = contextPath + '/ad-photo?adId=' + adId + '&photoIndex=' + index + '&t=' + timestamp;
+
+            console.log('Loading photo:', newSrc);
+
+            // Показываем загрузку
+            mainPhoto.style.opacity = '0.5';
+
+            // Создаем новое изображение для предзагрузки
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                mainPhoto.src = newSrc;
+                mainPhoto.style.opacity = '1';
+                mainPhoto.style.display = 'block';
+
+                // Скрываем placeholder если он показан
+                const placeholder = document.querySelector('.main-photo .photo-placeholder');
+                if (placeholder) placeholder.style.display = 'none';
+            };
+            tempImg.onerror = function() {
+                console.error('Error loading photo:', newSrc);
+                handlePhotoError(mainPhoto);
+            };
+            tempImg.src = newSrc;
 
             document.getElementById('currentPhoto').textContent = index + 1;
 
@@ -987,30 +1055,40 @@
         }
     }
 
-    // Обработка ошибок загрузки фото
+    // Улучшенная обработка ошибок загрузки фото
     function handlePhotoError(img) {
+        console.error('Error loading main photo');
         img.style.display = 'none';
         const placeholder = document.querySelector('.main-photo .photo-placeholder');
         if (placeholder) {
             placeholder.style.display = 'flex';
-            placeholder.innerHTML = '❌<div style="text-align: center; margin-top: 10px; font-size: 1rem;">Ошибка загрузки фото</div>';
+            placeholder.style.flexDirection = 'column';
+            placeholder.innerHTML = '❌<div style="text-align: center; margin-top: 10px; font-size: 1rem; color: #666;">Ошибка загрузки фото</div>';
         }
     }
 
     function handleThumbnailError(img) {
+        console.error('Error loading thumbnail');
         img.style.display = 'none';
         const thumbnail = img.parentElement;
         thumbnail.innerHTML = '❌';
         thumbnail.style.alignItems = 'center';
         thumbnail.style.justifyContent = 'center';
-        thumbnail.style.fontSize = '1.5rem';
+        thumbnail.style.fontSize = '1.2rem';
         thumbnail.style.color = '#ccc';
+        thumbnail.style.background = '#f8f9fa';
     }
 
     // Инициализация навигации
     document.addEventListener('DOMContentLoaded', function() {
         if (totalPhotos > 0) {
             updateNavigationButtons();
+
+            // Предзагружаем следующее фото для быстрой навигации
+            if (totalPhotos > 1) {
+                const nextImg = new Image();
+                nextImg.src = '/ad-photo?adId=' + adId + '&photoIndex=1&t=' + new Date().getTime();
+            }
         }
 
         // Добавляем обработку клавиш клавиатуры
@@ -1019,38 +1097,6 @@
             if (e.key === 'ArrowRight') nextPhoto();
         });
     });
-
-    // Функция для связи с продавцом
-    function contactSeller() {
-        alert('Функция связи с продавцом будет реализована позже\n\nСейчас вы можете:\n• Написать комментарий\n• Отслеживать обновления объявления');
-    }
-
-    // Анимация появления элементов
-    document.addEventListener('DOMContentLoaded', function() {
-        const elements = document.querySelectorAll('.ad-card, .comments-section');
-        elements.forEach((element, index) => {
-            element.style.animationDelay = (index * 0.2) + 's';
-        });
-    });
-    
-    // Функция для отправки комментария с проверкой на ненормативную лексику
-    function submitCommentForm() {
-        const commentTextArea = document.getElementById('commentText');
-        const commentText = commentTextArea.value;
-        if (!commentText || commentText.trim() === '') {
-            return;
-        }
-        
-        checkProfanityAsync(commentText.trim(), function(hasProfanity) {
-            if (hasProfanity) {
-                // Clear the comment field
-                commentTextArea.value = '';
-                showProfanityWarning('commentForm', ['commentText']);
-            } else {
-                document.getElementById('commentForm').submit();
-            }
-        });
-    }
 </script>
 <%@ include file="profanity-check.jsp" %>
 </body>
