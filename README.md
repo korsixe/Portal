@@ -10,7 +10,7 @@ docker-compose up -d
 ```
 ### Заполнения бд с нуля:
 ```
- java -cp "target/classes:postgresql-42.6.0.jar" com.mipt.portal.database.TestData
+mvn compile exec:java -Dexec.mainClass="com.mipt.portal.database.TestData"
 ```
 ### Запуск фронта
 ```
