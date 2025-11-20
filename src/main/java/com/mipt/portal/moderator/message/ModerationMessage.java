@@ -13,14 +13,16 @@ public class ModerationMessage {
     private String action; // 'approve', 'reject', 'delete'
     private String reason;
     private LocalDateTime createdAt;
+    private Boolean isRead;
 
     public ModerationMessage() {}
 
-    public ModerationMessage(Long adId, String moderatorEmail, String action, String reason) {
+    public ModerationMessage(Long adId, String moderatorEmail, String action, String reason, Boolean isRead) {
         this.adId = adId;
         this.moderatorEmail = moderatorEmail;
         this.action = action;
         this.reason = reason;
         this.createdAt = LocalDateTime.now();
+        this.isRead = isRead;
     }
 }

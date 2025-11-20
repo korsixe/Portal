@@ -8,8 +8,9 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="com.mipt.portal.users.service.UserService" %>
+<%@ page import="com.mipt.portal.notifications.NotificationService" %>
+<%@ page import="com.mipt.portal.moderator.message.ModerationMessage" %>
 <%
-    // Проверяем авторизацию
     User user = (User) session.getAttribute("user");
     if (user == null) {
         response.sendRedirect("login.jsp");
@@ -24,7 +25,6 @@
     AdsService adsService = new AdsService();
     List<Announcement> userAnnouncements = new ArrayList<>();
 
-
     if (user.getAdList() != null && !user.getAdList().isEmpty()) {
         for (Long adId : user.getAdList()) {
             try {
@@ -38,6 +38,11 @@
             }
         }
     }
+
+    // Загружаем уведомления пользователя
+    NotificationService notificationService = new NotificationService();
+    List<ModerationMessage> userNotifications = notificationService.getUserNotifications(user.getId());
+    int unreadCount = notificationService.getUnreadCount(user.getId());
 %>
 <%
     // В начале home.jsp, после проверки авторизации
@@ -107,8 +112,14 @@
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             padding: 40px;
-            text-align: center;
             margin-bottom: 30px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
         .portal-logo {
@@ -118,14 +129,165 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 10px;
             letter-spacing: 2px;
         }
+
+
 
         .welcome-message {
             color: #666;
             font-size: 1.5rem;
-            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Стили для уведомлений */
+        .notification-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .notification-bell {
+            position: relative;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            color: #667eea;
+        }
+
+        .notification-bell:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.1);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .notification-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 10px;
+        }
+
+        .notification-dropdown.show {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        .notification-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-header h4 {
+            margin: 0;
+            color: #333;
+        }
+
+        .notification-list {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .notification-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .notification-item:hover {
+            background: #f8f9fa;
+        }
+
+        .notification-item.unread {
+            background: #f0f7ff;
+            border-left: 3px solid #667eea;
+        }
+
+        .notification-icon {
+            font-size: 1.2rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .notification-message {
+            color: #666;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 5px;
+        }
+
+        .notification-reason {
+            color: #888;
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .notification-time {
+            color: #999;
+            font-size: 0.75rem;
+        }
+
+        .notification-actions {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+
+        .no-notifications {
+            padding: 40px 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        .no-notifications .icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
         }
 
         .user-info {
@@ -523,6 +685,16 @@
         }
 
         @media (max-width: 768px) {
+            .header-top {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .notification-dropdown {
+                width: 300px;
+                right: -50px;
+            }
+
             .user-info {
                 grid-template-columns: 1fr;
             }
@@ -563,7 +735,15 @@
 <body>
 <div class="dashboard-container">
     <div class="header">
-        <div class="portal-logo">PORTAL</div>
+        <div class="header-top">
+            <div class="portal-logo">PORTAL</div>
+        </div>
+    </div>
+
+    <div class="header-top">
+
+        <!-- Подключаем колокольчик -->
+        <jsp:include page="notification-bell.jsp" />
     </div>
 
     <!-- Статистика -->
@@ -795,6 +975,26 @@
         document.getElementById('deleteAccountModal').style.display = 'none';
     }
 
+    // Функции для уведомлений
+    function toggleNotifications() {
+        const dropdown = document.getElementById('notificationDropdown');
+        dropdown.classList.toggle('show');
+    }
+
+    function handleNotificationClick(adId) {
+        // Переходим к объявлению
+        window.location.href = 'http://localhost:8080/portal/edit-ad?adId=' + adId;
+    }
+
+    function markAllAsRead() {
+        // Просто скрываем бейдж и закрываем dropdown
+        const badge = document.getElementById('notificationBadge');
+        if (badge) {
+            badge.style.display = 'none';
+        }
+        document.getElementById('notificationDropdown').classList.remove('show');
+    }
+
     // Закрытие модальных окон при клике вне их
     window.onclick = function(event) {
         const modals = document.getElementsByClassName('modal');
@@ -802,6 +1002,13 @@
             if (event.target == modal) {
                 modal.style.display = 'none';
             }
+        }
+
+        // Закрытие dropdown уведомлений при клике вне
+        const dropdown = document.getElementById('notificationDropdown');
+        const bell = document.querySelector('.notification-bell');
+        if (dropdown && bell && !bell.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.classList.remove('show');
         }
     }
 
@@ -860,33 +1067,34 @@
 </html>
 
 <%!
-    // Вспомогательные методы для JSP
+            // Вспомогательные методы для JSP
 
-    private String getStatusClass(AdvertisementStatus status) {
-        switch (status) {
-            case ACTIVE: return "status-active";
-            case DRAFT: return "status-draft";
-            case UNDER_MODERATION: return "status-moderation";
-            case ARCHIVED: return "status-archived";
-            default: return "status-draft";
-        }
-    }
+            private String getStatusClass(AdvertisementStatus status) {
+                switch (status) {
+                    case ACTIVE: return "status-active";
+                    case DRAFT: return "status-draft";
+                    case UNDER_MODERATION: return "status-moderation";
+                    case ARCHIVED: return "status-archived";
+                    default: return "status-draft";
+                }
+            }
 
-    private String formatPrice(int price) {
-        if (price == -1) {
-            return "Договорная";
-        } else if (price == 0) {
-            return "Бесплатно";
-        } else {
-            return String.format("%,d руб.", price);
-        }
-    }
+            private String formatPrice(int price) {
+                if (price == -1) {
+                    return "Договорная";
+                } else if (price == 0) {
+                    return "Бесплатно";
+                } else {
+                    return String.format("%,d руб.", price);
+                }
+            }
 
-    private String formatDate(java.time.Instant instant) {
-        if (instant == null) return "Не указано";
-        java.time.format.DateTimeFormatter formatter =
-                java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")
-                        .withZone(java.time.ZoneId.systemDefault());
-        return formatter.format(instant);
-    }
+            private String formatDate(java.time.Instant instant) {
+                if (instant == null) return "Не указано";
+                if (instant == null) return "Не указано";
+                java.time.format.DateTimeFormatter formatter =
+                        java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")
+                                .withZone(java.time.ZoneId.systemDefault());
+                return formatter.format(instant);
+            }
 %>
