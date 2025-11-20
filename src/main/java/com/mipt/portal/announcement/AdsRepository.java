@@ -22,16 +22,6 @@ public class AdsRepository implements IAdsRepository {
     this.connection = DatabaseConnection.getConnection();
   }
 
-  @Override
-  public void deleteData() {
-    try {
-      String sql = readSqlFile("sql/delete_data.sql");
-      executeSql(sql);
-      resetSequences();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
 
   private void resetSequences() throws SQLException {
     String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq", "moderation_messages_id_seq"};

@@ -1,4 +1,8 @@
+DROP TABLE IF EXISTS comments CASCADE;
+DROP TABLE IF EXISTS moderation_messages CASCADE;
 DROP TABLE IF EXISTS ads CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS moderators CASCADE;
 
 -- Создание таблицы пользователей
 CREATE TABLE IF NOT EXISTS users

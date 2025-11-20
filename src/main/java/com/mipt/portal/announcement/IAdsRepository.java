@@ -5,8 +5,6 @@ import java.util.List;
 
 public interface IAdsRepository {
 
-  void deleteData();
-
   void createTables();
 
   void insertData();
