@@ -1,4 +1,7 @@
 DROP TABLE IF EXISTS comments CASCADE;
+DROP TABLE IF EXISTS tag_values CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS tags CASCADE;
 DROP TABLE IF EXISTS moderation_messages CASCADE;
 DROP TABLE IF EXISTS ads CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -74,4 +77,28 @@ CREATE TABLE IF NOT EXISTS moderation_messages (
                                                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
                                                    FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE
+);
+
+-- Создание таблицы категорий и подкатегорий
+CREATE TABLE IF NOT EXISTS categories (
+                            id SERIAL PRIMARY KEY,
+                            name VARCHAR(100) NOT NULL,
+                            parent_id INTEGER REFERENCES categories(id),
+                            is_service BOOLEAN DEFAULT FALSE,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы тегов
+CREATE TABLE IF NOT EXISTS tags (
+                      id SERIAL PRIMARY KEY,
+                      name VARCHAR(50) NOT NULL,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы значений тегов
+CREATE TABLE IF NOT EXISTS tag_values (
+                            id SERIAL PRIMARY KEY,
+                            tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
+                            value VARCHAR(100) NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

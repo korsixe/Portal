@@ -4,6 +4,7 @@ import com.mipt.portal.users.service.UserService;
 import java.io.File;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -29,14 +30,15 @@ public class AdsService implements IAdsService {
 
   @Override
   public Announcement createAd(long userId, String title, String description, Category category,
-      String subcategory, Condition condition, int price, String location, List<File> photos,
-      List<String> tags, AdvertisementStatus action) throws SQLException {
+                               String subcategory, Condition condition, int price, String location, List<File> photos,
+                               List<String> tags, AdvertisementStatus action) throws SQLException {
 
     Announcement ad = new Announcement(title, description, category, condition, price, location,
-        userId);
+      userId);
     ad.setSubcategory(subcategory);
     ad.setPhotos(photos);
     ad.setTags(tags);
+    ad.setTagsCount(tags != null ? tags.size() : 0);
     ad.setStatus(action);
     ad.setId(adsRepository.saveAd(ad));
     userService.addAnnouncementId(ad.getUserId(), ad.getId());
@@ -51,8 +53,11 @@ public class AdsService implements IAdsService {
   @Override
   public Announcement editAd(Announcement ad) throws SQLException {
     ad.setUpdatedAt(Instant.now());
+
+    // Обновляем объявление вместе с фото и тегами в одном запросе
     adsRepository.updateAd(ad);
-    System.out.println("✅ Изменения сохранены успешно!");
+
+    System.out.println("✅ Изменения сохранены успешно! ID: " + ad.getId());
     return ad;
   }
 
@@ -123,16 +128,16 @@ public class AdsService implements IAdsService {
   @Override
   public List<Long> searchAdsByString(List<Long> adsId, String query) throws SQLException {
     return adsId.stream()
-        .filter(adId -> {
-          Announcement ad = getAd(adId);
-          if (ad == null) {
-            return false;
-          }
+      .filter(adId -> {
+        Announcement ad = getAd(adId);
+        if (ad == null) {
+          return false;
+        }
 
-          String searchText = (ad.getTitle() + " " + ad.getDescription()).toLowerCase();
-          return searchText.contains(query.toLowerCase());
-        })
-        .collect(Collectors.toList());
+        String searchText = (ad.getTitle() + " " + ad.getDescription()).toLowerCase();
+        return searchText.contains(query.toLowerCase());
+      })
+      .collect(Collectors.toList());
   }
 
   @Override
@@ -177,6 +182,21 @@ public class AdsService implements IAdsService {
 
   public List<Long> getActiveAdIds() throws SQLException {
     return adsRepository.getActiveAdIds();
+  }
+  public AdsRepository getAdsRepository() {
+    return this.adsRepository;
+  }
+
+
+  public List<byte[]> getAdPhotosBytes(long adId) throws SQLException {
+    try {
+      List<byte[]> photos = adsRepository.getAdPhotosBytes(adId);
+      System.out.println("✅ AdsService loaded " + (photos != null ? photos.size() : 0) + " photos for ad " + adId);
+      return photos != null ? photos : new ArrayList<>();
+    } catch (Exception e) {
+      System.err.println("❌ Error in AdsService.getAdPhotosBytes: " + e.getMessage());
+      return new ArrayList<>();
+    }
   }
 
 }

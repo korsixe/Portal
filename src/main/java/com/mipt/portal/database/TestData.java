@@ -50,7 +50,7 @@ public class TestData {
         testCreateAd(userId2, "Учебник по физике", "Курс общей физики Ландсберга", Category.BOOKS,
             Condition.USED, 1500, AdvertisementStatus.ACTIVE);
         testCreateAd(userId2, "Микроскоп школьный", "Детский микроскоп для начинающих",
-            Category.TOYS,
+            Category.CHILDREN,
             Condition.USED, 2000, AdvertisementStatus.ACTIVE);
         testCreateAd(userId2, "Рюкзак студенческий", "Вместительный рюкзак для ноутбука",
             Category.OTHER, Condition.USED, 800, AdvertisementStatus.DRAFT);
@@ -64,7 +64,7 @@ public class TestData {
             Condition.USED, 45000, AdvertisementStatus.ACTIVE);
         testCreateAd(userId3, "Клавиатура механическая", "Mechanical keyboard с RGB",
             Category.ELECTRONICS, Condition.NEW, 3500, AdvertisementStatus.ACTIVE);
-        testCreateAd(userId3, "Стул офисный", "Офисный стул с регулировкой", Category.FURNITURE,
+        testCreateAd(userId3, "Стул офисный", "Офисный стул с регулировкой", Category.HOME,
             Condition.NEW, 2500, AdvertisementStatus.UNDER_MODERATION);
         testCreateAd(userId3, "Книги по программированию", "Java, Python, Algorithms",
             Category.BOOKS,

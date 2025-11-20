@@ -7,13 +7,19 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.sql.*" %>
 <%@ page import="java.util.Base64" %>
+<%@ page import="com.fasterxml.jackson.databind.ObjectMapper" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="com.mipt.portal.announcement.AdsService" %>
+
+
 <%
     // Получаем ID объявления из параметра
     String adIdParam = request.getParameter("id");
     Announcement announcement = null;
     List<Comment> comments = new ArrayList<>();
     String authorName = "Неизвестный пользователь";
-    List<String> photoBase64List = new ArrayList<>(); // Список для хранения фото в Base64
+    int photoCount = 0;
+    AdsService adsService = new AdsService();
 
     if (adIdParam != null && !adIdParam.trim().isEmpty()) {
         try {
@@ -46,38 +52,69 @@
                     // Получаем имя автора
                     authorName = rs.getString("author_name");
 
-                    // Обрабатываем теги из JSONB
+                    // Обрабатываем теги из JSONB с использованием Jackson
                     String tagsJson = rs.getString("tags");
-                    if (tagsJson != null && !tagsJson.equals("null")) {
-                        List<String> tags = new ArrayList<>();
-                        // Простая обработка JSON массива
-                        if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
-                            String[] tagArray = tagsJson.substring(1, tagsJson.length() - 1).split(",");
-                            for (String tag : tagArray) {
-                                String cleanTag = tag.trim().replace("\"", "");
-                                if (!cleanTag.isEmpty()) {
-                                    tags.add(cleanTag);
-                                }
-                            }
-                        }
-                        announcement.setTags(tags);
-                    }
+                    List<String> tags = new ArrayList<>();
+                    if (tagsJson != null && !tagsJson.equals("null") && !tagsJson.trim().isEmpty()) {
+                        try {
+                            ObjectMapper mapper = new ObjectMapper();
 
-                    Array photosArray = rs.getArray("photos");
-                    if (photosArray != null) {
-                        Object[] photosData = (Object[]) photosArray.getArray();
-                        if (photosData != null && photosData.length > 0) {
-                            for (Object photoData : photosData) {
-                                if (photoData instanceof byte[]) {
-                                    byte[] imageBytes = (byte[]) photoData;
-                                    if (imageBytes.length > 0) {
-                                        // Конвертируем byte[] в Base64 строку
-                                        String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-                                        photoBase64List.add(base64Image);
+                            // Пробуем разные варианты парсинга
+                            if (tagsJson.startsWith("[")) {
+                                // Это массив объектов
+                                Map<String, Object>[] tagArray = mapper.readValue(tagsJson, Map[].class);
+                                for (Map<String, Object> tagObj : tagArray) {
+                                    String valueName = (String) tagObj.get("valueName");
+                                    if (valueName != null && !valueName.trim().isEmpty()) {
+                                        tags.add(valueName.trim());
+                                    }
+                                }
+                            } else if (tagsJson.startsWith("\"")) {
+                                // Это простая строка (возможно закодированный JSON)
+                                String decodedTags = mapper.readValue(tagsJson, String.class);
+                                if (decodedTags.startsWith("[")) {
+                                    Map<String, Object>[] tagArray = mapper.readValue(decodedTags, Map[].class);
+                                    for (Map<String, Object> tagObj : tagArray) {
+                                        String valueName = (String) tagObj.get("valueName");
+                                        if (valueName != null && !valueName.trim().isEmpty()) {
+                                            tags.add(valueName.trim());
+                                        }
                                     }
                                 }
                             }
+                        } catch (Exception e) {
+                            System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
+                            e.printStackTrace();
+
+                            // Fallback: пробуем извлечь теги простым способом
+                            try {
+                                // Если теги хранятся как простой массив строк
+                                if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
+                                    String[] simpleTags = tagsJson.substring(1, tagsJson.length() - 1).split(",");
+                                    for (String tag : simpleTags) {
+                                        String cleanedTag = tag.trim().replace("\"", "");
+                                        if (!cleanedTag.isEmpty()) {
+                                            tags.add(cleanedTag);
+                                        }
+                                    }
+                                }
+                            } catch (Exception e2) {
+                                System.err.println("Fallback парсинг тоже не удался: " + e2.getMessage());
+                            }
                         }
+                    }
+
+                    announcement.setTags(tags);
+
+
+                    // Получаем количество фото через AdsService
+                    try {
+                        List<byte[]> photos = adsService.getAdPhotosBytes(adId);
+                        photoCount = photos != null ? photos.size() : 0;
+                        System.out.println("✅ Loaded " + photoCount + " photos for ad " + adId);
+                    } catch (Exception e) {
+                        System.err.println("❌ Error loading photos: " + e.getMessage());
+                        photoCount = 0;
                     }
 
                     // Увеличиваем счетчик просмотров
@@ -98,11 +135,16 @@
                 ResultSet rs = stmt.executeQuery();
 
                 while (rs.next()) {
+                    // Получаем Timestamp и конвертируем в LocalDateTime
+                    Timestamp timestamp = rs.getTimestamp("created_at");
+                    java.time.LocalDateTime createdAt = timestamp != null ?
+                            timestamp.toLocalDateTime() : java.time.LocalDateTime.now();
+
                     Comment comment = new Comment(
                             rs.getLong("id"),
                             rs.getString("user_name"),
                             rs.getString("content"),
-                            rs.getTimestamp("created_at").toLocalDateTime(),
+                            createdAt,
                             rs.getLong("ad_id")
                     );
                     comments.add(comment);
@@ -127,26 +169,45 @@
             String commentText = request.getParameter("commentText");
             if (commentText != null && !commentText.trim().isEmpty()) {
                 com.mipt.portal.announcementContent.ProfanityChecker profanityChecker =
-                    new com.mipt.portal.announcementContent.ProfanityChecker();
+                        new com.mipt.portal.announcementContent.ProfanityChecker();
                 if (profanityChecker.containsProfanity(commentText)) {
                     request.setAttribute("profanityError", "Комментарий содержит недопустимые слова и не может быть сохранен.");
                 } else {
-                    try {
-                        CommentManager commentManager = new CommentManager(announcement.getId(), commentText.trim());
-                        Comment newComment = commentManager.create();
-                        comments.add(0, newComment); // Добавляем в начало списка
+                    try (Connection conn = getConnection();
+                         PreparedStatement stmt = conn.prepareStatement(
+                                 "INSERT INTO comments (ad_id, user_id, user_name, content, created_at) VALUES (?, ?, ?, ?, ?)",
+                                 Statement.RETURN_GENERATED_KEYS)) {
 
-                        // Перенаправляем
-                        response.sendRedirect("ad-details.jsp?id=" + announcement.getId());
-                        return;
+                        stmt.setLong(1, announcement.getId());
+                        stmt.setLong(2, user.getId());
+                        stmt.setString(3, user.getName());
+                        stmt.setString(4, commentText.trim());
+                        stmt.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
+
+                        int affectedRows = stmt.executeUpdate();
+
+                        if (affectedRows > 0) {
+                            // Перенаправляем для предотвращения повторной отправки
+                            response.sendRedirect("ad-details.jsp?id=" + announcement.getId());
+                            return;
+                        }
                     } catch (SQLException e) {
                         System.err.println("Ошибка при создании комментария: " + e.getMessage());
+                        e.printStackTrace();
+                        request.setAttribute("error", "Ошибка при сохранении комментария: " + e.getMessage());
                     }
                 }
+            } else {
+                request.setAttribute("error", "Комментарий не может быть пустым");
             }
+        } else {
+            request.setAttribute("error", "Для добавления комментария необходимо авторизоваться");
         }
     }
 %>
+%>
+
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -396,7 +457,7 @@
             border-color: #667eea;
         }
 
-        .thumbnail.active {
+        .thumbnail{
             border-color: #667eea;
             box-shadow: 0 0 0 2px #667eea;
         }
@@ -678,10 +739,33 @@
                 height: 60px;
             }
         }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+        }
     </style>
 </head>
 <body>
 <div class="container">
+
     <!-- Шапка -->
     <div class="header">
         <div class="portal-logo">PORTAL</div>
@@ -731,9 +815,9 @@
 
             <!-- Фотографии -->
             <div class="photos-section">
-                <h3 class="section-title">📷 Фотографии (<%= photoBase64List.size() %>)</h3>
+                <h3 class="section-title">📷 Фотографии (<%= photoCount %>)</h3>
 
-                <% if (photoBase64List.isEmpty()) { %>
+                <% if (photoCount == 0) { %>
                 <div class="main-photo">
                     <div class="photo-placeholder">📷</div>
                     <div style="text-align: center; color: #666; position: absolute; bottom: 20px; width: 100%;">
@@ -743,26 +827,34 @@
                 <% } else { %>
                 <!-- Основное фото с навигацией -->
                 <div class="main-photo">
-                    <img id="mainPhoto" src="data:image/jpeg;base64,<%= photoBase64List.get(0) %>"
-                         alt="Фото объявления">
+                    <img id="mainPhoto"
+                         src="<%= request.getContextPath() %>/ad-photo?adId=<%= announcement.getId() %>&photoIndex=0&t=<%= System.currentTimeMillis() %>"
+                         alt="Фото объявления"
+                         onerror="handlePhotoError(this)"
+                         style="display: block;">
+                    <div class="photo-placeholder" style="display: none;">📷</div>
                     <div class="photo-counter">
-                        <span id="currentPhoto">1</span> / <%= photoBase64List.size() %>
+                        <span id="currentPhoto">1</span> / <%= photoCount %>
                     </div>
+                    <% if (photoCount > 1) { %>
                     <div class="photo-navigation">
-                        <button class="nav-btn" onclick="prevPhoto()" id="prevBtn">❮</button>
-                        <button class="nav-btn" onclick="nextPhoto()" id="nextBtn">❯</button>
+                        <button class="nav-btn" onclick="prevPhoto()" id="prevBtn" disabled>❮</button>
+                        <button class="nav-btn" onclick="nextPhoto()" id="nextBtn" <%= photoCount > 1 ? "" : "disabled" %>>❯</button>
                     </div>
+                    <% } %>
                 </div>
 
                 <!-- Миниатюры -->
-                <% if (photoBase64List.size() > 1) { %>
+                <% if (photoCount > 1) { %>
                 <div class="photo-thumbnails">
-                    <% for (int i = 0; i < photoBase64List.size(); i++) { %>
+                    <% for (int i = 0; i < photoCount; i++) { %>
                     <div class="thumbnail <%= i == 0 ? "active" : "" %>"
                          onclick="showPhoto(<%= i %>)"
                          data-index="<%= i %>">
-                        <img src="data:image/jpeg;base64,<%= photoBase64List.get(i) %>"
-                             alt="Миниатюра <%= i + 1 %>">
+                        <img src="<%= request.getContextPath() %>/ad-photo?adId=<%= announcement.getId() %>&photoIndex=<%= i %>&t=<%= System.currentTimeMillis() %>"
+                             alt="Миниатюра <%= i + 1 %>"
+                             onerror="handleThumbnailError(this)"
+                             loading="lazy">
                     </div>
                     <% } %>
                 </div>
@@ -780,13 +872,19 @@
             </div>
 
             <!-- Теги -->
-            <% if (announcement.getTags() != null && !announcement.getTags().isEmpty()) { %>
+            <%
+                List<String> tags = announcement.getTags();
+                boolean hasTags = tags != null && !tags.isEmpty() && !(tags.size() == 1 && tags.get(0).isEmpty());
+            %>
+            <% if (hasTags) { %>
             <div class="tags-section">
                 <h3 class="section-title">🏷️ Теги</h3>
                 <div class="tags-container">
-                    <% for (String tag : announcement.getTags()) { %>
-                    <span class="tag"><%= tag %></span>
-                    <% } %>
+                    <% for (String tag : tags) {
+                        if (tag != null && !tag.trim().isEmpty()) {
+                    %>
+                    <span class="tag">#<%= tag.trim() %></span>
+                    <% } } %>
                 </div>
             </div>
             <% } %>
@@ -884,24 +982,46 @@
     </div>
     <% } %>
 </div>
-
 <script>
-    // 🔥 ФУНКЦИИ ДЛЯ РАБОТЫ С ФОТОГРАФИЯМИ 🔥
+    // 🔥 ОБНОВЛЕННЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ФОТОГРАФИЯМИ 🔥
     let currentPhotoIndex = 0;
-    const totalPhotos = <%= photoBase64List.size() %>;
+    const totalPhotos = <%= photoCount %>;
+    const adId = <%= announcement != null ? announcement.getId() : 0 %>;
 
     function showPhoto(index) {
-        if (index >= 0 && index < totalPhotos) {
+        if (index >= 0 && index < totalPhotos && adId > 0) {
             currentPhotoIndex = index;
 
-            // Получаем Base64 строку из глобального массива
-            const photoBase64List = [
-                <% for (int i = 0; i < photoBase64List.size(); i++) { %>
-                '<%= photoBase64List.get(i) %>'<%= i < photoBase64List.size() - 1 ? "," : "" %>
-                <% } %>
-            ];
+            // Обновляем основное фото через сервлет
+            const mainPhoto = document.getElementById('mainPhoto');
+            const timestamp = new Date().getTime();
 
-            document.getElementById('mainPhoto').src = 'data:image/jpeg;base64,' + photoBase64List[index];
+            // Используем contextPath из JSP
+            const contextPath = '<%= request.getContextPath() %>'; // Это вернет "/portal"
+            const newSrc = contextPath + '/ad-photo?adId=' + adId + '&photoIndex=' + index + '&t=' + timestamp;
+
+            console.log('Loading photo:', newSrc);
+
+            // Показываем загрузку
+            mainPhoto.style.opacity = '0.5';
+
+            // Создаем новое изображение для предзагрузки
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                mainPhoto.src = newSrc;
+                mainPhoto.style.opacity = '1';
+                mainPhoto.style.display = 'block';
+
+                // Скрываем placeholder если он показан
+                const placeholder = document.querySelector('.main-photo .photo-placeholder');
+                if (placeholder) placeholder.style.display = 'none';
+            };
+            tempImg.onerror = function() {
+                console.error('Error loading photo:', newSrc);
+                handlePhotoError(mainPhoto);
+            };
+            tempImg.src = newSrc;
+
             document.getElementById('currentPhoto').textContent = index + 1;
 
             // Обновляем активную миниатюру
@@ -928,15 +1048,47 @@
 
     function updateNavigationButtons() {
         if (totalPhotos > 1) {
-            document.getElementById('prevBtn').disabled = currentPhotoIndex === 0;
-            document.getElementById('nextBtn').disabled = currentPhotoIndex === totalPhotos - 1;
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            if (prevBtn) prevBtn.disabled = currentPhotoIndex === 0;
+            if (nextBtn) nextBtn.disabled = currentPhotoIndex === totalPhotos - 1;
         }
+    }
+
+    // Улучшенная обработка ошибок загрузки фото
+    function handlePhotoError(img) {
+        console.error('Error loading main photo');
+        img.style.display = 'none';
+        const placeholder = document.querySelector('.main-photo .photo-placeholder');
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+            placeholder.style.flexDirection = 'column';
+            placeholder.innerHTML = '❌<div style="text-align: center; margin-top: 10px; font-size: 1rem; color: #666;">Ошибка загрузки фото</div>';
+        }
+    }
+
+    function handleThumbnailError(img) {
+        console.error('Error loading thumbnail');
+        img.style.display = 'none';
+        const thumbnail = img.parentElement;
+        thumbnail.innerHTML = '❌';
+        thumbnail.style.alignItems = 'center';
+        thumbnail.style.justifyContent = 'center';
+        thumbnail.style.fontSize = '1.2rem';
+        thumbnail.style.color = '#ccc';
+        thumbnail.style.background = '#f8f9fa';
     }
 
     // Инициализация навигации
     document.addEventListener('DOMContentLoaded', function() {
         if (totalPhotos > 0) {
             updateNavigationButtons();
+
+            // Предзагружаем следующее фото для быстрой навигации
+            if (totalPhotos > 1) {
+                const nextImg = new Image();
+                nextImg.src = '/ad-photo?adId=' + adId + '&photoIndex=1&t=' + new Date().getTime();
+            }
         }
 
         // Добавляем обработку клавиш клавиатуры
@@ -945,38 +1097,6 @@
             if (e.key === 'ArrowRight') nextPhoto();
         });
     });
-
-    // Функция для связи с продавцом
-    function contactSeller() {
-        alert('Функция связи с продавцом будет реализована позже\n\nСейчас вы можете:\n• Написать комментарий\n• Отслеживать обновления объявления');
-    }
-
-    // Анимация появления элементов
-    document.addEventListener('DOMContentLoaded', function() {
-        const elements = document.querySelectorAll('.ad-card, .comments-section');
-        elements.forEach((element, index) => {
-            element.style.animationDelay = (index * 0.2) + 's';
-        });
-    });
-    
-    // Функция для отправки комментария с проверкой на ненормативную лексику
-    function submitCommentForm() {
-        const commentTextArea = document.getElementById('commentText');
-        const commentText = commentTextArea.value;
-        if (!commentText || commentText.trim() === '') {
-            return;
-        }
-        
-        checkProfanityAsync(commentText.trim(), function(hasProfanity) {
-            if (hasProfanity) {
-                // Clear the comment field
-                commentTextArea.value = '';
-                showProfanityWarning('commentForm', ['commentText']);
-            } else {
-                document.getElementById('commentForm').submit();
-            }
-        });
-    }
 </script>
 <%@ include file="profanity-check.jsp" %>
 </body>

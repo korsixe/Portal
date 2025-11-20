@@ -1,30 +1,42 @@
 package com.mipt.portal.announcement;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mipt.portal.database.DatabaseConnection;
-import java.io.File;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.io.InputStream;
-import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class AdsRepository implements IAdsRepository {
 
   private Connection connection;
+  private ObjectMapper objectMapper;
+
 
   public AdsRepository() throws SQLException {
     this.connection = DatabaseConnection.getConnection();
+    this.objectMapper = new ObjectMapper();
+  }
+
+  public AdsRepository(Connection connection) throws SQLException {
+    this.connection = connection;
+    this.objectMapper = new ObjectMapper(); // Добавляем инициализацию ObjectMapper
   }
 
 
   private void resetSequences() throws SQLException {
-    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq", "moderation_messages_id_seq"};
+    String[] sequences = {"users_id_seq", "ads_id_seq", "moderators_id_seq", "comments_id_seq",
+        "moderation_messages_id_seq", "categories_id_seq", "tags_id_seq", "tag_values_id_seq"};
 
     for (String seq : sequences) {
       try (Statement stmt = connection.createStatement()) {
@@ -51,6 +63,21 @@ public class AdsRepository implements IAdsRepository {
     } catch (Exception e) {
       e.printStackTrace();
     }
+
+    try {
+      String sql = readSqlFile("sql/insert_category_tables.sql");
+      executeSql(sql);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    try {
+      String sql = readSqlFile("sql/insert_data_comments.sql");
+      executeSql(sql);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
   }
 
   @Override
@@ -74,7 +101,7 @@ public class AdsRepository implements IAdsRepository {
             UPDATE ads
             SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
                 price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
-                view_count = ?, tags = ?::JSONB, tags_count = ?, message_id = ?
+                view_count = ?, tags = ?::JSONB, tags_count = ?
             WHERE id = ?
         """;
 
@@ -89,28 +116,40 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(8, ad.getStatus().name());
       statement.setInt(9, ad.getViewCount());
 
-      // Преобразуем список тегов в JSON
+      // Обработка тегов
+      System.out.println("=== DEBUG UPDATE AD ===");
+      System.out.println("Tags list: " + ad.getTags());
+
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
-        String tagsJson = "[\"" + String.join("\",\"", ad.getTags()) + "\"]";
-        statement.setString(10, tagsJson);
+        try {
+          String tagsJson = objectMapper.writeValueAsString(ad.getTags());
+          System.out.println("Generated JSON: " + tagsJson);
+          statement.setString(10, tagsJson);
+        } catch (Exception e) {
+          System.err.println("❌ Error converting tags to JSON in update: " + e.getMessage());
+          String tagsJson = convertTagsToJson(ad.getTags());
+          statement.setString(10, tagsJson);
+        }
       } else {
+        System.out.println("No tags to update");
         statement.setNull(10, Types.VARCHAR);
       }
 
       statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
+      statement.setLong(12, ad.getId());
 
-      if (ad.getMessageId() != null) {
-        statement.setLong(12, ad.getMessageId());
-      } else {
-        statement.setNull(12, Types.BIGINT);
-      }
-      statement.setLong(13, ad.getId());
       int affectedRows = statement.executeUpdate();
       if (affectedRows == 0) {
         throw new SQLException("Обновление объявления failed, no rows affected.");
       }
+      System.out.println("✅ Объявление успешно обновлено в БД");
+    } catch (Exception e) {
+      System.err.println("❌ FULL ERROR in updateAd:");
+      e.printStackTrace();
+      throw new SQLException("Error updating ad", e);
     }
   }
+
 
   @Override
   public Announcement getAdById(long adId) throws SQLException {
@@ -185,10 +224,16 @@ public class AdsRepository implements IAdsRepository {
 
   @Override
   public long saveAd(Announcement ad) throws SQLException {
+    System.out.println("=== 🚀 SAVE AD DEBUG ===");
+    System.out.println("Title: " + ad.getTitle());
+    System.out.println("Tags: " + ad.getTags());
+    System.out.println("Tags count: " + ad.getTagsCount());
+
+    // ИСПРАВЛЕННЫЙ SQL - только 12 столбцов
     String sql = """
             INSERT INTO ads (title, description, category, subcategory, condition, price,
-                            location, user_id, status, view_count, tags, tags_count, message_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?, ?)
+                            location, user_id, status, view_count, tags, tags_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB, ?)
             RETURNING id
         """;
 
@@ -204,31 +249,38 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(9, ad.getStatus().name());
       statement.setInt(10, ad.getViewCount());
 
-      // Преобразуем список тегов в JSON - пока так, чтобы запускался код (часть Лизы О)
+      // Преобразуем список тегов в JSON
+      System.out.println("=== DEBUG SAVE AD ===");
+      System.out.println("Tags list: " + ad.getTags());
+
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
-        String tagsJson = "[\"" + String.join("\",\"", ad.getTags()) + "\"]";
-        statement.setString(11, tagsJson);
+        try {
+          String tagsJson = objectMapper.writeValueAsString(ad.getTags());
+          System.out.println("Generated JSON: " + tagsJson);
+          statement.setString(11, tagsJson); // для saveAd
+        } catch (Exception e) {
+          System.err.println("❌ Error converting tags to JSON: " + e.getMessage());
+          String tagsJson = convertTagsToJson(ad.getTags());
+          statement.setString(11, tagsJson);
+        }
       } else {
-        statement.setNull(11, Types.VARCHAR);
+        System.out.println("No tags to save");
+        statement.setNull(11, Types.VARCHAR); // для saveAd
       }
 
       statement.setInt(12, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
-      if (ad.getMessageId() != null) {
-        statement.setLong(13, ad.getMessageId());
-      } else {
-        statement.setNull(13, Types.BIGINT);
-      }
 
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {
         long generatedId = resultSet.getLong(1);
-        // Сохраняем фото если они есть
-        if (ad.getPhotos() != null && !ad.getPhotos().isEmpty()) {
-          //saveAdPhotos(generatedId, ad.getPhotos());
-        }
+        System.out.println("✅ Ad saved successfully with ID: " + generatedId);
         return generatedId;
       }
       throw new SQLException("Failed to get generated ID");
+    } catch (Exception e) {
+      System.err.println("❌ FULL ERROR in saveAd:");
+      e.printStackTrace();
+      throw new SQLException("Error saving ad with tags", e);
     }
   }
 
@@ -253,14 +305,6 @@ public class AdsRepository implements IAdsRepository {
     }
   }
 
-  // метод для сохранения фото
-  private void saveAdPhotos(long adId, List<File> photos) throws SQLException {
-  }
-
-  // метод для загрузки фото объявления
-  public List<String> getAdPhotos(long adId) throws SQLException {
-    return null;
-  }
 
   private Announcement mapResultSetToAd(ResultSet resultSet) throws SQLException {
     // Создаем объявление с базовыми полями
@@ -288,7 +332,57 @@ public class AdsRepository implements IAdsRepository {
       ad.setStatus(AdvertisementStatus.DRAFT);
     }
 
-    // Обрабатываем теги
+    // Правильное чтение тегов из JSON
+    String tagsJson = resultSet.getString("tags");
+    if (tagsJson != null && !tagsJson.trim().isEmpty()) {
+      try {
+        System.out.println("📥 Reading tags from DB: " + tagsJson);
+
+        // Парсим JSON массив обратно в List<String>
+        List<String> tags = objectMapper.readValue(
+            tagsJson,
+            objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
+        );
+        ad.setTags(tags);
+
+        System.out.println("✅ Successfully parsed " + tags.size() + " tags");
+
+      } catch (Exception e) {
+        System.err.println("❌ Error parsing tags JSON from DB: " + e.getMessage());
+        System.err.println("❌ Raw JSON: " + tagsJson);
+        e.printStackTrace();
+        ad.setTags(new ArrayList<>()); // Fallback: пустой список
+      }
+    } else {
+      ad.setTags(new ArrayList<>());
+    }
+
+    // Загружаем фото из БД
+    try {
+      List<byte[]> photoBytes = getAdPhotosBytes(resultSet.getLong("id"));
+      if (!photoBytes.isEmpty()) {
+        List<File> photos = new ArrayList<>();
+
+        // Создаем временные файлы для каждого фото
+        for (int i = 0; i < photoBytes.size(); i++) {
+          byte[] photoData = photoBytes.get(i);
+          File tempFile = File.createTempFile("ad_photo_" + resultSet.getLong("id") + "_" + i,
+              ".jpg");
+          Files.write(tempFile.toPath(), photoData);
+          // Удаляем файл при выходе из JVM
+          tempFile.deleteOnExit();
+          photos.add(tempFile);
+        }
+        ad.setPhotos(photos);
+        System.out.println(
+            "✅ Loaded " + photos.size() + " photos for ad " + resultSet.getLong("id"));
+      } else {
+        ad.setPhotos(new ArrayList<>());
+      }
+    } catch (Exception e) {
+      System.err.println("❌ Error loading photos for ad: " + e.getMessage());
+      ad.setPhotos(new ArrayList<>());
+    }
 
     // Устанавливаем даты
     Timestamp createdAt = resultSet.getTimestamp("created_at");
@@ -334,4 +428,140 @@ public class AdsRepository implements IAdsRepository {
       }
     }
   }
+
+  private String convertTagsToJson(List<String> tags) {
+    if (tags == null || tags.isEmpty()) {
+      return "[]";
+    }
+
+    StringBuilder json = new StringBuilder("[");
+    for (int i = 0; i < tags.size(); i++) {
+      if (i > 0) {
+        json.append(",");
+      }
+      // Правильное экранирование для JSON
+      String escaped = tags.get(i)
+          .replace("\\", "\\\\")
+          .replace("\"", "\\\"")
+          .replace("\n", "\\n")
+          .replace("\r", "\\r")
+          .replace("\t", "\\t");
+      json.append("\"").append(escaped).append("\"");
+    }
+    json.append("]");
+
+    System.out.println("Fallback JSON: " + json.toString());
+    return json.toString();
+  }
+
+  public void saveAdPhotosBytes(long adId, List<byte[]> photos) throws SQLException {
+    String sql = "UPDATE ads SET photos = ? WHERE id = ?";
+
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      if (photos == null || photos.isEmpty()) {
+        stmt.setNull(1, Types.ARRAY);
+      } else {
+        // Просто сохраняем все фото без сложных проверок
+        byte[][] photosArray = photos.toArray(new byte[0][]);
+        Array sqlArray = connection.createArrayOf("bytea", photosArray);
+        stmt.setArray(1, sqlArray);
+      }
+      stmt.setLong(2, adId);
+      stmt.executeUpdate();
+      System.out.println("✅ Photos saved to database for ad " + adId);
+    }
+  }
+
+  public List<byte[]> getAdPhotosBytes(long adId) throws SQLException {
+    String sql = "SELECT photos FROM ads WHERE id = ?";
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setLong(1, adId);
+      ResultSet rs = stmt.executeQuery();
+
+      List<byte[]> photos = new ArrayList<>();
+
+      if (rs.next()) {
+        Array photosArray = rs.getArray("photos");
+        if (photosArray != null) {
+          Object[] dbPhotos = (Object[]) photosArray.getArray();
+          if (dbPhotos != null) {
+            for (Object photoObj : dbPhotos) {
+              if (photoObj instanceof byte[]) {
+                photos.add((byte[]) photoObj);
+              } else if (photoObj instanceof Object[]) {
+                // Вложенный массив - берем первый элемент
+                Object[] nested = (Object[]) photoObj;
+                if (nested.length > 0 && nested[0] instanceof byte[]) {
+                  photos.add((byte[]) nested[0]);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Если фото не загрузились - очищаем неправильный формат
+      if (photos.isEmpty()) {
+        cleanupPhotosFormat(adId);
+      }
+
+      return photos;
+    }
+  }
+
+  private void cleanupPhotosFormat(long adId) throws SQLException {
+    String sql = "UPDATE ads SET photos = NULL WHERE id = ?";
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setLong(1, adId);
+      stmt.executeUpdate();
+    }
+  }
+
+
+  // Специальный метод для парсинга PostgreSQL hex формата
+  private byte[] parsePostgresHexString(String hexString) {
+    try {
+      if (hexString == null || hexString.length() < 2) {
+        return null;
+      }
+
+      // PostgreSQL hex формат начинается с \x
+      if (hexString.startsWith("\\x")) {
+        // Убираем префикс \x
+        String cleanHex = hexString.substring(2);
+
+        // Проверяем что строка имеет четную длину
+        if (cleanHex.length() % 2 != 0) {
+          System.err.println("   - warning: hex string has odd length, padding with 0");
+          cleanHex = "0" + cleanHex;
+        }
+
+        // Конвертируем hex в byte[]
+        byte[] data = new byte[cleanHex.length() / 2];
+        for (int i = 0; i < cleanHex.length(); i += 2) {
+          String byteStr = cleanHex.substring(i, i + 2);
+          data[i / 2] = (byte) Integer.parseInt(byteStr, 16);
+        }
+
+        return data;
+      } else {
+        System.err.println("   - not a PostgreSQL hex string, missing \\x prefix");
+        return null;
+      }
+    } catch (Exception e) {
+      System.err.println("❌ Error parsing PostgreSQL hex string: " + e.getMessage());
+      System.err.println("   - input: " + (hexString != null ? hexString.substring(0,
+          Math.min(100, hexString.length())) : "null"));
+      return null;
+    }
+  }
+
+  private boolean isValidImageData(byte[] data) {
+    return data != null && data.length > 1000; // минимальный размер для изображения
+  }
+
+  public Connection getConnection() {
+    return this.connection;
+  }
+
 }
