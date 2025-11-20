@@ -127,17 +127,27 @@ public class AdsService implements IAdsService {
 
   @Override
   public List<Long> searchAdsByString(List<Long> adsId, String query) throws SQLException {
-    return adsId.stream()
-      .filter(adId -> {
-        Announcement ad = getAd(adId);
-        if (ad == null) {
-          return false;
-        }
+    if (query == null || query.trim().isEmpty()) {
+      return adsId;
+    }
 
-        String searchText = (ad.getTitle() + " " + ad.getDescription()).toLowerCase();
-        return searchText.contains(query.toLowerCase());
-      })
-      .collect(Collectors.toList());
+    final double SIMILARITY_THRESHOLD = 0.7; // Порог похожести (0-1)
+    final int MAX_RESULTS = 100; // Ограничение количества результатов
+
+    return adsId.stream()
+        .filter(adId -> {
+          Announcement ad = getAd(adId);
+          if (ad == null) {
+            return false;
+          }
+
+          String searchText = (ad.getTitle() + " " + ad.getDescription()).toLowerCase();
+          String cleanQuery = query.toLowerCase().trim();
+
+          return LevenshteinSearch.fuzzyContains(searchText, cleanQuery, SIMILARITY_THRESHOLD);
+        })
+        .limit(MAX_RESULTS)
+        .collect(Collectors.toList());
   }
 
   @Override
