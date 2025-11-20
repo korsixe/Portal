@@ -101,7 +101,7 @@ public class AdsRepository implements IAdsRepository {
             UPDATE ads
             SET title = ?, description = ?, category = ?, subcategory = ?, condition = ?,
                 price = ?, location = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
-                view_count = ?, tags = ?::JSONB, tags_count = ?
+                view_count = ?, tags = ?::JSONB, tags_count = ?, message_id = ?
             WHERE id = ?
         """;
 
@@ -115,10 +115,6 @@ public class AdsRepository implements IAdsRepository {
       statement.setString(7, ad.getLocation());
       statement.setString(8, ad.getStatus().name());
       statement.setInt(9, ad.getViewCount());
-
-      // Обработка тегов
-      System.out.println("=== DEBUG UPDATE AD ===");
-      System.out.println("Tags list: " + ad.getTags());
 
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
         try {
@@ -136,7 +132,15 @@ public class AdsRepository implements IAdsRepository {
       }
 
       statement.setInt(11, ad.getTagsCount() != null ? ad.getTagsCount() : 0);
-      statement.setLong(12, ad.getId());
+
+
+      if (ad.getMessageId() == null) {
+        statement.setNull(12, Types.BIGINT);
+      } else {
+        statement.setLong(12, ad.getMessageId());
+      }
+
+      statement.setLong(13, ad.getId());
 
       int affectedRows = statement.executeUpdate();
       if (affectedRows == 0) {
