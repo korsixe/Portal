@@ -6,8 +6,6 @@
          version="4.0">
 
     <!-- Обработка ошибок -->
-
-    <!--
     <error-page>
         <error-code>404</error-code>
         <location>/error.jsp</location>
@@ -18,8 +16,6 @@
         <location>/error.jsp</location>
     </error-page>
 
-    -->
-
     <error-page>
         <exception-type>java.lang.Exception</exception-type>
         <location>/error.jsp</location>
@@ -29,7 +25,7 @@
 
     <display-name>Portal</display-name>
 
-    <welcome-file-list>
-        <welcome-file>home.jsp</welcome-file>
-    </welcome-file-list>
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
 </web-app>

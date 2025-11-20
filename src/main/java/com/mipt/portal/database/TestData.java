@@ -24,7 +24,6 @@ public class TestData {
   }
 
   private static void start() {
-    adsRepository.deleteData();
     adsRepository.createTables();
     adsRepository.insertData();
     generateTestAds();
