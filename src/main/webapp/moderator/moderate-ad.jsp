@@ -31,23 +31,22 @@
                         moderatorEmail
                 );
                 ad.setMessageId(messageId);
-                // Используем только существующие статусы из AdvertisementStatus
                 switch (action) {
                     case "approve":
                         ad.setStatus(AdvertisementStatus.ACTIVE);
+                        adsService.editAd(ad);
                         message = "Объявление одобрено";
                         break;
                     case "reject":
                         ad.setStatus(AdvertisementStatus.DRAFT);
+                        adsService.editAd(ad);
                         message = "Объявление отправлено на доработку";
                         break;
                     case "delete":
-                        ad.setStatus(AdvertisementStatus.DELETED);
+                        adsService.hardDeleteAd(ad.getId());
                         message = "Объявление удалено";
                         break;
                 }
-
-                adsService.editAd(ad);
             } else {
                 message = "Объявление не найдено";
                 messageType = "error";
