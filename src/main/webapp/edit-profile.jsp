@@ -46,6 +46,8 @@
     if (canEdit == null) {
         canEdit = false;
     }
+
+
 %>
 
 <!DOCTYPE html>
@@ -413,6 +415,48 @@
 </div>
 
 <script>
+
+    // Обработчик отправки формы
+    function handleFormSubmit() {
+        // Показываем сообщение о сохранении
+        showSaveMessage();
+
+        // Продолжаем стандартную отправку формы
+        return true;
+    }
+
+    // Функция для показа сообщения о сохранении
+    function showSaveMessage() {
+        // Создаем элемент для сообщения
+        const messageDiv = document.createElement('div');
+        messageDiv.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        ">
+            <span style="font-size: 1.2em;">✓</span>
+            <span>Изменения сохранены успешно!</span>
+        </div>
+    `;
+
+        document.body.appendChild(messageDiv);
+
+        // Автоматически скрываем через 3 секунды
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
     // Добавляем проверку паролей в реальном времени
     document.addEventListener('DOMContentLoaded', function() {
         const newPassword = document.getElementById('newPassword');
@@ -441,4 +485,6 @@
         session.removeAttribute("canEditProfile");
         response.sendRedirect("edit-profile.jsp");
     }
+
+
 %>

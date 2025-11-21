@@ -51,28 +51,34 @@
                 Announcement ad = adService.getAd(notification.getAdId());
                 String adTitle = (ad != null) ? ad.getTitle() : "Объявление";
                 String notificationClass = Boolean.TRUE.equals(notification.getIsRead()) ? "notification-item read" : "notification-item unread";
+
+                // Определяем тип уведомления
+                boolean isApprovalNotification = "approve".equals(notification.getAction()) &&
+                        (notification.getReason() == null || notification.getReason().isEmpty());
             %>
             <div class="<%= notificationClass %>"
                  data-notification-id="<%= notification.getId() %>"
                  data-ad-id="<%= notification.getAdId() %>">
                 <div class="notification-icon">
-                    <%= getActionIcon(notification.getAction()) %>
+                    <%= getActionIcon(notification.getAction(), isApprovalNotification) %>
                 </div>
                 <div class="notification-content">
                     <div class="notification-title">
-                        <%= getNotificationTitle(notification.getAction()) %>
+                        <%= getNotificationTitle(notification.getAction(), isApprovalNotification) %>
                         <% if (!Boolean.TRUE.equals(notification.getIsRead())) { %>
                         <span class="unread-dot">●</span>
                         <% } %>
                     </div>
                     <div class="notification-message">
-                        <%= getNotificationMessage(notification.getAction(), adTitle) %>
+                        <%= getNotificationMessage(notification.getAction(), adTitle, isApprovalNotification) %>
                     </div>
                     <% if (notification.getReason() != null && !notification.getReason().isEmpty()) { %>
                     <div class="notification-reason">Причина: <%= notification.getReason() %></div>
                     <% } %>
+                    <% if (isApprovalNotification) { %>
+                    <% } %>
                     <div class="notification-time">
-                        Модератор: <%= notification.getModeratorEmail() %> •
+
                         <%= formatNotificationDate(notification.getCreatedAt()) %>
                     </div>
                 </div>
@@ -106,7 +112,16 @@
                 const btn = target.closest('.btn-delete');
                 const notificationItem = btn.closest('.notification-item');
 
-                if (notificationItem && confirm('Удалить уведомление?')) {
+                console.log('🔍 Найдена кнопка удаления');
+                console.log('🔍 notificationItem:', notificationItem);
+
+                if (notificationItem) {
+                    const notificationId = notificationItem.getAttribute('data-notification-id');
+                    console.log('🔍 ID уведомления:', notificationId);
+                    console.log('🔍 Все атрибуты:', notificationItem.attributes);
+                }
+
+                if (notificationItem) {
                     const notificationId = notificationItem.getAttribute('data-notification-id');
                     deleteNotification(notificationId);
                 }
@@ -214,8 +229,8 @@
         function deleteNotification(notificationId) {
             console.log('🗑️ Начинаем удаление уведомления:', notificationId);
 
-            // Находим элемент уведомления по data-атрибуту
-            const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            // ИСПРАВЛЕННЫЙ СЕЛЕКТОР - используем правильный синтаксис
+            const notificationElement = document.querySelector('[data-notification-id="' + notificationId + '"]');
 
             if (notificationElement) {
                 console.log('🗑️ Элемент уведомления найден в DOM');
@@ -266,20 +281,25 @@
                     })
                     .then(text => {
                         console.log('✅ Сервер подтвердил удаление:', text);
-                        if (text !== 'SUCCESS') {
+                        if (text.trim() !== 'SUCCESS') {
                             throw new Error('Server returned: ' + text);
                         }
                     })
                     .catch(error => {
                         console.error('❌ Ошибка при удалении уведомления:', error);
-                        // Показываем сообщение об ошибке
+                        // Восстанавливаем элемент в случае ошибки
                         alert('Ошибка при удалении уведомления. Пожалуйста, обновите страницу.');
+                        location.reload();
                     });
             } else {
                 console.error('❌ Элемент уведомления не найден в DOM для ID:', notificationId);
-                alert('Элемент не найден. Пожалуйста, обновите страницу.');
+                console.log('🔍 Все элементы с data-notification-id:');
+                document.querySelectorAll('[data-notification-id]').forEach(el => {
+                    console.log(' - ', el.getAttribute('data-notification-id'));
+                });
             }
         }
+
         function markAllAsRead() {
             // Помечаем все визуально как прочитанные
             document.querySelectorAll('.notification-item.unread').forEach(item => {
@@ -471,6 +491,17 @@
         margin-bottom: 4px;
     }
 
+    .notification-approval-info {
+        color: #28a745;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+        background: #f8fff9;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border-left: 3px solid #28a745;
+    }
+
     .notification-time {
         color: #999;
         font-size: 0.8rem;
@@ -511,7 +542,10 @@
 </style>
 
 <%!
-    private String getActionIcon(String action) {
+    private String getActionIcon(String action, boolean isApprovalNotification) {
+        if (isApprovalNotification) {
+            return "✅"; // Специальная иконка для одобрения
+        }
         switch (action) {
             case "approve": return "✅";
             case "reject": return "⚠️";
@@ -520,7 +554,10 @@
         }
     }
 
-    private String getNotificationTitle(String action) {
+    private String getNotificationTitle(String action, boolean isApprovalNotification) {
+        if (isApprovalNotification) {
+            return "Объявление одобрено!";
+        }
         switch (action) {
             case "approve": return "Объявление одобрено";
             case "reject": return "Требуется доработка";
@@ -529,7 +566,10 @@
         }
     }
 
-    private String getNotificationMessage(String action, String adTitle) {
+    private String getNotificationMessage(String action, String adTitle, boolean isApprovalNotification) {
+        if (isApprovalNotification) {
+            return "Ваше объявление \"" + adTitle + "\" прошло модерацию и опубликовано";
+        }
         switch (action) {
             case "approve": return "Ваше объявление \"" + adTitle + "\" было одобрено модератором";
             case "reject": return "Ваше объявление \"" + adTitle + "\" требует доработки";

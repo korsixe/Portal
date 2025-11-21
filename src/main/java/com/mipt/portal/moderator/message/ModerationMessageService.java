@@ -11,47 +11,52 @@ public class ModerationMessageService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static Long logModerationAction(Long adId, String action, String reason, String moderatorEmail) {
-      if (reason == null || reason.trim().isEmpty()) {
-        System.out.println("⚠️ Причина не указана, сообщение модератора не сохраняется");
+        String timestamp = LocalDateTime.now().format(formatter);
+
+        System.out.println(
+                "📝 У объявления с Id " + adId + " обновлён статус: " + action +
+                        (reason != null && !reason.trim().isEmpty() ? " по причине: " + reason : " (без указания причины)") +
+                        ". Модератор: " + moderatorEmail);
+
+        ModerationMessageRepository repository = null;
+        try {
+            repository = new ModerationMessageRepository();
+
+            // Проверяем существование таблицы
+            boolean tableExists = repository.checkTableExists();
+            if (!tableExists) {
+                System.err.println("❌ Таблица moderation_messages не существует!");
+                return null;
+            }
+
+            System.out.println("✅ Таблица moderation_messages существует, сохраняем сообщение...");
+
+            // Для одобрения без причины создаем сообщение с пустой причиной
+            String finalReason = (reason == null || reason.trim().isEmpty()) ? "" : reason;
+
+            Long idMessage = repository.saveModerationMessage(adId, moderatorEmail, action, finalReason);
+
+            if (idMessage != null) {
+                System.out.println("✅ Сообщение модератора успешно сохранено в базу данных");
+            } else {
+                System.out.println("❌ Ошибка: сообщение модератора не было сохранено");
+            }
+            repository.close();
+            return idMessage;
+        } catch (Exception e) {
+            System.err.println(
+                    "❌ Критическая ошибка при сохранении сообщения модератора: " + e.getMessage());
+            e.printStackTrace();
+        }
         return null;
-      }
-
-      String timestamp = LocalDateTime.now().format(formatter);
-
-      System.out.println(
-          "📝 У объявления с Id " + adId + " обновлён статус: " + action + " по причине: " + reason
-              + ". Модератор: " + moderatorEmail);
-
-      ModerationMessageRepository repository = null;
-      try {
-        repository = new ModerationMessageRepository();
-
-        // Проверяем существование таблицы
-        boolean tableExists = repository.checkTableExists();
-        if (!tableExists) {
-          System.err.println("❌ Таблица moderation_messages не существует!");
-          return null;
-        }
-
-        System.out.println("✅ Таблица moderation_messages существует, сохраняем сообщение...");
-
-        Long idMessage = repository.saveModerationMessage(adId, moderatorEmail, action, reason);
-
-        if (idMessage != null) {
-          System.out.println("✅ Сообщение модератора успешно сохранено в базу данных");
-        } else {
-          System.out.println("❌ Ошибка: сообщение модератора не было сохранено");
-        }
-        repository.close();
-        return idMessage;
-      } catch (Exception e) {
-        System.err.println(
-            "❌ Критическая ошибка при сохранении сообщения модератора: " + e.getMessage());
-        e.printStackTrace();
-      }
-      return null;
     }
 
+    /**
+     * Специальный метод для создания уведомлений об одобрении
+     */
+    public static Long createApprovalNotification(Long adId, String moderatorEmail) {
+        return logModerationAction(adId, "approve", "", moderatorEmail);
+    }
     /**
      * Для отладки: полная проверка базы данных
      */
