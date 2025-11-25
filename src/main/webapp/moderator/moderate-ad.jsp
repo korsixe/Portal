@@ -24,7 +24,6 @@
             Announcement ad = adsService.getAd(adId);
 
             if (ad != null) {
-                // ВАЖНО: Для одобрения создаем уведомление даже без причины
                 if ("approve".equals(action) && (reason == null || reason.trim().isEmpty())) {
                     // Создаем уведомление об одобрении без причины
                     Long messageId = ModerationMessageService.createApprovalNotification(adId, moderatorEmail);

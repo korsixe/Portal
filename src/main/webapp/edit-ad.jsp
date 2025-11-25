@@ -570,7 +570,6 @@
     <div class="card">
         <div class="card-header">
             <h1 class="card-title">Редактировать объявление</h1>
-            <p class="card-subtitle">ID: #<%= announcement.getId() %></p>
         </div>
 
         <% if (request.getAttribute("error") != null) { %>
