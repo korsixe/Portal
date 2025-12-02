@@ -198,5 +198,4 @@ public class AdsService implements IAdsService {
       return new ArrayList<>();
     }
   }
-
 }

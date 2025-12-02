@@ -1,22 +1,31 @@
 package com.mipt.portal.notifications;
 
+import com.mipt.portal.announcement.AdsRepository;
 import com.mipt.portal.moderator.message.ModerationMessage;
 import com.mipt.portal.moderator.message.ModerationMessageRepository;
 import com.mipt.portal.announcement.AdsService;
 import com.mipt.portal.announcement.Announcement;
+import com.mipt.portal.users.User;
+import com.mipt.portal.users.service.UserService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NotificationService {
-
     // Получаем уведомления пользователя с информацией о прочтении
     public List<ModerationMessage> getUserNotifications(Long userId) {
         List<ModerationMessage> notifications = new ArrayList<>();
 
         try {
-            AdsService adsService = new AdsService();
-            List<Announcement> userAds = adsService.getUserAds(userId);
+            UserService userService = new UserService();
+            List<Long> adIds = userService.findUserById(userId).getData().getAdList();
+            AdsRepository adsRepository = new AdsRepository();
+            List<Announcement> userAds = new ArrayList<>();
+
+            for (int i = 0; i < adIds.size(); i++) {
+              Announcement ad = adsRepository.getAdById(adIds.get(i));
+              userAds.add(ad);
+            }
 
             if (userAds.isEmpty()) {
                 return notifications;
