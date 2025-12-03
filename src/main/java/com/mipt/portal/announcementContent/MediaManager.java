@@ -68,8 +68,6 @@ public class MediaManager implements AutoCloseable {
       stmt.setInt(2, adId);
 
       int affectedRows = stmt.executeUpdate();
-      System.out.println("✅ MediaManager.saveToDB(): обновлено " +
-        affectedRows + " строк");
 
       if (affectedRows == 0) {
         throw new SQLException("Не удалось обновить запись. Возможно, adId=" + adId + " не существует");
@@ -77,7 +75,7 @@ public class MediaManager implements AutoCloseable {
 
     } catch (SQLException e) {
       System.err.println("❌ MediaManager.saveToDB() ОШИБКА: " + e.getMessage());
-      throw e; // пробрасываем дальше
+      throw e;
     }
   }
 
@@ -96,13 +94,11 @@ public class MediaManager implements AutoCloseable {
             for (Object photoData : dbPhotos) {
               if (photoData instanceof byte[]) {
                 byte[] imageData = (byte[]) photoData;
-                // Проверяем, что это действительно изображение (не кастомная сериализация)
                 if (isValidImageData(imageData)) {
                   photos.add(imageData);
                 }
               }
             }
-            System.out.println("✅ Loaded " + photos.size() + " photos from database");
           }
         }
       }
