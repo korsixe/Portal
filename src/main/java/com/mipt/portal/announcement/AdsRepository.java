@@ -11,9 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 
@@ -71,7 +69,10 @@ public class AdsRepository implements IAdsRepository {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
 
+  @Override
+  public void insertDataComments() {
     try {
       String sql = readSqlFile("sql/insert_data_comments.sql");
       executeSql(sql);

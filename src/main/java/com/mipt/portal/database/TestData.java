@@ -34,6 +34,7 @@ public class TestData {
     adsRepository.createTables();
     adsRepository.insertData();
     generateTestAds();
+    adsRepository.insertDataComments();
   }
 
   private static void generateTestAds() {

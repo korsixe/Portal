@@ -9,6 +9,8 @@ public interface IAdsRepository {
 
   void insertData();
 
+  void insertDataComments();
+
   Long getUserIdByEmail(String email) throws SQLException;
 
   void updateAd(Announcement ad) throws SQLException;
