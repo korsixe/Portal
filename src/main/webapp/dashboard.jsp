@@ -8,22 +8,30 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="com.mipt.portal.users.service.UserService" %>
+<%@ page import="com.mipt.portal.notifications.NotificationService" %>
+<%@ page import="com.mipt.portal.moderator.message.ModerationMessage" %>
 <%
-    // Проверяем авторизацию
     User user = (User) session.getAttribute("user");
     if (user == null) {
         response.sendRedirect("login.jsp");
         return;
     }
 
+    // Обработка сообщений об успехе
+    String successMessage = (String) session.getAttribute("successMessage");
+    if (successMessage != null) {
+        session.removeAttribute("successMessage"); // Удаляем после показа
+    }
+
+    // Обновляем данные пользователя
     UserService userService = new UserService();
     User freshUser = userService.findUserById(user.getId()).getData();
     session.setAttribute("user", freshUser);
     user = freshUser; // Обновляем локальную переменную
 
+    // Загружаем объявления пользователя
     AdsService adsService = new AdsService();
     List<Announcement> userAnnouncements = new ArrayList<>();
-
 
     if (user.getAdList() != null && !user.getAdList().isEmpty()) {
         for (Long adId : user.getAdList()) {
@@ -33,49 +41,15 @@
                     userAnnouncements.add(ad);
                 }
             } catch (Exception e) {
-                // Пропускаем объявления, которые не удалось загрузить
                 System.err.println("Ошибка при загрузке объявления ID " + adId + ": " + e.getMessage());
             }
         }
     }
-%>
-<%
-    // В начале home.jsp, после проверки авторизации
-    String message = request.getParameter("message");
-    if (message != null) {
-%>
-<script>
-    alert('<%= message %>');
-</script>
-<%
-    }
-%>
-<%
-    // Проверяем сообщения от обработчиков
-    String passwordMessage = (String) session.getAttribute("passwordMessage");
-    String passwordMessageType = (String) session.getAttribute("passwordMessageType");
-    String deleteMessage = (String) session.getAttribute("deleteMessage");
-    String deleteMessageType = (String) session.getAttribute("deleteMessageType");
 
-    if (passwordMessage != null) {
-%>
-<script>
-    alert("<%= passwordMessage %>");
-</script>
-<%
-        session.removeAttribute("passwordMessage");
-        session.removeAttribute("passwordMessageType");
-    }
-
-    if (deleteMessage != null) {
-%>
-<script>
-    alert("<%= deleteMessage %>");
-</script>
-<%
-        session.removeAttribute("deleteMessage");
-        session.removeAttribute("deleteMessageType");
-    }
+    // Загружаем уведомления пользователя
+    NotificationService notificationService = new NotificationService();
+    List<ModerationMessage> userNotifications = notificationService.getUserNotifications(user.getId());
+    int unreadCount = notificationService.getUnreadCount(user.getId());
 %>
 <!DOCTYPE html>
 <html lang="ru">
@@ -107,9 +81,444 @@
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             padding: 40px;
-            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+
+
+        .profile-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .header-bell {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px 40px;
             margin-bottom: 30px;
         }
+
+        .header-top-bell {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        /* Колокольчик слева */
+        .notification-left {
+            margin-right: auto; /* Прижимаем к левому краю */
+            margin-left: 40%;
+        }
+
+        /* Аватарка по центру */
+        .avatar-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .avatar-circle {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .avatar-circle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .avatar-icon {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .online-status {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 16px;
+            height: 16px;
+            background: #28a745;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Кнопки справа вертикально */
+        .buttons-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-left: auto; /* Прижимаем к правому краю */
+            min-width: 200px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .header-top-bell {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .notification-left {
+                order: 1;
+                margin: 0 auto;
+            }
+
+            .avatar-center {
+                order: 2;
+                position: static;
+                transform: none;
+            }
+
+            .buttons-vertical {
+                order: 3;
+                margin-left: 0;
+                min-width: 100%;
+            }
+
+            .avatar-circle {
+                width: 70px;
+                height: 70px;
+            }
+
+            .btn {
+                justify-content: center;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-bell {
+                padding: 25px 20px;
+            }
+
+            .buttons-vertical {
+                min-width: 100%;
+            }
+
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.85rem;
+            }
+
+            .avatar-circle {
+                width: 60px;
+                height: 60px;
+            }
+
+            .avatar-icon {
+                font-size: 1.6rem;
+            }
+
+            .online-status {
+                width: 14px;
+                height: 14px;
+                bottom: 6px;
+                right: 6px;
+            }
+        }
+
+
+
+        /* Стили для кнопок */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .header-top-bell {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .profile-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .avatar-circle {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .user-avatar-placeholder {
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar-center {
+            display: flex;
+            justify-content: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .avatar-circle {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .avatar-circle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .avatar-icon {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .online-status {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 16px;
+            height: 16px;
+            background: #28a745;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Колокольчик справа */
+        .notification-side {
+            margin-right: 20px;
+        }
+
+        .notification-right {
+            margin-left: 20px;
+        }
+
+        /* Вертикальные кнопки справа */
+        .buttons-vertical {
+            display: flex;
+            flex-direction: column;
+            justify-content: right;
+            margin-right: 20px;
+            gap: 12px;
+            min-width: 200px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .header-top-bell {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .avatar-center {
+                position: static;
+                transform: none;
+                order: 1;
+            }
+
+            .buttons-vertical {
+                order: 2;
+                min-width: 100%;
+            }
+
+            .notification-side {
+                order: 3;
+                margin-right: 0;
+                margin-top: 10px;
+            }
+
+            .avatar-circle {
+                width: 70px;
+                height: 70px;
+            }
+
+            .btn {
+                justify-content: center;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-bell {
+                padding: 25px 20px;
+            }
+
+            .buttons-vertical {
+                min-width: 100%;
+            }
+
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.85rem;
+            }
+
+            .avatar-circle {
+                width: 60px;
+                height: 60px;
+            }
+
+            .avatar-icon {
+                font-size: 1.6rem;
+            }
+
+            .online-status {
+                width: 14px;
+                height: 14px;
+                bottom: 6px;
+                right: 6px;
+            }
+        }
+
+
+
+
+
+
 
         .portal-logo {
             font-size: 3.5rem;
@@ -118,16 +527,71 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 10px;
             letter-spacing: 2px;
         }
 
         .welcome-message {
             color: #666;
             font-size: 1.5rem;
-            margin-bottom: 20px;
+            text-align: center;
         }
 
+        /* Стили для сообщений */
+        .success-message {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            border: 2px solid rgba(255,255,255,0.2);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Статистика */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Информация о пользователе */
         .user-info {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -165,6 +629,17 @@
             color: #333;
         }
 
+        .rating-stars {
+            color: #ffc107;
+            font-size: 1.2rem;
+        }
+
+        .coins {
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        /* Кнопки управления профилем */
         .profile-actions {
             display: flex;
             justify-content: center;
@@ -173,6 +648,7 @@
             flex-wrap: wrap;
         }
 
+        /* Секция объявлений */
         .ads-section {
             background: white;
             border-radius: 15px;
@@ -290,6 +766,24 @@
             margin-top: 15px;
         }
 
+        .ad-views {
+            color: #666;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .ad-date {
+            color: #999;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .ad-location {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
         .no-ads {
             text-align: center;
             color: #666;
@@ -298,13 +792,7 @@
             grid-column: 1 / -1;
         }
 
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 30px;
-        }
-
+        /* Кнопки */
         .btn {
             padding: 12px 25px;
             border: none;
@@ -373,61 +861,14 @@
             background: #e0a800;
         }
 
-        .rating-stars {
-            color: #ffc107;
-            font-size: 1.2rem;
-        }
-
-        .coins {
-            color: #ffd700;
-            font-weight: 600;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        .action-buttons {
+            display: flex;
             gap: 15px;
-            margin-bottom: 20px;
+            justify-content: center;
+            margin-top: 30px;
         }
 
-        .stat-card {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .ad-views {
-            color: #666;
-            font-size: 0.8rem;
-            margin-top: 5px;
-        }
-
-        .ad-date {
-            color: #999;
-            font-size: 0.8rem;
-            margin-top: 5px;
-        }
-
-        .ad-location {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-        }
-
-        /* Стили для модальных окон */
+        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -508,6 +949,7 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+
         .warning-box {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -522,7 +964,13 @@
             margin-bottom: 10px;
         }
 
+        /* Адаптивность */
         @media (max-width: 768px) {
+            .header-top {
+                flex-direction: column;
+                gap: 15px;
+            }
+
             .user-info {
                 grid-template-columns: 1fr;
             }
@@ -562,11 +1010,49 @@
 </head>
 <body>
 <div class="dashboard-container">
+    <!-- Сообщение об успехе -->
+    <% if (successMessage != null) { %>
+    <div class="success-message">
+        <span style="font-size: 1.3em;">🎉</span>
+        <span><%= successMessage %></span>
+    </div>
+    <% } %>
+
     <div class="header">
-        <div class="portal-logo">PORTAL</div>
+        <div class="header-top">
+            <div class="portal-logo">PORTAL</div>
+        </div>
     </div>
 
-    <!-- Статистика -->
+    <div class="header-bell">
+        <div class="header-top-bell">
+            <!-- Колокольчик слева -->
+            <div class="notification-left">
+                <jsp:include page="notification-bell.jsp" />
+            </div>
+
+            <!-- Аватарка по центру -->
+            <div class="avatar-center">
+                <div class="avatar-circle">
+                    <span class="avatar-icon">👤</span>
+                    <div class="online-status"></div>
+                </div>
+            </div>
+
+            <!-- Кнопки справа вертикально -->
+            <div class="buttons-vertical">
+                <a href="edit-profile.jsp" class="btn btn-primary">
+                    <span class="btn-icon">✏️</span>
+                    Редактировать профиль
+                </a>
+                <button onclick="openAccountManagement()" class="btn btn-primary">
+                    <span class="btn-icon">⚙️</span>
+                    Управление аккаунтом
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="stats">
         <div class="stat-card">
             <div class="stat-number"><%= userAnnouncements.size() %></div>
@@ -586,6 +1072,7 @@
         </div>
     </div>
 
+    <!-- Информация о пользователе -->
     <div class="user-info">
         <div class="info-card">
             <h3>👤 Основная информация</h3>
@@ -636,11 +1123,8 @@
     </div>
 
     <!-- Кнопки управления профилем -->
-    <div class="profile-actions">
-        <a href="edit-profile.jsp" class="btn btn-primary">Редактировать профиль</a>
-        <button onclick="openAccountManagement()" class="btn btn-secondary">Управление аккаунтом</button>
-    </div>
 
+    <!-- Секция объявлений -->
     <div class="ads-section">
         <h3>
             📋 Мои объявления
@@ -687,18 +1171,18 @@
         </div>
     </div>
 
+    <!-- Кнопки навигации -->
     <div class="action-buttons">
         <a href="home.jsp" class="btn btn-primary">На главную</a>
         <a href="logout.jsp" class="btn btn-secondary">Выйти</a>
     </div>
 </div>
 
-<!-- Модальное окно управления аккаунтом -->
+<!-- Модальные окна (остаются без изменений) -->
 <div id="accountManagementModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeAccountManagement()">&times;</span>
         <h3>🔧 Управление аккаунтом</h3>
-
         <div class="button-group" style="display: flex; flex-direction: column; gap: 15px;">
             <button onclick="openChangePassword()" class="btn btn-primary">Изменить пароль</button>
             <button onclick="openDeleteAccount()" class="btn btn-danger">Удалить аккаунт</button>
@@ -706,30 +1190,24 @@
     </div>
 </div>
 
-<!-- Модальное окно изменения пароля -->
 <div id="changePasswordModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeChangePassword()">&times;</span>
         <h3>🔐 Изменение пароля</h3>
-
         <form id="changePasswordForm" method="POST" action="change-password-handler.jsp">
             <input type="hidden" name="action" value="changePassword">
-
             <div class="form-group">
                 <label for="currentPassword">Текущий пароль</label>
                 <input type="password" id="currentPassword" name="currentPassword" required>
             </div>
-
             <div class="form-group">
                 <label for="newPassword">Новый пароль</label>
                 <input type="password" id="newPassword" name="newPassword" required>
             </div>
-
             <div class="form-group">
                 <label for="confirmPassword">Подтверждение нового пароля</label>
                 <input type="password" id="confirmPassword" name="confirmPassword" required>
             </div>
-
             <div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="submit" class="btn btn-primary">Сохранить пароль</button>
                 <button type="button" onclick="closeChangePassword()" class="btn btn-secondary">Отмена</button>
@@ -738,27 +1216,21 @@
     </div>
 </div>
 
-<!-- Модальное окно удаления аккаунта -->
 <div id="deleteAccountModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeDeleteAccount()">&times;</span>
         <h3>🗑️ Удаление аккаунта</h3>
-
         <div class="warning-box">
             <h4>⚠️ Внимание!</h4>
             <p>Это действие необратимо. Все ваши данные, включая объявления, будут удалены без возможности восстановления.</p>
         </div>
-
         <p>Для подтверждения введите ваш пароль:</p>
-
         <form id="deleteAccountForm" method="POST" action="delete-account-handler.jsp">
             <input type="hidden" name="action" value="deleteAccount">
-
             <div class="form-group">
                 <label for="confirmPasswordDelete">Текущий пароль</label>
                 <input type="password" id="confirmPasswordDelete" name="confirmPassword" required>
             </div>
-
             <div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="submit" class="btn btn-danger">Удалить аккаунт</button>
                 <button type="button" onclick="closeDeleteAccount()" class="btn btn-secondary">Отмена</button>
@@ -768,7 +1240,7 @@
 </div>
 
 <script>
-    // Функции для управления модальными окнами
+    // Функции для модальных окон
     function openAccountManagement() {
         document.getElementById('accountManagementModal').style.display = 'block';
     }
@@ -805,8 +1277,8 @@
         }
     }
 
-    // Валидация формы изменения пароля
-    document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+    // Валидация форм
+    document.getElementById('changePasswordForm')?.addEventListener('submit', function(e) {
         const newPassword = document.getElementById('newPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
@@ -823,15 +1295,14 @@
         }
     });
 
-    // Валидация формы удаления аккаунта
-    document.getElementById('deleteAccountForm').addEventListener('submit', function(e) {
+    document.getElementById('deleteAccountForm')?.addEventListener('submit', function(e) {
         if (!confirm('❗ Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить!')) {
             e.preventDefault();
             return false;
         }
     });
 
-    // Добавляем анимации при загрузке
+    // Анимации при загрузке
     document.addEventListener('DOMContentLoaded', function() {
         const cards = document.querySelectorAll('.info-card, .ad-item, .stat-card');
         cards.forEach((card, index) => {
@@ -861,7 +1332,6 @@
 
 <%!
     // Вспомогательные методы для JSP
-
     private String getStatusClass(AdvertisementStatus status) {
         switch (status) {
             case ACTIVE: return "status-active";

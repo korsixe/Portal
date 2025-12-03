@@ -16,6 +16,7 @@
     String moderatorEmail = (String) session.getAttribute("moderatorEmail");
     String message = "Действие выполнено";
     String messageType = "success";
+
     if (action != null && adIdParam != null) {
         try {
             Long adId = Long.parseLong(adIdParam);
@@ -23,30 +24,45 @@
             Announcement ad = adsService.getAd(adId);
 
             if (ad != null) {
-                // Используем новый сервис для логирования действий модератора
-                Long messageId = ModerationMessageService.logModerationAction(
-                        adId,
-                        action,
-                        reason,
-                        moderatorEmail
-                );
-                ad.setMessageId(messageId);
+                if ("approve".equals(action) && (reason == null || reason.trim().isEmpty())) {
+                    // Создаем уведомление об одобрении без причины
+                    Long messageId = ModerationMessageService.createApprovalNotification(adId, moderatorEmail);
+                    ad.setMessageId(messageId);
+                    message = "Объявление одобрено";
+                } else {
+                    // Для остальных действий используем обычную логику
+                    Long messageId = ModerationMessageService.logModerationAction(
+                            adId,
+                            action,
+                            reason,
+                            moderatorEmail
+                    );
+                    ad.setMessageId(messageId);
+
+                    switch (action) {
+                        case "reject":
+                            message = "Объявление отправлено на доработку";
+                            break;
+                        case "delete":
+                            message = "Объявление удалено";
+                            break;
+                    }
+                }
+
+                // Обновляем статус объявления
                 switch (action) {
                     case "approve":
                         ad.setStatus(AdvertisementStatus.ACTIVE);
-                        adsService.editAd(ad);
-                        message = "Объявление одобрено";
                         break;
                     case "reject":
                         ad.setStatus(AdvertisementStatus.DRAFT);
-                        adsService.editAd(ad);
-                        message = "Объявление отправлено на доработку";
                         break;
                     case "delete":
-                        adsService.hardDeleteAd(ad.getId());
-                        message = "Объявление удалено";
+                        ad.setStatus(AdvertisementStatus.DELETED);
                         break;
                 }
+
+                adsService.editAd(ad);
             } else {
                 message = "Объявление не найдено";
                 messageType = "error";

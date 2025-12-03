@@ -64,8 +64,10 @@
                         session.setAttribute("user", updateResult.getData());
                         session.removeAttribute("canEditProfile");
 
-                        message = "Данные успешно обновлены!";
-                        messageType = "success";
+                        // ВАЖНОЕ ИЗМЕНЕНИЕ: редирект на dashboard с сообщением об успехе
+                        session.setAttribute("successMessage", "✅ Профиль успешно обновлен!");
+                        response.sendRedirect("dashboard.jsp");
+                        return; // Важно: завершаем выполнение после редиректа
                     } else {
                         message = updateResult.getMessage();
                         messageType = "error";
@@ -81,8 +83,11 @@
         }
     }
 
-    session.setAttribute("updateMessage", message);
-    session.setAttribute("updateMessageType", messageType);
-
-    response.sendRedirect("edit-profile.jsp");
+    // Сохраняем сообщения об ошибках и редиректим обратно на edit-profile.jsp
+    // (только в случае ошибки)
+    if (!message.isEmpty()) {
+        session.setAttribute("updateMessage", message);
+        session.setAttribute("updateMessageType", messageType);
+        response.sendRedirect("edit-profile.jsp");
+    }
 %>

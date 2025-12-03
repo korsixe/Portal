@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS moderation_messages (
                                                    action TEXT NOT NULL, -- 'approve', 'reject', 'delete'
                                                    reason TEXT, -- причина модерации
                                                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                                                   is_read  BOOLEAN,
 
                                                    FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE
 );
