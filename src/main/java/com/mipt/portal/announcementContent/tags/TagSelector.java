@@ -83,7 +83,7 @@ public class TagSelector {
         }
       }
     } catch (Exception e) {
-      throw new SQLException("Error parsing tags JSON for ad " + adId, e);
+      throw new SQLException("");
     }
     return new ArrayList<>();
   }

@@ -651,15 +651,13 @@
                     <input type="file" id="photos" name="photos" class="form-control"
                            multiple accept="image/*" style="padding: 8px;">
                     <div class="tags-hint">
-                        Можно выбрать несколько файлов. Максимум 10 фотографий.
+                        Выбранные фотографии:
                     </div>
                 </div>
 
                 <!-- Контейнер для предпросмотра фотографий -->
                 <div id="photoPreview" class="photo-preview-container" style="display: none;">
-                    <div class="preview-note">
-                        <strong>Предпросмотр фотографий:</strong> Выбранные фотографии появятся здесь после загрузки.
-                    </div>
+
                     <div id="previewImages" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;"></div>
                 </div>
             </div>
@@ -674,13 +672,7 @@
                 <!-- Скрытое поле для хранения выбранных тегов в JSON -->
                 <input type="hidden" id="selectedTags" name="selectedTags" value="">
 
-                <!-- Контейнер для выбранных тегов -->
-                <div class="form-group">
-                    <label>Выбранные теги:</label>
-                    <div id="selectedTagsContainer" class="selected-tags-container">
-                        <div class="no-tags-message">Теги не выбраны</div>
-                    </div>
-                </div>
+
 
                 <!-- Контейнер для тегов с выпадающими списками -->
                 <div class="form-group">
@@ -930,29 +922,6 @@
             }
         }
 
-        // Обновление отображения выбранных тегов
-        function updateSelectedTagsDisplay() {
-            const container = document.getElementById('selectedTagsContainer');
-
-            if (selectedTags.length === 0) {
-                container.innerHTML = '<div class="no-tags-message">Теги не выбраны</div>';
-                return;
-            }
-
-            let html = '';
-            selectedTags.forEach(tag => {
-                html += `
-                    <div class="selected-tag">
-                        ${tag.tagName}: ${tag.valueName}
-                        <button type="button" class="remove-tag-btn" onclick="removeSelectedTag(${tag.tagId})">
-                            ×
-                        </button>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
 
         // Обновление скрытых полей
         function updateHiddenFields() {

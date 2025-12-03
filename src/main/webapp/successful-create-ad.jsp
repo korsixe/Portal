@@ -285,7 +285,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <div class="logo">Market<span>Place</span></div>
+        <div class="logo">Portal<span></span></div>
     </div>
 
     <div class="card fade-in">
@@ -391,7 +391,7 @@
   // Автоматический редирект на главную через 30 секунд
   setTimeout(function () {
     window.location.href = 'index.jsp';
-  }, 30000);
+  }, 10000);
 </script>
 </body>
 </html>

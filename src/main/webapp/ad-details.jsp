@@ -49,19 +49,16 @@
                     announcement.setCreatedAt(rs.getTimestamp("created_at").toInstant());
                     announcement.setUpdatedAt(rs.getTimestamp("updated_at").toInstant());
 
-                    // Получаем имя автора
                     authorName = rs.getString("author_name");
 
-                    // Обрабатываем теги из JSONB с использованием Jackson
+                    // Обрабатываем теги из JSONB
                     String tagsJson = rs.getString("tags");
                     List<String> tags = new ArrayList<>();
                     if (tagsJson != null && !tagsJson.equals("null") && !tagsJson.trim().isEmpty()) {
                         try {
                             ObjectMapper mapper = new ObjectMapper();
 
-                            // Пробуем разные варианты парсинга
                             if (tagsJson.startsWith("[")) {
-                                // Это массив объектов
                                 Map<String, Object>[] tagArray = mapper.readValue(tagsJson, Map[].class);
                                 for (Map<String, Object> tagObj : tagArray) {
                                     String valueName = (String) tagObj.get("valueName");
@@ -70,7 +67,6 @@
                                     }
                                 }
                             } else if (tagsJson.startsWith("\"")) {
-                                // Это простая строка (возможно закодированный JSON)
                                 String decodedTags = mapper.readValue(tagsJson, String.class);
                                 if (decodedTags.startsWith("[")) {
                                     Map<String, Object>[] tagArray = mapper.readValue(decodedTags, Map[].class);
@@ -83,12 +79,10 @@
                                 }
                             }
                         } catch (Exception e) {
-                            System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
+                            // System.err.println("Ошибка при парсинге тегов: " + e.getMessage());
                             e.printStackTrace();
 
-                            // Fallback: пробуем извлечь теги простым способом
                             try {
-                                // Если теги хранятся как простой массив строк
                                 if (tagsJson.startsWith("[") && tagsJson.endsWith("]")) {
                                     String[] simpleTags = tagsJson.substring(1, tagsJson.length() - 1).split(",");
                                     for (String tag : simpleTags) {
@@ -165,18 +159,28 @@
     // Обработка добавления нового комментария
     if ("POST".equalsIgnoreCase(request.getMethod()) && "addComment".equals(request.getParameter("action"))) {
         User user = (User) session.getAttribute("user");
-        if (user != null && announcement != null) {
+
+        if (user == null) {
+            request.setAttribute("error", "Для добавления комментария необходимо авторизоваться");
+        } else if (announcement == null) {
+            request.setAttribute("error", "Объявление не найдено");
+        } else {
             String commentText = request.getParameter("commentText");
-            if (commentText != null && !commentText.trim().isEmpty()) {
+
+            if (commentText == null || commentText.trim().isEmpty()) {
+                request.setAttribute("error", "Комментарий не может быть пустым");
+            } else {
+                // Проверка на мат
                 com.mipt.portal.announcementContent.ProfanityChecker profanityChecker =
                         new com.mipt.portal.announcementContent.ProfanityChecker();
-                if (profanityChecker.containsProfanity(commentText)) {
+                boolean hasProfanity = profanityChecker.containsProfanity(commentText);
+
+                if (hasProfanity) {
                     request.setAttribute("profanityError", "Комментарий содержит недопустимые слова и не может быть сохранен.");
                 } else {
                     try (Connection conn = getConnection();
                          PreparedStatement stmt = conn.prepareStatement(
-                                 "INSERT INTO comments (ad_id, user_id, user_name, content, created_at) VALUES (?, ?, ?, ?, ?)",
-                                 Statement.RETURN_GENERATED_KEYS)) {
+                                 "INSERT INTO comments (ad_id, user_id, user_name, content, created_at) VALUES (?, ?, ?, ?, ?)")) {
 
                         stmt.setLong(1, announcement.getId());
                         stmt.setLong(2, user.getId());
@@ -185,11 +189,36 @@
                         stmt.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
 
                         int affectedRows = stmt.executeUpdate();
+                        System.out.println("Rows affected: " + affectedRows);
 
                         if (affectedRows > 0) {
-                            // Перенаправляем для предотвращения повторной отправки
-                            response.sendRedirect("ad-details.jsp?id=" + announcement.getId());
-                            return;
+                            System.out.println("Comment saved successfully");
+
+                            try (PreparedStatement commentStmt = conn.prepareStatement(
+                                    "SELECT * FROM comments WHERE ad_id = ? ORDER BY created_at DESC")) {
+                                commentStmt.setLong(1, announcement.getId());
+                                ResultSet rs = commentStmt.executeQuery();
+
+                                comments.clear();
+                                while (rs.next()) {
+                                    Timestamp timestamp = rs.getTimestamp("created_at");
+                                    java.time.LocalDateTime createdAt = timestamp != null ?
+                                            timestamp.toLocalDateTime() : java.time.LocalDateTime.now();
+
+                                    Comment comment = new Comment(
+                                            rs.getLong("id"),
+                                            rs.getString("user_name"),
+                                            rs.getString("content"),
+                                            createdAt,
+                                            rs.getLong("ad_id")
+                                    );
+                                    comments.add(comment);
+                                }
+                                System.out.println("Comments reloaded: " + comments.size());
+                            }
+
+                            request.setAttribute("clearComment", "true");
+                            request.setAttribute("success", "Комментарий успешно добавлен!");
                         }
                     } catch (SQLException e) {
                         System.err.println("Ошибка при создании комментария: " + e.getMessage());
@@ -197,14 +226,9 @@
                         request.setAttribute("error", "Ошибка при сохранении комментария: " + e.getMessage());
                     }
                 }
-            } else {
-                request.setAttribute("error", "Комментарий не может быть пустым");
             }
-        } else {
-            request.setAttribute("error", "Для добавления комментария необходимо авторизоваться");
         }
     }
-%>
 %>
 
 
@@ -660,7 +684,6 @@
             }
         }
 
-        /* Адаптивность */
         @media (max-width: 1024px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -942,11 +965,24 @@
             <!-- Форма добавления комментария -->
             <% if (user != null) { %>
             <div class="comment-form">
-                <form id="commentForm" method="POST" action="ad-details.jsp?id=<%= announcement.getId() %>" onsubmit="return false;">
+                <form id="commentForm" method="POST" action="ad-details.jsp?id=<%= announcement.getId() %>">
                     <input type="hidden" name="action" value="addComment">
                     <textarea name="commentText" id="commentText" class="comment-input"
-                              placeholder="Напишите ваш комментарий..." required></textarea>
-                    <button type="submit" class="btn btn-primary" onclick="submitCommentForm()">Добавить комментарий</button>
+                              placeholder="Напишите ваш комментарий..." required><%= request.getAttribute("clearComment") != null ? "" : "" %></textarea>
+
+                    <% if (request.getAttribute("success") != null) { %>
+                    <div style="color: green; margin-bottom: 10px; font-weight: 500;">
+                        ✅ <%= request.getAttribute("success") %>
+                    </div>
+                    <% } %>
+
+                    <% if (request.getAttribute("error") != null) { %>
+                    <div style="color: red; margin-bottom: 10px; font-weight: 500;">
+                        ❌ <%= request.getAttribute("error") %>
+                    </div>
+                    <% } %>
+
+                    <button type="submit" class="btn btn-primary" onclick="console.log('Кнопка нажата!')">Добавить комментарий</button>
                 </form>
             </div>
             <% } else { %>
@@ -983,7 +1019,6 @@
     <% } %>
 </div>
 <script>
-    // 🔥 ОБНОВЛЕННЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ФОТОГРАФИЯМИ 🔥
     let currentPhotoIndex = 0;
     const totalPhotos = <%= photoCount %>;
     const adId = <%= announcement != null ? announcement.getId() : 0 %>;
@@ -997,12 +1032,10 @@
             const timestamp = new Date().getTime();
 
             // Используем contextPath из JSP
-            const contextPath = '<%= request.getContextPath() %>'; // Это вернет "/portal"
+            const contextPath = '<%= request.getContextPath() %>';
             const newSrc = contextPath + '/ad-photo?adId=' + adId + '&photoIndex=' + index + '&t=' + timestamp;
 
             console.log('Loading photo:', newSrc);
-
-            // Показываем загрузку
             mainPhoto.style.opacity = '0.5';
 
             // Создаем новое изображение для предзагрузки
@@ -1012,7 +1045,6 @@
                 mainPhoto.style.opacity = '1';
                 mainPhoto.style.display = 'block';
 
-                // Скрываем placeholder если он показан
                 const placeholder = document.querySelector('.main-photo .photo-placeholder');
                 if (placeholder) placeholder.style.display = 'none';
             };
@@ -1079,19 +1111,18 @@
         thumbnail.style.background = '#f8f9fa';
     }
 
-    // Инициализация навигации
+    // навигация
     document.addEventListener('DOMContentLoaded', function() {
         if (totalPhotos > 0) {
             updateNavigationButtons();
 
-            // Предзагружаем следующее фото для быстрой навигации
             if (totalPhotos > 1) {
                 const nextImg = new Image();
                 nextImg.src = '/ad-photo?adId=' + adId + '&photoIndex=1&t=' + new Date().getTime();
             }
         }
 
-        // Добавляем обработку клавиш клавиатуры
+        // обработка клавиш клавиатуры
         document.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowLeft') prevPhoto();
             if (e.key === 'ArrowRight') nextPhoto();

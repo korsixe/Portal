@@ -25,7 +25,7 @@ public enum Category {
   MEDICAL("Медицинские услуги", 19),
   LEGAL("Юридические услуги", 20),
 
-  OTHER("Другое", 21);  // Fallback категория
+  OTHER("Другое", 21);
 
   private final String displayName;
   private final int number;

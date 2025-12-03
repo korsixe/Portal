@@ -130,7 +130,6 @@ public class Announcement {
     updatedAt = Instant.now();
   }
 
-  // Методы для работы с тегами, жду объединения с другой частью проекта
 
   public void addTag(String tag) {
     if (tags == null) {
@@ -181,6 +180,18 @@ public class Announcement {
       photos.clear();
       updatedAt = Instant.now();
     }
+  }
+
+
+  public File getFirstPhoto() {
+    if (photos != null && !photos.isEmpty()) {
+      return photos.get(0);
+    }
+    return null;
+  }
+
+  public boolean hasPhotos() {
+    return photos != null && !photos.isEmpty();
   }
 
   public void incrementViewCount() {
