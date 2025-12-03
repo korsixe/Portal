@@ -1,6 +1,7 @@
 package com.mipt.portal.announcement;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mipt.portal.announcementContent.MediaManager;
 import com.mipt.portal.database.DatabaseConnection;
 
 import java.io.*;
@@ -504,7 +505,6 @@ public class AdsRepository implements IAdsRepository {
         }
       }
 
-      // Если фото не загрузились - очищаем неправильный формат
       if (photos.isEmpty()) {
         cleanupPhotosFormat(adId);
       }
@@ -528,10 +528,7 @@ public class AdsRepository implements IAdsRepository {
       if (hexString == null || hexString.length() < 2) {
         return null;
       }
-
-      // PostgreSQL hex формат начинается с \x
       if (hexString.startsWith("\\x")) {
-        // Убираем префикс \x
         String cleanHex = hexString.substring(2);
 
         // Проверяем что строка имеет четную длину
@@ -557,6 +554,46 @@ public class AdsRepository implements IAdsRepository {
       System.err.println("   - input: " + (hexString != null ? hexString.substring(0,
           Math.min(100, hexString.length())) : "null"));
       return null;
+    }
+  }
+
+  // В AdsRepository.java добавьте этот метод:
+
+  public void removePhotoFromAd(long adId, int photoIndex) throws SQLException {
+    System.out.println("=== DEBUG AdsRepository.removePhotoFromAd ===");
+    System.out.println("adId: " + adId + ", photoIndex: " + photoIndex);
+
+    try (MediaManager mediaManager = new MediaManager(connection, (int) adId)) {
+      System.out.println("1. Created MediaManager");
+
+      mediaManager.loadFromDB();
+      System.out.println("2. Loaded photos from DB. Count: " + mediaManager.getPhotosCount());
+
+      if (mediaManager.getPhotosCount() == 0) {
+        System.err.println("❌ No photos found for ad " + adId);
+        return;
+      }
+
+      System.out.println("3. Photo index validation: " + photoIndex +
+        " < " + mediaManager.getPhotosCount() + " = " +
+        (photoIndex < mediaManager.getPhotosCount()));
+
+      if (photoIndex < 0 || photoIndex >= mediaManager.getPhotosCount()) {
+        System.err.println("❌ Invalid photo index: " + photoIndex +
+          ". Photo count: " + mediaManager.getPhotosCount());
+        return;
+      }
+
+      System.out.println("4. Calling deleteFromDB...");
+      mediaManager.deleteFromDB(photoIndex);
+
+      System.out.println("✅ Photo removed successfully. New count should be: " +
+        (mediaManager.getPhotosCount() - 1));
+
+    } catch (Exception e) {
+      System.err.println("❌ Error in removePhotoFromAd: " + e.getMessage());
+      e.printStackTrace();
+      throw new SQLException("Failed to remove photo", e);
     }
   }
 

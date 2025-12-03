@@ -33,29 +33,51 @@ public class MediaManager implements AutoCloseable {
   }
 
   public void saveToDB() throws SQLException {
-    if (photos.isEmpty()) {
-      System.out.println("⚠️ No photos to save");
-      return;
+    if (connection == null || connection.isClosed()) {
+      throw new SQLException("Connection is closed");
     }
 
-    // Сохраняем как массив bytea
+    System.out.println("🔄 MediaManager.saveToDB(): сохранение " +
+      photos.size() + " фото для adId=" + adId);
+
     String sql = "UPDATE ads SET photos = ? WHERE id = ?";
+
     try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 
-      // Преобразуем List<byte[]> в массив для PostgreSQL
-      byte[][] photosArray = photos.toArray(new byte[photos.size()][]);
-      Array sqlArray = connection.createArrayOf("bytea", photosArray);
+      if (photos.isEmpty()) {
+        // Вариант 1: Устанавливаем NULL
+        stmt.setNull(1, Types.ARRAY);
 
-      stmt.setArray(1, sqlArray);
+        // Или вариант 2: Пустой массив (что предпочтительнее для вашей схемы)
+        byte[][] emptyArray = new byte[0][0];
+        Array sqlArray = connection.createArrayOf("bytea", emptyArray);
+        stmt.setArray(1, sqlArray);
+        // sqlArray можно не закрывать - PreparedStatement закроет его
+
+      } else {
+        // Конвертируем List<byte[]> в массив byte[][]
+        byte[][] photosArray = new byte[photos.size()][];
+        for (int i = 0; i < photos.size(); i++) {
+          photosArray[i] = photos.get(i);
+        }
+
+        Array sqlArray = connection.createArrayOf("bytea", photosArray);
+        stmt.setArray(1, sqlArray);
+      }
+
       stmt.setInt(2, adId);
 
       int affectedRows = stmt.executeUpdate();
+      System.out.println("✅ MediaManager.saveToDB(): обновлено " +
+        affectedRows + " строк");
 
-      if (affectedRows > 0) {
-        System.out.println("✅ Successfully saved " + photos.size() + " photos to database");
-      } else {
-        System.err.println("❌ Failed to save photos - no rows affected");
+      if (affectedRows == 0) {
+        throw new SQLException("Не удалось обновить запись. Возможно, adId=" + adId + " не существует");
       }
+
+    } catch (SQLException e) {
+      System.err.println("❌ MediaManager.saveToDB() ОШИБКА: " + e.getMessage());
+      throw e; // пробрасываем дальше
     }
   }
 
@@ -112,6 +134,7 @@ public class MediaManager implements AutoCloseable {
     if (index < 0 || index >= photos.size()) {
       throw new IllegalArgumentException("Неверный индекс: " + index);
     }
+
     photos.remove(index);
     saveToDB();
   }

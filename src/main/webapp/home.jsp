@@ -455,6 +455,29 @@
         font-size: 0.8rem;
       }
 
+      .ad-image {
+          width: 100%;
+          aspect-ratio: 4 / 3;
+          border-radius: 12px;
+          margin-bottom: 15px;
+          overflow: hidden;
+          background: #f8f9fa;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .ad-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+      }
+
+      .no-image {
+          font-size: 2rem;
+          color: #ccc;
+      }
+
       .ad-views {
         color: #666;
         font-size: 0.8rem;
@@ -527,80 +550,142 @@
         transform: translateY(-2px);
       }
 
-      /* Адаптивность */
+      /* Стили для автодополнения */
+      .autocomplete-suggestions {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: white;
+          border: 2px solid #667eea;
+          border-top: none;
+          border-radius: 0 0 12px 12px;
+          max-height: 200px;
+          overflow-y: auto;
+          z-index: 1001;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+          pointer-events: auto;
+      }
+
+      .autocomplete-suggestion {
+          padding: 12px 20px;
+          cursor: pointer;
+          border-bottom: 1px solid #f0f0f0;
+          transition: background-color 0.2s ease;
+          pointer-events: auto;
+          user-select: none;
+      }
+
+      .autocomplete-suggestion:hover {
+          background-color: #f8f9fa;
+      }
+
+      .autocomplete-suggestion:last-child {
+          border-bottom: none;
+      }
+
+      .autocomplete-suggestion strong {
+          color: #667eea;
+          font-weight: 600;
+      }
+
+      .search-section {
+          flex: 1;
+          max-width: 600px;
+          min-width: 300px;
+          position: relative;
+      }
+
+      .search-form {
+          display: flex;
+          gap: 10px;
+          position: relative;
+      }
+
+      .autocomplete-suggestion.active {
+          background-color: #667eea;
+          color: white;
+      }
+
+      .autocomplete-suggestion.active strong {
+          color: white;
+          font-weight: bold;
+      }
+
+
       @media (max-width: 1024px) {
-        .home-container {
-          grid-template-columns: 1fr;
-          gap: 20px;
-        }
+          .home-container {
+              grid-template-columns: 1fr;
+              gap: 20px;
+          }
 
-        .filters-sidebar {
-          position: static;
-          order: 2;
-        }
+          .filters-sidebar {
+              position: static;
+              order: 2;
+          }
 
-        .main-content {
-          order: 1;
-        }
-      }
+          .main-content {
+              order: 1;
+          }
 
-      @media (max-width: 768px) {
-        .header {
-          flex-direction: column;
-          text-align: center;
-        }
+          @media (max-width: 768px) {
+              .header {
+                  flex-direction: column;
+                  text-align: center;
+              }
 
-        .search-section {
-          max-width: 100%;
-        }
+              .search-section {
+                  max-width: 100%;
+              }
 
-        .search-form {
-          flex-direction: column;
-        }
+              .search-form {
+                  flex-direction: column;
+              }
 
-        .auth-buttons {
-          justify-content: center;
-        }
+              .auth-buttons {
+                  justify-content: center;
+              }
 
-        .ads-grid {
-          grid-template-columns: 1fr;
-        }
+              .ads-grid {
+                  grid-template-columns: 1fr;
+              }
 
-        .section-title {
-          font-size: 1.7rem;
-        }
+              .section-title {
+                  font-size: 1.7rem;
+              }
 
-        .content-header {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-      }
+              .content-header {
+                  flex-direction: column;
+                  align-items: flex-start;
+              }
+          }
 
-      @media (max-width: 480px) {
-        .header {
-          padding: 20px;
-        }
+          @media (max-width: 480px) {
+              .header {
+                  padding: 20px;
+              }
 
-        .main-content {
-          padding: 25px 20px;
-        }
+              .main-content {
+                  padding: 25px 20px;
+              }
 
-        .filters-sidebar {
-          padding: 20px;
-        }
+              .filters-sidebar {
+                  padding: 20px;
+              }
 
-        .portal-logo {
-          font-size: 2rem;
-        }
+              .portal-logo {
+                  font-size: 2rem;
+              }
 
-        .btn {
-          padding: 10px 20px;
-          font-size: 0.9rem;
-        }
+              .btn {
+                  padding: 10px 20px;
+                  font-size: 0.9rem;
+              }
 
-        .price-inputs {
-          flex-direction: column;
-        }
+              .price-inputs {
+                  flex-direction: column;
+              }
+          }
       }
     </style>
 </head>
@@ -611,13 +696,16 @@
         <div class="portal-logo">PORTAL</div>
 
         <div class="search-section">
-            <form class="search-form" method="GET" action="home.jsp">
+            <form class="search-form" method="GET" action="home.jsp" id="searchForm">
                 <input type="text"
                        class="search-input"
                        placeholder="🔍 Поиск объявлений..."
                        name="searchQuery"
-                       value="<%= request.getParameter("searchQuery") != null ? request.getParameter("searchQuery") : "" %>">
+                       id="searchInput"
+                       value="<%= request.getParameter("searchQuery") != null ? request.getParameter("searchQuery") : "" %>"
+                       autocomplete="off">
                 <button type="submit" class="search-btn">Найти</button>
+                <div class="autocomplete-suggestions" id="autocompleteSuggestions" style="display: none;"></div>
             </form>
         </div>
 
@@ -738,6 +826,12 @@
                 <div class="ad-title"><%= ad.getTitle() %>
                 </div>
 
+                <div class="ad-image">
+                    <img src="<%= request.getContextPath() %>/ad-photo?adId=<%= ad.getId() %>&photoIndex=0&thumbnail=true"
+                         alt="<%= ad.getTitle() %>"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-image\'>📷</div>';">
+                </div>
+
                 <div class="ad-price">
                     <%= formatPrice(ad.getPrice()) %>
                 </div>
@@ -778,45 +872,206 @@
 </div>
 
 <script>
-  // Функция для загрузки дополнительных объявлений
-  function loadMoreAds() {
-    alert('Функция "Показать еще" будет реализована позже');
-  }
+    // Функция для загрузки дополнительных объявлений
+    function loadMoreAds() {
+        alert('Функция "Показать еще" будет реализована позже');
+    }
 
-  // Функция сброса фильтров
-  function resetFilters() {
-    document.getElementById('filterForm').reset();
-    document.getElementById('filterForm').submit();
-  }
+    // Функция сброса фильтров
+    function resetFilters() {
+        document.getElementById('filterForm').reset();
+        document.getElementById('filterForm').submit();
+    }
 
-  // Анимация появления карточек
-  document.addEventListener('DOMContentLoaded', function () {
-    const cards = document.querySelectorAll('.ad-card');
-    cards.forEach((card, index) => {
-      card.style.animationDelay = (index * 0.1) + 's';
-      card.style.animation = 'fadeInUp 0.6s ease-out forwards';
+    // Функция для автодополнения поиска
+    function setupAutocomplete() {
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsContainer = document.getElementById('autocompleteSuggestions');
+        let currentRequest = null;
+
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            console.log('Autocomplete input:', query);
+
+            // Отменяем предыдущий запрос
+            if (currentRequest) {
+                currentRequest.abort();
+            }
+
+            if (query.length < 2) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
+            // Показываем индикатор загрузки
+            suggestionsContainer.innerHTML = '<div class="autocomplete-suggestion">Поиск...</div>';
+            suggestionsContainer.style.display = 'block';
+
+            // Создаем новый AJAX запрос
+            currentRequest = new XMLHttpRequest();
+
+            // ВАЖНО: Добавляем timestamp для избежания кэширования
+            const url = 'autocomplete.jsp?query=' + encodeURIComponent(query) + '&t=' + Date.now();
+            console.log('Request URL:', url);
+
+            currentRequest.open('GET', url);
+
+            currentRequest.onreadystatechange = function() {
+                if (currentRequest.readyState === 4) {
+                    console.log('Response status:', currentRequest.status);
+                    console.log('Response text:', currentRequest.responseText.substring(0, 100));
+
+                    if (currentRequest.status === 200) {
+                        try {
+                            const suggestions = JSON.parse(currentRequest.responseText);
+                            console.log('Parsed suggestions:', suggestions);
+
+                            if (suggestions.length > 0) {
+                                displaySuggestions(suggestions, query);
+                            } else {
+                                suggestionsContainer.innerHTML = '<div class="autocomplete-suggestion">Не найдено</div>';
+                                suggestionsContainer.style.display = 'block';
+                            }
+                        } catch (e) {
+                            console.error('JSON parse error:', e);
+                            suggestionsContainer.style.display = 'none';
+                        }
+                    } else {
+                        console.error('Request failed:', currentRequest.status);
+                        suggestionsContainer.style.display = 'none';
+                    }
+                    currentRequest = null;
+                }
+            };
+
+            currentRequest.onerror = function() {
+                console.error('Network error');
+                suggestionsContainer.style.display = 'none';
+                currentRequest = null;
+            };
+
+            currentRequest.send();
+        });
+
+        // Обработка клавиш
+        searchInput.addEventListener('keydown', function(e) {
+            const visibleSuggestions = Array.from(suggestionsContainer.querySelectorAll('.autocomplete-suggestion'));
+            const activeSuggestion = suggestionsContainer.querySelector('.autocomplete-suggestion.active');
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (visibleSuggestions.length > 0) {
+                    if (!activeSuggestion) {
+                        visibleSuggestions[0].classList.add('active');
+                    } else {
+                        const currentIndex = visibleSuggestions.indexOf(activeSuggestion);
+                        const nextIndex = (currentIndex + 1) % visibleSuggestions.length;
+                        activeSuggestion.classList.remove('active');
+                        visibleSuggestions[nextIndex].classList.add('active');
+                    }
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (visibleSuggestions.length > 0 && activeSuggestion) {
+                    const currentIndex = visibleSuggestions.indexOf(activeSuggestion);
+                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : visibleSuggestions.length - 1;
+                    activeSuggestion.classList.remove('active');
+                    visibleSuggestions[prevIndex].classList.add('active');
+                }
+            } else if (e.key === 'Enter' && activeSuggestion) {
+                e.preventDefault();
+                searchInput.value = activeSuggestion.textContent;
+                suggestionsContainer.style.display = 'none';
+                document.getElementById('searchForm').submit();
+            } else if (e.key === 'Escape') {
+                suggestionsContainer.style.display = 'none';
+            }
+        });
+
+        // Обновленная функция displaySuggestions
+        function displaySuggestions(suggestions, query) {
+            suggestionsContainer.innerHTML = '';
+
+            suggestions.forEach((suggestion, index) => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-suggestion';
+                if (index === 0) div.classList.add('active');
+
+                const lowerSuggestion = suggestion.toLowerCase();
+                const lowerQuery = query.toLowerCase();
+                const startIndex = lowerSuggestion.indexOf(lowerQuery);
+
+                if (startIndex >= 0) {
+                    const before = suggestion.substring(0, startIndex);
+                    const match = suggestion.substring(startIndex, startIndex + query.length);
+                    const after = suggestion.substring(startIndex + query.length);
+
+                    div.innerHTML = before + '<strong>' + match + '</strong>' + after;
+                } else {
+                    div.textContent = suggestion;
+                }
+
+                div.addEventListener('mouseenter', function() {
+                    suggestionsContainer.querySelectorAll('.autocomplete-suggestion.active')
+                        .forEach(el => el.classList.remove('active'));
+                    div.classList.add('active');
+                });
+
+                div.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    searchInput.value = suggestion;
+                    suggestionsContainer.style.display = 'none';
+                    setTimeout(() => {
+                        document.getElementById('searchForm').submit();
+                    }, 50);
+                });
+
+                suggestionsContainer.appendChild(div);
+            });
+
+            suggestionsContainer.style.display = 'block';
+        }
+
+        // Скрываем подсказки при клике вне поля
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                suggestionsContainer.style.display = 'none';
+            }
+        });
+    }
+
+    // Анимация появления карточек и инициализация автодополнения
+    document.addEventListener('DOMContentLoaded', function () {
+        const cards = document.querySelectorAll('.ad-card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = (index * 0.1) + 's';
+            card.style.animation = 'fadeInUp 0.6s ease-out forwards';
+        });
+
+        // Инициализация автодополнения
+        setupAutocomplete();
     });
-  });
 
-  // Добавляем стили для анимации
-  const style = document.createElement('style');
-  style.textContent = `
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .ad-card {
+    // Добавляем стили для анимации
+    const style = document.createElement('style');
+    style.textContent = `
+    @keyframes fadeInUp {
+        from {
             opacity: 0;
+            transform: translateY(30px);
         }
-    `;
-  document.head.appendChild(style);
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ad-card {
+        opacity: 0;
+    }
+`;
+    document.head.appendChild(style);
 </script>
 </body>
 </html>

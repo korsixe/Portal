@@ -6,7 +6,14 @@ import com.mipt.portal.announcement.AdvertisementStatus;
 import com.mipt.portal.announcement.Announcement;
 import com.mipt.portal.announcement.Category;
 import com.mipt.portal.announcement.Condition;
+import com.mipt.portal.announcementContent.MediaManager;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TestData {
   static AdsService adsService = new AdsService();
@@ -48,12 +55,12 @@ public class TestData {
       Long userId2 = adsService.getUserIdByEmail("ivanov.ii@phystech.edu");
       if (userId2 != null) {
         testCreateAd(userId2, "Учебник по физике", "Курс общей физики Ландсберга", Category.BOOKS,
-            Condition.USED, 1500, AdvertisementStatus.ACTIVE);
+            Condition.USED, 1500, AdvertisementStatus.UNDER_MODERATION);
         testCreateAd(userId2, "Микроскоп школьный", "Детский микроскоп для начинающих",
             Category.CHILDREN,
             Condition.USED, 2000, AdvertisementStatus.ACTIVE);
         testCreateAd(userId2, "Рюкзак студенческий", "Вместительный рюкзак для ноутбука",
-            Category.OTHER, Condition.USED, 800, AdvertisementStatus.DRAFT);
+            Category.CLOTHING, Condition.USED, 800, AdvertisementStatus.DRAFT);
       }
 
       // Дмитрий Орлов
@@ -75,9 +82,9 @@ public class TestData {
       Long userId4 = adsService.getUserIdByEmail("novikova.vv@phystech.edu");
       if (userId4 != null) {
         testCreateAd(userId4, "Микроскоп лабораторный", "Профессиональный для исследований",
-            Category.OTHER, Condition.NEW, 15000, AdvertisementStatus.ACTIVE);
+            Category.ELECTRONICS, Condition.NEW, 15000, AdvertisementStatus.ACTIVE);
         testCreateAd(userId4, "Набор реактивов", "Для студенческих опытов", Category.OTHER,
-            Condition.BROKEN, 3000, AdvertisementStatus.ACTIVE);
+            Condition.USED, 3000, AdvertisementStatus.ACTIVE);
         testCreateAd(userId4, "Лабораторный халат", "Белый халат размер M", Category.CLOTHING,
             Condition.USED, 500, AdvertisementStatus.UNDER_MODERATION);
       }
@@ -99,7 +106,55 @@ public class TestData {
     adsService.getUserService().addAnnouncementId(ad.getUserId(), ad.getId());
   }
 
+  public static void uploadAllPhotos() {
+    try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5433/myproject",
+      "myuser",
+      "mypassword")) {
+
+      String basePath = "src/main/resources/jpg/";
+
+      Map<Integer, String[]> photoMapping = new HashMap<>();
+
+      //
+      photoMapping.put(1, new String[]{basePath + "макбук.jpg"});
+      photoMapping.put(2, new String[]{basePath + "математика.jpg"});
+      photoMapping.put(4, new String[]{basePath + "калькулятор.jpg"});
+      photoMapping.put(5, new String[]{basePath + "физика.jpg"});
+      photoMapping.put(6, new String[]{basePath + "микроскоп.jpg"});
+      photoMapping.put(7, new String[]{basePath + "рюкзак_студенческий.jpg"});
+      photoMapping.put(8, new String[]{basePath + "компьютер.jpg"});
+      photoMapping.put(9, new String[]{basePath + "клавиатура.jpg"});
+      photoMapping.put(10, new String[]{basePath + "стул.jpg"});
+      photoMapping.put(13, new String[]{basePath + "набор_реактивов.jpg"});
+      photoMapping.put(14, new String[]{basePath + "халат.jpg"});
+
+      for (Map.Entry<Integer, String[]> entry : photoMapping.entrySet()) {
+        int adId = entry.getKey();
+        String[] photoPaths = entry.getValue();
+
+        try (MediaManager mediaManager = new MediaManager(conn, adId)) {
+          for (String path : photoPaths) {
+            try {
+              mediaManager.addPhoto(path);
+              System.out.println("" + path);
+            } catch (IOException e) {
+              System.err.println("" + path);
+            }
+          }
+          mediaManager.saveToDB();
+        } catch (Exception e) {
+          System.err.println("Ошибка для объявления " + adId + ": " + e.getMessage());
+        }
+      }
+
+    } catch (SQLException e) {
+      System.err.println(e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
   public static void main(String[] args) {
     start();
+    uploadAllPhotos();
   }
 }

@@ -5,7 +5,7 @@ import com.mipt.portal.announcement.AdsService;
 import com.mipt.portal.announcement.Announcement;
 import com.mipt.portal.announcement.Category;
 import com.mipt.portal.announcement.Condition;
-import com.mipt.portal.announcement.AdvertisementStatus;
+import com.mipt.portal.announcementContent.MediaManager;
 import com.mipt.portal.announcementContent.tags.TagSelector;
 
 import javax.servlet.ServletException;
@@ -18,8 +18,11 @@ import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -27,9 +30,9 @@ import static java.lang.Boolean.FALSE;
 
 @WebServlet("/edit-ad")
 @MultipartConfig(
-  maxFileSize = 1024 * 1024 * 10,      // 10 MB max file size
-  maxRequestSize = 1024 * 1024 * 50,   // 50 MB max request size
-  fileSizeThreshold = 1024 * 1024      // 1 MB size threshold
+  maxFileSize = 1024 * 1024 * 10,
+  maxRequestSize = 1024 * 1024 * 50,
+  fileSizeThreshold = 1024 * 1024
 )
 public class EditAdServlet extends HttpServlet {
 
@@ -37,7 +40,7 @@ public class EditAdServlet extends HttpServlet {
   private TagSelector tagSelector;
   private ObjectMapper objectMapper;
   private static final String UPLOAD_DIR = "uploads";
-  private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif");
+  private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg",  "png", "gif");
 
   @Override
   public void init() throws ServletException {
@@ -58,10 +61,28 @@ public class EditAdServlet extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
 
+    String action = request.getParameter("action");
+
+    if ("removePhoto".equals(action)) {
+      String adIdStr = request.getParameter("adId");
+      String photoIndexStr = request.getParameter("photoIndex");
+
+      // Удаляем фото
+      handleRemovePhoto(adIdStr, photoIndexStr, response);
+      return; // Важно: не продолжаем дальше
+    }
+
     try {
       String adIdStr = request.getParameter("adId");
-      String action = request.getParameter("action");
       String categoryParam = request.getParameter("category");
+
+      if ("removePhoto".equals(action)) {
+        String photoIndexStr = request.getParameter("photoIndex");
+        if (adIdStr != null && photoIndexStr != null) {
+          handleRemovePhoto(adIdStr, photoIndexStr, response);
+          return;
+        }
+      }
 
       if (adIdStr == null) {
         response.sendRedirect("dashboard.jsp");
@@ -80,7 +101,20 @@ public class EditAdServlet extends HttpServlet {
       // Обработка быстрых действий
       if ("toDraft".equals(action)) {
         adsService.saveAsDraft(announcement);
+
+        // Подготовка данных для страницы успеха
+        request.setAttribute("announcement", announcement);
+        request.setAttribute("action", "statusChange");
         request.setAttribute("success", "Объявление сохранено как черновик");
+
+        // Создаем список изменений
+        List<String> changes = new ArrayList<>();
+        changes.add("Статус изменен на 'Черновик'");
+        request.setAttribute("changes", changes);
+
+        // Перенаправляем на страницу успешного редактирования
+        request.getRequestDispatcher("/successful-edit-ad.jsp").forward(request, response);
+        return; // ВАЖНО: добавляем return чтобы код не продолжал выполняться дальше
       }
 
       // Сохраняем параметры категории из запроса
@@ -109,7 +143,19 @@ public class EditAdServlet extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
 
-    // ОБЪЯВЛЯЕМ uploadedPhotos ЗДЕСЬ ДЛЯ ДОСТУПА В БЛОКЕ CATCH
+    System.out.println("🔥🔥🔥 ========== EDIT-AD DO POST START ==========");
+
+    String action = request.getParameter("action");
+
+    if ("removePhoto".equals(action)) {
+      String adIdStr = request.getParameter("adId");
+      String photoIndexStr = request.getParameter("photoIndex");
+
+      // Удаляем фото
+      handleRemovePhoto(adIdStr, photoIndexStr, response);
+      return; // Важно: не продолжаем дальше
+    }
+
     List<File> uploadedPhotos = new ArrayList<>();
 
     try {
@@ -145,8 +191,9 @@ public class EditAdServlet extends HttpServlet {
       String location = request.getParameter("location");
       String priceType = request.getParameter("priceType");
       String priceStr = request.getParameter("price");
-      String action = request.getParameter("action");
       String selectedTagsJson = request.getParameter("selectedTags");
+
+
 
       // Валидация обязательных полей
       if (title == null || title.trim().isEmpty() ||
@@ -287,16 +334,39 @@ public class EditAdServlet extends HttpServlet {
 
       adsService.editAd(existingAd);
 
-      request.setAttribute("success", "Объявление успешно обновлено!");
+// Подготовка данных для страницы успеха
       request.setAttribute("announcement", existingAd);
-      loadTagsForPage(request, adId);
+      request.setAttribute("success", "Объявление успешно обновлено!");
 
-      request.getRequestDispatcher("/edit-ad.jsp").forward(request, response);
+// Определяем тип действия
+      if ("publish".equals(action)) {
+        request.setAttribute("action", "statusChange");
+      } else {
+        request.setAttribute("action", "edit");
+      }
+
+      List<String> changes = new ArrayList<>();
+      changes.add("Обновлена информация об объявлении");
+
+      if (!uploadedPhotos.isEmpty()) {
+        changes.add("Добавлены новые фотографии (" + uploadedPhotos.size() + " шт.)");
+      }
+
+      if (selectedTagsJson != null && !selectedTagsJson.trim().isEmpty()) {
+        changes.add("Обновлены теги");
+      }
+
+      if ("publish".equals(action)) {
+        changes.add("Статус изменен на 'На модерации'");
+      }
+
+      request.setAttribute("changes", changes);
+
+      request.getRequestDispatcher("/successful-edit-ad.jsp").forward(request, response);
 
     } catch (IllegalArgumentException e) {
       System.err.println("❌ IllegalArgumentException: " + e.getMessage());
 
-      // ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ ПРИ ОШИБКЕ
       cleanupUploadedPhotos(uploadedPhotos);
 
       request.setAttribute("error", "Некорректные данные: " + e.getMessage());
@@ -441,5 +511,25 @@ public class EditAdServlet extends HttpServlet {
     }
     String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
     return ALLOWED_EXTENSIONS.contains(extension);
+  }
+
+  private void handleRemovePhoto(String adIdStr, String photoIndexStr, HttpServletResponse response)
+    throws IOException {
+
+    try {
+      long adId = Long.parseLong(adIdStr);
+      int photoIndex = Integer.parseInt(photoIndexStr);
+
+      // Удаляем фото
+      adsService.removePhotoFromAd(adId, photoIndex);
+      System.out.println("✅ Photo removed from ad " + adId + " at index " + photoIndex);
+
+      // ВАЖНО: Делаем редирект на GET запрос
+      response.sendRedirect("edit-ad?adId=" + adId + "&success=Фотография успешно удалена");
+
+    } catch (Exception e) {
+      System.err.println("❌ Error removing photo: " + e.getMessage());
+      response.sendRedirect("edit-ad?adId=" + adIdStr + "&error=Ошибка при удалении фотографии");
+    }
   }
 }

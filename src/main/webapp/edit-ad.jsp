@@ -5,6 +5,15 @@
 <%@ page import="com.mipt.portal.announcement.AdvertisementStatus" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.List" %>
+
+
+<%
+    // Сохраняем выбранные теги из параметров запроса
+    String selectedTagsParam = request.getParameter("selectedTags");
+    if (selectedTagsParam != null && !selectedTagsParam.isEmpty()) {
+        request.setAttribute("savedSelectedTags", selectedTagsParam);
+    }
+%>
 <%
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     response.setHeader("Pragma", "no-cache");
@@ -15,9 +24,8 @@
         response.sendRedirect("dashboard.jsp");
         return;
     }
-
     // Загружаем теги для редактирования
-    if (request.getAttribute("availableTags") == null) {
+    if (request.getAttribute("availableTags") == null || request.getAttribute("currentTags") == null) {
         try {
             com.mipt.portal.announcementContent.tags.TagSelector tagSelector =
                     new com.mipt.portal.announcementContent.tags.TagSelector();
@@ -27,6 +35,9 @@
             // Загружаем текущие теги объявления
             List<Map<String, Object>> currentTags = tagSelector.getTagsForAd(announcement.getId());
             request.setAttribute("currentTags", currentTags);
+
+            System.out.println("✅ Set currentTags in request: " + (currentTags != null ? currentTags.size() : 0));
+
         } catch (Exception e) {
             System.err.println("Error loading tags in edit-ad.jsp: " + e.getMessage());
             e.printStackTrace();
@@ -37,7 +48,61 @@
     int price = announcement.getPrice();
     String priceType = price == -1 ? "negotiable" : price == 0 ? "free" : "fixed";
     boolean showPrice = "fixed".equals(priceType);
+
+    // Определяем текущую категорию и подкатегорию с приоритетом сохраненных данных
+    String currentCategoryValue = null; // ИЗМЕНЕНО: переименовано
+    String currentSubcategory = null;
+
+    String categoryParam = request.getParameter("category");
+    String subcategoryParam = request.getParameter("subcategory");
+
+    if (categoryParam != null && !categoryParam.isEmpty()) {
+        currentCategoryValue = categoryParam; // ИЗМЕНЕНО
+    } else if (announcement.getCategory() != null) {
+        currentCategoryValue = announcement.getCategory().getDisplayName(); // ИЗМЕНЕНО
+    }
+
+    if (subcategoryParam != null && !subcategoryParam.isEmpty()) {
+        currentSubcategory = subcategoryParam;
+    } else {
+        currentSubcategory = announcement.getSubcategory();
+    }
 %>
+
+<%!
+    // Метод для преобразования DisplayName в имя из БД
+    private String convertDisplayNameToDbName(String displayName) {
+        if (displayName == null) return null;
+
+        // Пример маппинга - адаптируйте под вашу базу данных
+        java.util.Map<String, String> mapping = new java.util.HashMap<>();
+        mapping.put("Автозапчасти", "autoparts");
+        mapping.put("Электроника", "electronics");
+        mapping.put("Недвижимость", "realestate");
+        mapping.put("Автоговары", "autogoods");
+        // Добавьте другие категории
+
+        return mapping.getOrDefault(displayName, displayName);
+    }
+%>
+
+<%
+    // Сохранение состояния тегов между запросами
+    String selectedTagsJson = request.getParameter("selectedTags");
+    if (selectedTagsJson != null && !selectedTagsJson.trim().isEmpty()) {
+        try {
+            // Парсим JSON с тегами из параметра запроса
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            List<Map<String, Object>> savedTags = mapper.readValue(selectedTagsJson, List.class);
+            request.setAttribute("savedTags", savedTags);
+        } catch (Exception e) {
+            System.err.println("Error parsing saved tags: " + e.getMessage());
+        }
+    }
+%>
+
+
+
 <html>
 <head>
     <title>Редактировать объявление • Portal</title>
@@ -559,6 +624,28 @@
         .remove-tag-btn:hover {
             background: rgba(255,255,255,0.2);
         }
+
+        .selected-tags-container {
+            min-height: 50px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            background: white;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .selected-tags-container:focus-within {
+            border-color: var(--primary);
+        }
+
+        .no-tags-message {
+            color: var(--gray);
+            font-style: italic;
+            text-align: center;
+            padding: 10px;
+        }
+
     </style>
 </head>
 <body>
@@ -571,12 +658,6 @@
         <div class="card-header">
             <h1 class="card-title">Редактировать объявление</h1>
         </div>
-
-        <% if (request.getAttribute("error") != null) { %>
-        <div class="alert alert-error">
-            <span class="icon">⚠</span> <%= request.getAttribute("error") %>
-        </div>
-        <% } %>
 
         <% if (request.getAttribute("success") != null) { %>
         <div class="alert alert-success">
@@ -640,6 +721,8 @@
         <form action="edit-ad" method="post" enctype="multipart/form-data">
             <input type="hidden" name="adId" value="<%= announcement.getId() %>">
 
+            <input type="hidden" name="selectedTags" id="formSelectedTags" value="<%= selectedTagsParam != null ? selectedTagsParam : "" %>">
+
             <!-- Основная информация -->
             <div class="form-section">
                 <h3 class="section-title">
@@ -679,12 +762,9 @@
                                         new com.mipt.portal.announcementContent.tags.CategorySelector();
                                 java.util.List<java.util.Map<String, Object>> categories = categorySelector.getAllCategories();
 
-                                String currentCategory = announcement.getCategory() != null ?
-                                        announcement.getCategory().getDisplayName() : "";
-
                                 for (java.util.Map<String, Object> category : categories) {
                                     String categoryName = (String) category.get("name");
-                                    boolean isSelected = categoryName.equals(currentCategory);
+                                    boolean isSelected = categoryName.equals(currentCategoryValue); // ИЗМЕНЕНО
                         %>
                         <option value="<%= categoryName %>" <%= isSelected ? "selected" : "" %>>
                             <%= categoryName %>
@@ -701,55 +781,77 @@
                     </select>
                 </div>
 
-            <!-- Подкатегория -->
+
+                <!-- Подкатегория -->
                 <div class="form-group">
                     <label for="subcategory" class="required">Подкатегория</label>
                     <select id="subcategory" name="subcategory" class="form-control" required
                             <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                         <%
-                            // ПРИОРИТЕТ: 1. Параметры запроса, 2. Данные объявления
-                            String currentCategoryParam = request.getParameter("category");
-                            String currentCategory = currentCategoryParam != null ? currentCategoryParam :
-                                    (announcement.getCategory() != null ? announcement.getCategory().getDisplayName() : "");
+                            // ДЕБАГ 1: Что у нас есть на входе
+                            System.out.println("=== DEBUG SUBCATEGORIES START ===");
+                            System.out.println("currentCategoryValue: '" + currentCategoryValue + "'");
+                            System.out.println("currentSubcategory: '" + currentSubcategory + "'");
 
-                            String currentSubcategoryParam = request.getParameter("subcategory");
-                            String currentSubcategory = currentSubcategoryParam != null ? currentSubcategoryParam :
-                                    announcement.getSubcategory();
-
-                            if (currentCategory == null || currentCategory.isEmpty()) {
+                            if (currentCategoryValue == null || currentCategoryValue.isEmpty()) {
+                                System.out.println("❌ currentCategoryValue is null or empty");
                         %>
                         <option value="">Сначала выберите категорию</option>
                         <%
                         } else {
                             try {
+                                System.out.println("🔍 Ищем категорию в БД: '" + currentCategoryValue + "'");
+
                                 // Загружаем категории и находим ID выбранной
                                 com.mipt.portal.announcementContent.tags.CategorySelector categorySelector =
                                         new com.mipt.portal.announcementContent.tags.CategorySelector();
                                 java.util.List<java.util.Map<String, Object>> allCategories = categorySelector.getAllCategories();
-                                Long categoryId = null;
 
+                                System.out.println("📊 Всего категорий в БД: " + allCategories.size());
+
+                                Long categoryId = null;
+                                boolean foundExactMatch = false;
+
+                                // ДЕБАГ: Выводим все категории из БД
+                                System.out.println("📋 Категории в БД:");
                                 for (java.util.Map<String, Object> category : allCategories) {
                                     String catName = (String) category.get("name");
-                                    if (catName.equals(currentCategory)) {
-                                        categoryId = (Long) category.get("id");
+                                    Long catId = (Long) category.get("id");
+                                    System.out.println("  - '" + catName + "' (ID: " + catId + ")");
+
+                                    // Сравниваем с учетом возможных опечаток и пробелов
+                                    if (catName != null && catName.equals(currentCategoryValue)) {
+                                        categoryId = catId;
+                                        foundExactMatch = true;
+                                        System.out.println("✅ Точное совпадение найдено! ID: " + categoryId);
                                         break;
                                     }
                                 }
 
+                                // ДЕБАГ: Проверяем, что нашли
                                 if (categoryId != null) {
+
                                     // Загружаем подкатегории
                                     com.mipt.portal.announcementContent.tags.SubcategorySelector subcategorySelector =
                                             new com.mipt.portal.announcementContent.tags.SubcategorySelector();
                                     java.util.List<java.util.Map<String, Object>> subcategories =
                                             subcategorySelector.getSubcategoriesByCategory(categoryId);
 
+
                                     if (subcategories != null && !subcategories.isEmpty()) {
+                                        for (java.util.Map<String, Object> subcategory : subcategories) {
+                                            String subcategoryName = (String) subcategory.get("name");
+                                        }
                         %>
                         <option value="">Выберите подкатегорию</option>
                         <%
                             for (java.util.Map<String, Object> subcategory : subcategories) {
                                 String subcategoryName = (String) subcategory.get("name");
                                 boolean isSelected = subcategoryName.equals(currentSubcategory);
+
+                                if (isSelected) {
+                                    System.out.println("⭐ Подкатегория выбрана: '" + subcategoryName + "'");
+                                }
                         %>
                         <option value="<%= subcategoryName %>" <%= isSelected ? "selected" : "" %>>
                             <%= subcategoryName %>
@@ -757,25 +859,36 @@
                         <%
                             }
                         } else {
+                            System.out.println("⚠️ Нет доступных подкатегорий для categoryId: " + categoryId);
                         %>
                         <option value="">Нет доступных подкатегорий</option>
                         <%
                             }
                         } else {
+                            System.out.println("❌ Категория не найдена в БД: '" + currentCategoryValue + "'");
+
+                            // ДЕБАГ: Проверим, что есть в enum Category
+                            System.out.println("🔍 Проверяем enum Category:");
+                            for (Category cat : Category.values()) {
+                                System.out.println("  - " + cat.name() + " -> '" + cat.getDisplayName() + "'");
+                            }
                         %>
                         <option value="">Категория не найдена в БД</option>
                         <%
                             }
                         } catch (Exception e) {
-                            System.err.println("ERROR loading subcategories: " + e.getMessage());
+                            System.err.println("❌ ERROR loading subcategories: " + e.getMessage());
+                            e.printStackTrace();
                         %>
                         <option value="">Ошибка загрузки подкатегорий</option>
                         <%
                                 }
                             }
+                            System.out.println("=== DEBUG SUBCATEGORIES END ===");
                         %>
                     </select>
                 </div>
+            </div>
 
             <!-- Местоположение и состояние -->
             <div class="form-section">
@@ -860,12 +973,21 @@
                 <div class="form-group">
                     <label>Текущие фотографии:</label>
                     <div class="current-photos">
-                        <% for (int i = 0; i < announcement.getPhotos().size(); i++) { %>
-                        <div class="photo-item">
+                        <%
+                            int photoCount = announcement.getPhotos() != null ? announcement.getPhotos().size() : 0;
+                            for (int i = 0; i < photoCount; i++) { %>
+                        <div class="photo-item" id="photo-<%= i %>" style="position: relative; display: inline-block; margin: 10px;">
                             <img src="ad-photo?adId=<%= announcement.getId() %>&photoIndex=<%= i %>"
-                                 alt="Фото <%= i + 1 %>">
-                            <button type="button" class="photo-remove-btn"
-                                    onclick="removePhoto(<%= i %>)">×</button>
+                                 alt="Фото <%= i + 1 %>"
+                                 style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; pointer-events: none;">
+
+                            <!-- Кнопка удаления - кликабельна -->
+                            <button type="button"
+                                    class="photo-remove-btn"
+                                    onclick="removePhoto(<%= announcement.getId() %>, <%= i %>); return false;">
+                                ×
+                            </button>
+
                         </div>
                         <% } %>
                     </div>
@@ -879,14 +1001,14 @@
                            multiple accept="image/*" style="padding: 8px;"
                         <%= !announcement.canBeEdited() ? "disabled" : "" %>>
                     <div class="tags-hint">
-                        Можно выбрать несколько файлов. Максимум 10 фотографий.
+                        Добавленные файлы:
                     </div>
                 </div>
 
                 <!-- Контейнер для предпросмотра новых фотографий -->
                 <div id="photoPreview" class="photo-preview-container" style="display: none;">
                     <div class="preview-note">
-                        <strong>Предпросмотр новых фотографий:</strong> Выбранные фотографии появятся здесь после загрузки.
+                        <strong>Предпросмотр новых фотографий:</strong> Выбранные фотографии появятся здесь.
                     </div>
                     <div id="previewImages" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;"></div>
                 </div>
@@ -898,16 +1020,19 @@
                     <span class="icon">🏷️</span> Теги
                 </h3>
 
-                <!-- Скрытое поле для хранения выбранных тегов в JSON -->
-                <input type="hidden" id="selectedTags" name="selectedTags" value="">
+                <!-- ДЛЯ ОТЛАДКИ -->
+                <%
+                    List<Map<String, Object>> debugCurrentTags = (List<Map<String, Object>>) request.getAttribute("currentTags");
+                    System.out.println("DEBUG in JSP - currentTags: " + (debugCurrentTags != null ? debugCurrentTags.size() : "null"));
+                    if (debugCurrentTags != null) {
+                        for (Map<String, Object> tag : debugCurrentTags) {
+                            System.out.println("DEBUG tag in JSP: " + tag);
+                        }
+                    }
+                %>
 
-                <!-- Контейнер для выбранных тегов -->
-                <div class="form-group">
-                    <label>Выбранные теги:</label>
-                    <div id="selectedTagsContainer" class="selected-tags-container">
-                        <div class="no-tags-message">Теги не выбраны</div>
-                    </div>
-                </div>
+                <!-- Скрытое поле для хранения выбранных тегов в JSON -->
+                <input type="hidden" id="selectedTags" name="selectedTagsJson" value="">
 
                 <!-- Контейнер для тегов с выпадающими списками -->
                 <div class="form-group">
@@ -918,23 +1043,21 @@
                                 List<Map<String, Object>> availableTags = (List<Map<String, Object>>) request.getAttribute("availableTags");
                                 List<Map<String, Object>> currentTags = (List<Map<String, Object>>) request.getAttribute("currentTags");
 
+                                // ДЛЯ ОТЛАДКИ
+                                System.out.println("=== DEBUG TAGS ===");
+                                System.out.println("Available tags: " + (availableTags != null ? availableTags.size() : 0));
+                                System.out.println("Current tags: " + (currentTags != null ? currentTags.size() : 0));
+                                if (currentTags != null) {
+                                    for (Map<String, Object> tag : currentTags) {
+                                        System.out.println("Current tag - tagId: " + tag.get("tagId") + ", valueId: " + tag.get("valueId"));
+                                    }
+                                }
+
                                 if (availableTags != null && !availableTags.isEmpty()) {
                                     for (Map<String, Object> tag : availableTags) {
                                         String tagName = (String) tag.get("name");
                                         Long tagId = (Long) tag.get("id");
                                         List<Map<String, Object>> values = (List<Map<String, Object>>) tag.get("values");
-
-                                        // Находим текущее значение тега
-                                        String currentValueId = "";
-                                        if (currentTags != null) {
-                                            for (Map<String, Object> currentTag : currentTags) {
-                                                Long currentTagId = ((Number) currentTag.get("tagId")).longValue();
-                                                if (currentTagId.equals(tagId)) {
-                                                    currentValueId = ((Number) currentTag.get("valueId")).toString();
-                                                    break;
-                                                }
-                                            }
-                                        }
                         %>
                         <div class="tag-row" data-tag-id="<%= tagId %>">
                             <div class="tag-header">
@@ -948,32 +1071,43 @@
                                         for (Map<String, Object> value : values) {
                                             String valueName = (String) value.get("name");
                                             Long valueId = (Long) value.get("id");
-                                            boolean isSelected = currentValueId.equals(valueId.toString());
+                                            boolean isSelected = false;
+
+                                            // Проверяем, выбран ли этот тег
+                                            if (currentTags != null) {
+                                                for (Map<String, Object> currentTag : currentTags) {
+                                                    Long currentTagId = ((Number) currentTag.get("tagId")).longValue();
+                                                    Long currentTagValueId = ((Number) currentTag.get("valueId")).longValue();
+
+                                                    // ДЛЯ ОТЛАДКИ
+                                                    if (currentTagId.equals(tagId) && currentTagValueId.equals(valueId)) {
+                                                        System.out.println("FOUND SELECTED: tagId=" + tagId +
+                                                                ", valueId=" + valueId + ", valueName=" + valueName);
+                                                        isSelected = true;
+                                                        break;
+                                                    }
+
+                                                    if (currentTagId.equals(tagId) && currentTagValueId.equals(valueId)) {
+                                                        isSelected = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
                                 %>
-                                <option value="<%= valueId %>" data-value-name="<%= valueName %>" <%= isSelected ? "selected" : "" %>>
+                                <option value="<%= valueId %>"
+                                        data-value-name="<%= valueName %>"
+                                        <%= isSelected ? "selected" : "" %>>
                                     <%= valueName %>
                                 </option>
                                 <%
-                                    }
-                                } else {
-                                %>
-                                <option value="">Нет доступных значений</option>
-                                <%
+                                        }
                                     }
                                 %>
                             </select>
                         </div>
                         <%
-                            }
-                        } else {
-                        %>
-                        <div class="no-tags-message">Нет доступных тегов в базе данных</div>
-                        <%
-                            }
-                        } else {
-                        %>
-                        <div class="no-tags-message">Теги не загружены</div>
-                        <%
+                                    }
+                                }
                             }
                         %>
                     </div>
@@ -1025,163 +1159,288 @@
     </div>
 </div>
 <script>
+
+    function removePhoto(adId, photoIndex, event = null) {
+        console.log('Удаление фото:', adId, photoIndex);
+
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        if (!confirm('Удалить это фото?')) {
+            return false;
+        }
+
+        let button;
+        if (event) {
+            button = event.target;
+        } else {
+            button = document.querySelector(`[onclick*="removePhoto(${adId}, ${photoIndex})"]`);
+            if (!button) {
+                button = document.getElementById('remove-photo-' + photoIndex);
+            }
+        }
+
+        const originalText = button ? button.innerHTML : '×';
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '...';
+        }
+
+        // Сохраняем ссылку на элемент ДО отправки запроса
+        const photoElement = document.getElementById('photo-' + photoIndex);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/portal/delete-photo', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+        xhr.onload = function() {
+            console.log('Статус ответа:', xhr.status);
+            console.log('Ответ:', xhr.responseText);
+
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+
+            // === ИСПРАВЛЕННАЯ ПРОВЕРКА ===
+            if (xhr.status === 200) {
+                const response = xhr.responseText.trim();
+                console.log('Обработанный ответ:', response);
+
+                if (response === 'success') {
+                    // ✅ MediaManager удалил фото из БД
+                    console.log('✅ Фото удалено из БД, удаляем из DOM');
+
+                    if (photoElement) {
+                        // Плавное исчезновение
+                        photoElement.style.transition = 'opacity 0.3s';
+                        photoElement.style.opacity = '0';
+
+                        setTimeout(() => {
+                            // Удаляем элемент
+                            photoElement.remove();
+                            console.log('✅ Элемент удалён из DOM');
+
+                            // Обновляем UI
+                            updatePhotoIndexes(adId);
+
+                        }, 300);
+                    } else {
+                        console.warn('Элемент не найден, перезагружаем страницу');
+                        setTimeout(() => window.location.reload(), 500);
+                    }
+                } else {
+                }
+            } else {
+            }
+        };
+
+        xhr.onerror = function() {
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        };
+
+        const params = 'adId=' + adId + '&photoIndex=' + photoIndex;
+        console.log('Отправляем:', params);
+        xhr.send(params);
+
+        return false;
+    }
+
+    // === НОВАЯ ФУНКЦИЯ для переиндексации фото ===
+    function updatePhotoIndexes(adId) {
+        console.log('Обновляем индексы оставшихся фото...');
+
+        const remaining = document.querySelectorAll('[id^="photo-"]');
+        console.log('Найдено элементов:', remaining.length);
+
+        remaining.forEach((el, newIndex) => {
+            // Обновляем ID элемента
+            const oldId = el.id;
+            el.id = 'photo-' + newIndex;
+            console.log(`Переименован: ${oldId} -> ${el.id}`);
+
+            // Обновляем кнопку удаления
+            const btn = el.querySelector('button');
+            if (btn) {
+                // Полностью перезаписываем обработчик
+                btn.onclick = function(e) {
+                    return removePhoto(adId, newIndex, e);
+                };
+                console.log(`Обновлена кнопка для индекса ${newIndex}`);
+            }
+
+            // Обновляем изображение если нужно
+            const img = el.querySelector('img');
+            if (img) {
+                // Сохраняем оригинальный src в data-атрибут
+                if (!img.dataset.originalSrc) {
+                    img.dataset.originalSrc = img.src;
+                }
+                // Обновляем src с новым индексом
+                const newSrc = img.dataset.originalSrc.replace(
+                    /photoIndex=\d+/,
+                    'photoIndex=' + newIndex
+                );
+                img.src = newSrc;
+            }
+        });
+
+        // Также обновим скрытые поля формы если они есть
+        const photoCountInput = document.querySelector('input[name="photoCount"]');
+        if (photoCountInput) {
+            photoCountInput.value = remaining.length;
+        }
+
+        console.log('✅ Переиндексация завершена');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // === СИСТЕМА ТЕГОВ ===
         let selectedTags = [];
 
         // Инициализация тегов из текущих данных
         function initializeTags() {
-            <%
-            if (request.getAttribute("currentTags") != null) {
-                List<Map<String, Object>> currentTags = (List<Map<String, Object>>) request.getAttribute("currentTags");
-                for (Map<String, Object> tag : currentTags) {
-            %>
-            selectedTags.push({
-                tagId: <%= ((Number) tag.get("tagId")).longValue() %>,
-                tagName: '<%= tag.get("tagName") %>',
-                valueId: <%= ((Number) tag.get("valueId")).longValue() %>,
-                valueName: '<%= tag.get("valueName") %>'
-            });
-            <%
-                }
-            }
-            %>
-            updateSelectedTagsDisplay();
+            console.log('=== INITIALIZING TAGS ===');
+            selectedTags = [];
+
+            // Сначала обновляем селекты из данных
+            updateSelectsFromDOM();
+
+            // Затем загружаем из селектов
+            loadTagsFromSelects();
+
+            console.log('Initial selected tags:', selectedTags);
             updateHiddenFields();
+            updateSelectedTagsDisplay();
         }
 
-        // === ОБРАБОТКА КАТЕГОРИЙ И ПОДКАТЕГОРИЙ ===
-        const categorySelect = document.getElementById('category');
-        const subcategorySelect = document.getElementById('subcategory');
+        // Обновление селектов на основе данных из DOM (уже проставленных сервером)
+        function updateSelectsFromDOM() {
+            const tagSelects = document.querySelectorAll('.tag-select');
+            console.log('Updating selects from DOM, found:', tagSelects.length);
 
-        // ДОБАВЛЯЕМ ЭТОТ КОД ВНУТРЬ DOMContentLoaded
-        categorySelect.addEventListener('change', function() {
-            submitFormWithCategory(this.value);
-        });
+            tagSelects.forEach(select => {
+                const tagId = select.getAttribute('data-tag-id');
+                const currentValue = select.value;
+                const selectedIndex = select.selectedIndex;
 
-        function submitFormWithCategory(categoryValue) {
-            // Создаем временную форму для отправки данных
-            const form = document.createElement('form');
-            form.method = 'GET';
-            form.action = '<%= request.getRequestURI() %>';
+                console.log(`Select ${tagId}: value="${currentValue}", selectedIndex=${selectedIndex}`);
 
-            // Добавляем выбранную категорию
-            addHiddenField(form, 'category', categoryValue);
+                if (currentValue && currentValue !== "" && selectedIndex > 0) {
+                    const selectedOption = select.options[selectedIndex];
+                    const valueName = selectedOption.getAttribute('data-value-name') || selectedOption.textContent;
 
-            // Сохраняем другие поля формы
-            const fieldsToSave = ['title', 'description', 'location', 'priceType', 'price', 'adId'];
-            fieldsToSave.forEach(fieldName => {
-                const field = document.querySelector('[name="' + fieldName + '"]');
-                if (field && (field.value || field.checked)) {
-                    if (field.type === 'radio') {
-                        const checkedRadio = document.querySelector('[name="' + fieldName + '"]:checked');
-                        if (checkedRadio) {
-                            addHiddenField(form, fieldName, checkedRadio.value);
-                        }
-                    } else {
-                        addHiddenField(form, fieldName, field.value);
-                    }
+                    console.log(`✅ Select ${tagId} has pre-selected value: ${currentValue} - ${valueName}`);
                 }
             });
-
-            // Сохраняем выбранные теги
-            const selectedTagsField = document.getElementById('selectedTags');
-            if (selectedTagsField && selectedTagsField.value) {
-                addHiddenField(form, 'selectedTags', selectedTagsField.value);
-            }
-
-            // Сохраняем action если выбран
-            const actionRadio = document.querySelector('input[name="action"]:checked');
-            if (actionRadio) {
-                addHiddenField(form, 'action', actionRadio.value);
-            }
-
-            document.body.appendChild(form);
-            form.submit();
         }
 
-        function addHiddenField(form, name, value) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = name;
-            input.value = value;
-            form.appendChild(input);
-        }
+        // Загрузка тегов из выпадающих списков
+        function loadTagsFromSelects() {
+            const tagSelects = document.querySelectorAll('.tag-select');
+            console.log('Loading tags from selects:', tagSelects.length);
 
-        // Обработчик изменения выпадающих списков тегов
-        const tagSelects = document.querySelectorAll('.tag-select');
-        tagSelects.forEach(select => {
-            select.addEventListener('change', function() {
-                const tagId = this.getAttribute('data-tag-id');
-                const tagName = this.getAttribute('data-tag-name');
-                const valueId = this.value;
-                const valueName = this.options[this.selectedIndex]?.getAttribute('data-value-name');
+            tagSelects.forEach(select => {
+                const tagId = parseInt(select.getAttribute('data-tag-id'));
+                const tagName = select.getAttribute('data-tag-name');
+                const valueId = select.value;
+                const selectedIndex = select.selectedIndex;
 
-                if (valueId && valueName) {
-                    // Добавляем или обновляем тег
-                    const existingIndex = selectedTags.findIndex(tag => tag.tagId == tagId);
+                console.log(`Processing select: ${tagName} (ID: ${tagId}), value: ${valueId}, index: ${selectedIndex}`);
 
-                    if (existingIndex !== -1) {
-                        // Обновляем существующий тег
-                        selectedTags[existingIndex] = {
-                            tagId: parseInt(tagId),
-                            tagName: tagName,
-                            valueId: parseInt(valueId),
-                            valueName: valueName
-                        };
-                    } else {
-                        // Добавляем новый тег
+                // Проверяем, что значение выбрано (не пустое и не "Не выбрано")
+                if (valueId && valueId !== "" && selectedIndex > 0) {
+                    const selectedOption = select.options[selectedIndex];
+                    const valueName = selectedOption.getAttribute('data-value-name') || selectedOption.textContent.trim();
+
+                    // Проверяем, нет ли уже такого тега
+                    const existingIndex = selectedTags.findIndex(tag => tag.tagId === tagId);
+                    if (existingIndex === -1) {
                         selectedTags.push({
-                            tagId: parseInt(tagId),
+                            tagId: tagId,
                             tagName: tagName,
                             valueId: parseInt(valueId),
                             valueName: valueName
                         });
+                    } else {
                     }
                 } else {
-                    // Удаляем тег если выбран "Не выбрано"
-                    const index = selectedTags.findIndex(tag => tag.tagId == tagId);
-                    if (index !== -1) {
-                        selectedTags.splice(index, 1);
-                    }
                 }
-
-                updateSelectedTagsDisplay();
-                updateHiddenFields();
             });
-        });
 
-        // Удаление выбранного тега
-        function removeSelectedTag(tagId) {
-            const index = selectedTags.findIndex(tag => tag.tagId == tagId);
-            if (index !== -1) {
-                selectedTags.splice(index, 1);
-
-                // Сбрасываем соответствующий выпадающий список
-                const select = document.querySelector(`.tag-select[data-tag-id="${tagId}"]`);
-                if (select) {
-                    select.value = '';
-                }
-
-                updateSelectedTagsDisplay();
-                updateHiddenFields();
-            }
+            console.log('Total tags loaded from selects:', selectedTags.length);
         }
 
+        // Обработчик изменения выпадающих списков тегов
+        function setupTagSelectHandlers() {
+            const tagSelects = document.querySelectorAll('.tag-select');
+            console.log('Setting up handlers for selects:', tagSelects.length);
+
+            tagSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    const tagId = parseInt(this.getAttribute('data-tag-id'));
+                    const tagName = this.getAttribute('data-tag-name');
+                    const valueId = this.value;
+                    const selectedOption = this.options[this.selectedIndex];
+                    const valueName = selectedOption?.getAttribute('data-value-name') || selectedOption?.textContent;
+
+                    console.log('🔄 Tag changed:', { tagId, tagName, valueId, valueName });
+
+                    // Находим индекс существующего тега
+                    const existingIndex = selectedTags.findIndex(tag => tag.tagId === tagId);
+
+                    if (valueId && valueId !== "" && this.selectedIndex > 0) {
+                        // Обновляем или добавляем тег
+                        const tagData = {
+                            tagId: tagId,
+                            tagName: tagName,
+                            valueId: parseInt(valueId),
+                            valueName: valueName
+                        };
+
+                        if (existingIndex !== -1) {
+                            selectedTags[existingIndex] = tagData;
+                            console.log('✅ Updated existing tag');
+                        } else {
+                            selectedTags.push(tagData);
+                            console.log('✅ Added new tag');
+                        }
+                    } else {
+                        // Удаляем тег если выбран "Не выбрано"
+                        if (existingIndex !== -1) {
+                            selectedTags.splice(existingIndex, 1);
+                            console.log('🗑️ Removed tag');
+                        }
+                    }
+
+                    updateHiddenFields();
+                });
+            });
+        }
+
+        // Обновление отображения выбранных тегов
         function updateSelectedTagsDisplay() {
             const container = document.getElementById('selectedTagsContainer');
 
+            if (!container) {return;
+            }
+
             if (selectedTags.length === 0) {
                 container.innerHTML = '<div class="no-tags-message">Теги не выбраны</div>';
+                console.log('No tags to display');
                 return;
             }
 
             let html = '';
             selectedTags.forEach(tag => {
-                // ИЗМЕНЕНИЕ: теперь показываем "значение тег" вместо "тег: значение"
                 html += `
                     <div class="selected-tag">
-                        ${tag.valueName} ${tag.tagName}
+                        ${tag.tagName}: ${tag.valueName}
                         <button type="button" class="remove-tag-btn" onclick="removeSelectedTag(${tag.tagId})">
                             ×
                         </button>
@@ -1190,35 +1449,43 @@
             });
 
             container.innerHTML = html;
+            console.log('Updated tags display with', selectedTags.length, 'tags');
+        }
+
+        // Удаление выбранного тега
+        function removeSelectedTag(tagId) {
+            console.log('Removing tag:', tagId);
+            const index = selectedTags.findIndex(tag => tag.tagId === tagId);
+            if (index !== -1) {
+                selectedTags.splice(index, 1);
+
+                // Сбрасываем соответствующий выпадающий список
+                const select = document.querySelector(`.tag-select[data-tag-id="${tagId}"]`);
+                if (select) {
+                    select.value = '';
+                    console.log('Reset select for tag:', tagId);
+                }
+
+                updateSelectedTagsDisplay();
+                updateHiddenFields();
+            }
         }
 
         // Обновление скрытых полей
         function updateHiddenFields() {
             const hiddenField = document.getElementById('selectedTags');
-            hiddenField.value = JSON.stringify(selectedTags);
+            const formHiddenField = document.getElementById('formSelectedTags');
+
+            const tagsJson = JSON.stringify(selectedTags);
+            if (hiddenField) hiddenField.value = tagsJson;
+            if (formHiddenField) formHiddenField.value = tagsJson;
+
+            updateSelectedTagsDisplay();
+
+            console.log('💾 Updated hidden fields with:', selectedTags);
         }
 
-        // === ОБРАБОТКА ЦЕНЫ ===
-        const priceTypeRadios = document.querySelectorAll('input[name="priceType"]');
-        const priceInput = document.getElementById('price');
-
-        function updatePriceFieldVisibility() {
-            const selectedType = document.querySelector('input[name="priceType"]:checked');
-            if (selectedType && selectedType.value === 'fixed') {
-                priceInput.style.display = 'block';
-                priceInput.required = true;
-            } else {
-                priceInput.style.display = 'none';
-                priceInput.required = false;
-                if (priceInput) priceInput.value = '';
-            }
-        }
-
-        priceTypeRadios.forEach(radio => {
-            radio.addEventListener('change', updatePriceFieldVisibility);
-        });
-
-        // === ОБРАБОТКА ФОТОГРАФИЙ ===
+        // === ОБРАБОТКА ПРЕДПРОСМОТРА ФОТОГРАФИЙ (НОВЫЕ ФОТО) ===
         const photoInput = document.getElementById('photos');
         const photoPreview = document.getElementById('photoPreview');
         const previewImages = document.getElementById('previewImages');
@@ -1289,6 +1556,7 @@
             });
         }
 
+
         function updateFileInput(originalFiles, indexToRemove) {
             const dt = new DataTransfer();
 
@@ -1300,24 +1568,128 @@
 
             photoInput.files = dt.files;
         }
+        // === КОНЕЦ ОБРАБОТКИ ФОТОГРАФИЙ ===
 
-        // Удаление существующей фотографии
-        window.removePhoto = function(photoIndex) {
-            if (confirm('Удалить эту фотографию?')) {
-                // Здесь можно добавить AJAX запрос для удаления фото с сервера
-                const photoItem = document.querySelector(`.photo-item:nth-child(${photoIndex + 1})`);
-                if (photoItem) {
-                    photoItem.remove();
-                }
+
+// Функция для переиндексации оставшихся фото
+        function reindexPhotos() {
+            const photoItems = document.querySelectorAll('.photo-item');
+            photoItems.forEach((item, newIndex) => {
+                // Обновляем ID
+                item.id = 'photo-' + newIndex;
+
+                // Обновляем кнопку удаления
+                const button = item.querySelector('button');
+                const adId = button.getAttribute('onclick').match(/\d+/)[0];
+                button.setAttribute('onclick', `removePhoto(${adId}, ${newIndex})`);
+
+                // Обновляем src изображения
+                const img = item.querySelector('img');
+                const currentSrc = img.src;
+                const newSrc = currentSrc.replace(/photoIndex=\d+/, 'photoIndex=' + newIndex);
+                img.src = newSrc;
+                img.alt = 'Фото ' + (newIndex + 1);
+            });
+        }
+
+// Функция для показа уведомлений
+        function showNotification(message, type) {
+            // Проверяем, нет ли уже уведомления
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
             }
-        };
 
-        // Инициализация
-        initializeTags();
-        updatePriceFieldVisibility();
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 24px;
+        background: ${type == 'success' ? '#4CAF50' : '#f72585'};
+        color: white;
+        border-radius: 8px;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+    `;
 
-        // Делаем функции глобальными
+            document.body.appendChild(notification);
+
+            // Автоматическое скрытие через 3 секунды
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+
+            // Добавляем стили для анимации
+            if (!document.querySelector('#notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+                document.head.appendChild(style);
+            }
+        }
+
+// Функция для обновления изображений после удаления (если нужно)
+        function updatePhotoUrls(adId) {
+            const images = document.querySelectorAll('.current-photos img');
+            images.forEach((img, index) => {
+                img.src = `ad-photo?adId=${adId}&photoIndex=${index}&t=${Date.now()}`;
+                img.alt = `Фото ${index + 1}`;
+            });
+        }
+
+        // Инициализация после полной загрузки DOM
+        function initializePage() {
+            console.log('=== STARTING PAGE INITIALIZATION ===');
+            console.log('DOM readyState:', document.readyState);
+
+            // Настраиваем обработчики сразу
+            setupTagSelectHandlers();
+
+            // Ждем немного чтобы браузер успел проставить selected значения
+            setTimeout(() => {
+                console.log('🕒 Initializing tags after timeout...');
+                initializeTags();
+
+                // Дополнительная проверка через секунду
+                setTimeout(() => {
+                    console.log('🕒 Final check...');
+                    const finalCheckSelects = document.querySelectorAll('.tag-select');
+                    finalCheckSelects.forEach(select => {
+                        if (select.value && select.selectedIndex > 0) {
+                            console.log(`Final - Select ${select.getAttribute('data-tag-id')}: ${select.value}`);
+                        }
+                    });
+                }, 1000);
+
+            }, 500); // Увеличиваем задержку
+        }
+
+        // Запускаем инициализацию
+        initializePage();
+
+        // Делаем функции глобальными для использования в onclick
         window.removeSelectedTag = removeSelectedTag;
+
+        // Дополнительная инициализация если DOM менялся
+        window.reinitializeTags = function() {
+            console.log('🔄 Manual reinitialization of tags');
+            initializeTags();
+        };
     });
 </script>
 </body>

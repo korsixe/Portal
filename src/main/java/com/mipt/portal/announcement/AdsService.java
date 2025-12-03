@@ -1,7 +1,11 @@
 package com.mipt.portal.announcement;
 
 import com.mipt.portal.users.service.UserService;
+import com.mipt.portal.database.DatabaseConnection;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -207,6 +211,47 @@ public class AdsService implements IAdsService {
       System.err.println("❌ Error in AdsService.getAdPhotosBytes: " + e.getMessage());
       return new ArrayList<>();
     }
+  }
+
+  public void removePhotoFromAd(long adId, int photoIndex) throws SQLException {
+    adsRepository.removePhotoFromAd(adId, photoIndex);
+  }
+
+  public List<String> getSearchSuggestionsFromActiveAds(String query) throws SQLException {
+    List<String> suggestions = new ArrayList<>();
+
+    // Проверяем соединение с БД
+    System.out.println("Searching for: " + query);
+
+    String sql = "SELECT DISTINCT title FROM announcements " +
+      "WHERE LOWER(title) LIKE LOWER(?) AND status = 'ACTIVE' " +
+      "ORDER BY created_at DESC LIMIT 10";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+      System.out.println("SQL query: " + sql);
+      System.out.println("Parameter: %" + query + "%");
+
+      stmt.setString(1, "%" + query + "%");
+
+      ResultSet rs = stmt.executeQuery();
+      int count = 0;
+      while (rs.next()) {
+        String title = rs.getString("title");
+        suggestions.add(title);
+        System.out.println("Found suggestion: " + title);
+        count++;
+      }
+
+      System.out.println("Total suggestions found: " + count);
+
+    } catch (SQLException e) {
+      System.err.println("SQL Error in getSearchSuggestionsFromActiveAds: " + e.getMessage());
+      throw e;
+    }
+
+    return suggestions;
   }
 
 }
