@@ -234,7 +234,6 @@ public class AdsRepository implements IAdsRepository {
     System.out.println("Tags: " + ad.getTags());
     System.out.println("Tags count: " + ad.getTagsCount());
 
-    // ИСПРАВЛЕННЫЙ SQL - только 12 столбцов
     String sql = """
             INSERT INTO ads (title, description, category, subcategory, condition, price,
                             location, user_id, status, view_count, tags, tags_count)
@@ -278,7 +277,6 @@ public class AdsRepository implements IAdsRepository {
       ResultSet resultSet = statement.executeQuery();
       if (resultSet.next()) {
         long generatedId = resultSet.getLong(1);
-        System.out.println("✅ Ad saved successfully with ID: " + generatedId);
         return generatedId;
       }
       throw new SQLException("Failed to get generated ID");

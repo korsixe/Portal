@@ -76,10 +76,8 @@ public class AdsService implements IAdsService {
 
       boolean deleted = adsRepository.deleteAd(adId);
       if (deleted) {
-        System.out.println("✅ Объявление успешно удалено");
         return ad;
       } else {
-        System.out.println("❌ Не удалось удалить объявление");
         return null;
       }
     } catch (SQLException e) {
@@ -100,10 +98,8 @@ public class AdsService implements IAdsService {
 
       boolean deleted = adsRepository.hardDeleteAd(adId);
       if (deleted) {
-        System.out.println("✅ Объявление успешно удалено");
         return ad;
       } else {
-        System.out.println("❌ Не удалось удалить объявление");
         return null;
       }
     } catch (SQLException e) {
@@ -117,7 +113,6 @@ public class AdsService implements IAdsService {
     try {
       Announcement ad = adsRepository.getAdById(adId);
       if (ad != null) {
-        System.out.println("✅ Объявление найдено:");
         System.out.println(ad.toString());
       } else {
         System.out.println("❌ Объявление с ID " + adId + " не найдено");
