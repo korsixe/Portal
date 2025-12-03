@@ -23,12 +23,8 @@ public class AdPhotoServlet extends HttpServlet {
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
 
-    System.out.println("🚀 AdPhotoServlet: START - " + request.getQueryString());
-
     String adIdParam = request.getParameter("adId");
     String photoIndexParam = request.getParameter("photoIndex");
-
-    System.out.println("📋 Parameters - adId: " + adIdParam + ", photoIndex: " + photoIndexParam);
 
     if (adIdParam == null || photoIndexParam == null) {
       System.err.println("❌ Missing parameters");
@@ -40,12 +36,8 @@ public class AdPhotoServlet extends HttpServlet {
       long adId = Long.parseLong(adIdParam);
       int photoIndex = Integer.parseInt(photoIndexParam);
 
-      System.out.println("🔍 Loading photos for adId: " + adId);
-
       // Получаем все фото для объявления
       List<byte[]> photos = adsService.getAdPhotosBytes(adId);
-
-      System.out.println("📸 Photos loaded: " + (photos != null ? photos.size() : "null"));
 
       if (photos == null || photos.isEmpty() || photoIndex >= photos.size()) {
         System.err.println("❌ Photo not found - index: " + photoIndex + ", total: " +
@@ -62,8 +54,6 @@ public class AdPhotoServlet extends HttpServlet {
         return;
       }
 
-      System.out.println("✅ Photo data size: " + photoData.length + " bytes");
-
       // Устанавливаем заголовки для правильного отображения изображения
       response.setContentType("image/jpeg");
       response.setContentLength(photoData.length);
@@ -73,8 +63,6 @@ public class AdPhotoServlet extends HttpServlet {
       // Записываем данные изображения в ответ
       response.getOutputStream().write(photoData);
       response.getOutputStream().flush();
-
-      System.out.println("✅ Photo sent successfully");
 
     } catch (NumberFormatException e) {
       System.err.println("❌ Number format error: " + e.getMessage());

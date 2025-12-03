@@ -13,8 +13,6 @@ import java.util.List;
 public class Main {
 
   public static void main(String[] args) {
-    System.out.println("🚀 Запуск Portal Application");
-
 
     try {
       Connection connection = DriverManager.getConnection(
@@ -26,15 +24,12 @@ public class Main {
       UserService userService = new UserService();
       AdsService adsService = new AdsService(adsRepository, userService);
 
-
       adsRepository.createTables();
-      System.out.println("✅ Таблицы успешно созданы!");
-
       adsRepository.insertData();
       System.out.println("✅ Тестовые данные добавлены!");
 
       List<Long> hehehe = adsRepository.getModerAdIds();
-      for(int i = 0; i < hehehe.size(); ++i){
+      for (int i = 0; i < hehehe.size(); ++i) {
         System.out.println(hehehe.get(i));
       }
 

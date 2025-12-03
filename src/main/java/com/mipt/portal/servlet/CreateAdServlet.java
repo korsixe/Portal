@@ -45,19 +45,10 @@ public class CreateAdServlet extends HttpServlet {
   @Override
   public void init() throws ServletException {
     try {
-      System.out.println("🚀 ========== НАЧАЛО ИНИЦИАЛИЗАЦИИ ==========");
-      System.out.println("📦 Создаем AdsRepository...");
 
-      System.out.println("📦 Создаем AdsService...");
       this.adsService = new AdsService();
-      System.out.println("✅ AdsService создан успешно");
-
       this.tagSelector = new TagSelector();
       this.objectMapper = new ObjectMapper();
-      System.out.println("✅ TagSelector и ObjectMapper созданы успешно");
-
-      logger.info("AdsService initialized successfully");
-      System.out.println("🎉 ========== ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА ==========");
 
     } catch (Exception e) {
       System.err.println("❌ ========== ОШИБКА ИНИЦИАЛИЗАЦИИ ==========");

@@ -13,7 +13,6 @@ public class GetUnreadCountServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             User user = (User) request.getSession().getAttribute("user");
-            System.out.println("🔔 Получен запрос на количество непрочитанных для пользователя: " + (user != null ? user.getId() : "null"));
 
             if (user == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -22,8 +21,6 @@ public class GetUnreadCountServlet extends HttpServlet {
 
             NotificationService notificationService = new NotificationService();
             int unreadCount = notificationService.getUnreadCount(user.getId());
-
-            System.out.println("✅ Количество непрочитанных: " + unreadCount);
 
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
