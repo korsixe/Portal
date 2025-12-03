@@ -29,7 +29,7 @@ public class AdsRepository implements IAdsRepository {
 
   public AdsRepository(Connection connection) throws SQLException {
     this.connection = connection;
-    this.objectMapper = new ObjectMapper(); // Добавляем инициализацию ObjectMapper
+    this.objectMapper = new ObjectMapper();
   }
 
 
