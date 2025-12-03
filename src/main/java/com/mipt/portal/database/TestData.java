@@ -136,7 +136,6 @@ public class TestData {
           for (String path : photoPaths) {
             try {
               mediaManager.addPhoto(path);
-              System.out.println("" + path);
             } catch (IOException e) {
               System.err.println("" + path);
             }

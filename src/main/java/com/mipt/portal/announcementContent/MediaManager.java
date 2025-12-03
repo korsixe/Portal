@@ -37,9 +37,6 @@ public class MediaManager implements AutoCloseable {
       throw new SQLException("Connection is closed");
     }
 
-    System.out.println("🔄 MediaManager.saveToDB(): сохранение " +
-      photos.size() + " фото для adId=" + adId);
-
     String sql = "UPDATE ads SET photos = ? WHERE id = ?";
 
     try (PreparedStatement stmt = connection.prepareStatement(sql)) {

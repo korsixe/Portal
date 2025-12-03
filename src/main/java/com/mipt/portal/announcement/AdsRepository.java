@@ -229,11 +229,6 @@ public class AdsRepository implements IAdsRepository {
 
   @Override
   public long saveAd(Announcement ad) throws SQLException {
-    System.out.println("=== 🚀 SAVE AD DEBUG ===");
-    System.out.println("Title: " + ad.getTitle());
-    System.out.println("Tags: " + ad.getTags());
-    System.out.println("Tags count: " + ad.getTagsCount());
-
     String sql = """
             INSERT INTO ads (title, description, category, subcategory, condition, price,
                             location, user_id, status, view_count, tags, tags_count)
@@ -254,13 +249,11 @@ public class AdsRepository implements IAdsRepository {
       statement.setInt(10, ad.getViewCount());
 
       // Преобразуем список тегов в JSON
-      System.out.println("=== DEBUG SAVE AD ===");
-      System.out.println("Tags list: " + ad.getTags());
+
 
       if (ad.getTags() != null && !ad.getTags().isEmpty()) {
         try {
           String tagsJson = objectMapper.writeValueAsString(ad.getTags());
-          System.out.println("Generated JSON: " + tagsJson);
           statement.setString(11, tagsJson); // для saveAd
         } catch (Exception e) {
           System.err.println("❌ Error converting tags to JSON: " + e.getMessage());
@@ -268,7 +261,6 @@ public class AdsRepository implements IAdsRepository {
           statement.setString(11, tagsJson);
         }
       } else {
-        System.out.println("No tags to save");
         statement.setNull(11, Types.VARCHAR); // для saveAd
       }
 

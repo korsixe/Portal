@@ -73,8 +73,6 @@ public class UserRepositoryImpl implements UserRepository {
       } else {
         pstmt.setArray(9, null);
       }
-      System.out.println(
-          "пользователь " + user.getEmail() + " обновлен, объявлений: " + user.getAdList().size());
 
       pstmt.setLong(10, user.getId());
 
