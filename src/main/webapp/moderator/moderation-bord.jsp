@@ -118,6 +118,10 @@
             padding: 20px;
             transition: all 0.3s ease;
             background: #f8f9fa;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 25px;
+            align-items: flex-start;
         }
 
         .ad-card:hover {
@@ -126,52 +130,170 @@
             transform: translateY(-2px);
         }
 
+        .ad-photo-section {
+            flex-shrink: 0;
+        }
+
+        .ad-photo-container {
+            width: 300px;
+            height: 250px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #e1e5e9;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .ad-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: white;
+        }
+
+        .photo-placeholder {
+            font-size: 3rem;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .photo-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .ad-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .ad-title {
-            font-size: 1.2rem;
+            font-size: 1.4rem; 
             font-weight: 600;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 15px; 
+            line-height: 1.3;
         }
 
         .ad-meta {
             color: #666;
-            font-size: 0.9rem;
+            font-size: 0.95rem; 
             margin-bottom: 15px;
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 12px; 
         }
 
         .ad-meta span {
             background: #e9ecef;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 6px 12px; 
+            border-radius: 8px; 
+            font-size: 0.9rem;
+        }
+
+        .ad-price {
+            font-size: 1.5rem; 
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 12px; 
+            padding: 8px 0;
+        }
+
+        .ad-location {
+            color: #666;
+            font-size: 0.95rem; 
+            margin-bottom: 12px; 
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .ad-description {
             color: #555;
-            line-height: 1.5;
+            line-height: 1.6; /* Улучшено */
             margin-bottom: 15px;
-            padding: 15px;
+            padding: 18px; 
             background: white;
             border-radius: 8px;
             border-left: 4px solid #667eea;
+            flex: 1;
+            min-height: 120px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.95rem; 
+        }
+
+        .ad-description::-webkit-scrollbar {
+            width: 8px; 
+        }
+
+        .ad-description::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .ad-description::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .ad-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px; 
+            padding-top: 12px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .ad-views {
+            color: #666;
+            font-size: 0.9rem; 
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ad-date {
+            color: #999;
+            font-size: 0.9rem; 
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .moderation-actions {
             display: flex;
-            gap: 10px;
+            gap: 12px; 
             flex-wrap: wrap;
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #e1e5e9;
+            grid-column: 1 / -1;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 1rem; 
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -179,7 +301,7 @@
             display: inline-block;
             text-align: center;
             flex: 1;
-            min-width: 120px;
+            min-width: 140px; 
         }
 
         .btn-approve {
@@ -262,11 +384,11 @@
 
         .status-badge {
             display: inline-block;
-            padding: 4px 12px;
+            padding: 6px 14px; 
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.9rem; 
             font-weight: 600;
-            margin-left: 10px;
+            margin-left: 12px; 
         }
 
         .status-pending {
@@ -510,6 +632,18 @@
             background: #17a2b8;
         }
 
+        @media (max-width: 1024px) {
+            .ad-card {
+                grid-template-columns: 250px 1fr;
+                gap: 20px;
+            }
+
+            .ad-photo-container {
+                width: 250px;
+                height: 200px;
+            }
+        }
+
         @media (max-width: 768px) {
             .navigation {
                 flex-direction: column;
@@ -543,6 +677,20 @@
 
             .reason-buttons {
                 grid-template-columns: 1fr;
+            }
+
+            .ad-card {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .ad-photo-container {
+                width: 100%;
+                height: 300px; /* Увеличено для мобильных */
+            }
+
+            .ad-title {
+                font-size: 1.3rem;
             }
         }
 
@@ -631,45 +779,110 @@
                 Long adId = pendingAds.get(i);
                 Announcement ad = adsService.getAd(adId);
                 if (ad != null) {
+                    // Получаем количество фото через AdsService - как в ad-details.jsp
+                    int photoCount = 0;
+                    try {
+                        List<byte[]> photos = adsService.getAdPhotosBytes(adId);
+                        photoCount = photos != null ? photos.size() : 0;
+                    } catch (Exception e) {
+                        photoCount = 0;
+                    }
             %>
             <div class="ad-card">
-                <div class="ad-title">
-                    <%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>
-                    <span class="status-badge status-pending">На модерации</span>
+                <div class="ad-photo-section">
+                    <div class="ad-photo-container">
+                        <% if (photoCount > 0) { %>
+                        <img src="<%= request.getContextPath() %>/ad-photo?adId=<%= adId %>&photoIndex=0&t=<%= System.currentTimeMillis() %>"
+                             alt="Фото объявления"
+                             class="ad-photo"
+                             onerror="handlePhotoError(this)">
+                        <div class="photo-placeholder" style="display: none;">
+                            <span style="font-size: 3rem;">📷</span>
+                            <span style="font-size: 0.9rem; margin-top: 5px;">Нет фото</span>
+                        </div>
+                        <% if (photoCount > 1) { %>
+                        <div class="photo-counter">+<%= photoCount-1 %></div>
+                        <% } %>
+                        <% } else { %>
+                        <div class="photo-placeholder">
+                            <span style="font-size: 3rem;">📷</span>
+                            <span style="font-size: 0.9rem; margin-top: 5px;">Нет фото</span>
+                        </div>
+                        <% } %>
+                    </div>
                 </div>
 
-                <div class="ad-meta">
-                    <% if (ad.getCategory() != null) { %>
-                    <span>Категория: <%= ad.getCategory().getDisplayName() %></span>
+                <div class="ad-content">
+                    <div class="ad-title">
+                        <%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>
+                        <span class="status-badge status-pending">На модерации</span>
+                    </div>
+
+                    <div class="ad-meta">
+                        <% if (ad.getCategory() != null) { %>
+                        <span>Категория: <%= ad.getCategory().getDisplayName() %></span>
+                        <% } %>
+                        <% if (ad.getSubcategory() != null && !ad.getSubcategory().isEmpty()) { %>
+                        <span>Подкатегория: <%= ad.getSubcategory() %></span>
+                        <% } else { %>
+                        <span>Подкатегория: Не указана</span>
+                        <% } %>
+                        <% if (ad.getCreatedAt() != null) { %>
+                        <span>Дата: <%= formatDate(ad.getCreatedAt()) %></span>
+                        <% } %>
+                    </div>
+
+                    <div class="ad-price">
+                        <%
+                            int price = ad.getPrice();
+                            if (price == -1) {
+                        %>
+                        Договорная
+                        <% } else if (price == 0) { %>
+                        Бесплатно
+                        <% } else { %>
+                        <%= String.format("%,d руб.", price) %>
+                        <% } %>
+                    </div>
+
+                    <% if (ad.getLocation() != null && !ad.getLocation().isEmpty()) { %>
+                    <div class="ad-location">
+                        <span style="font-size: 1.1rem;">📍</span> <%= ad.getLocation() %>
+                    </div>
                     <% } %>
-                    <% if (ad.getSubcategory() != null) { %>
-                    <span>Подкатегория: <%= ad.getSubcategory() %></span>
-                    <% } %> <% { %>
-                    <span>Подкатегория: </span>
+
+                    <% if (ad.getDescription() != null && !ad.getDescription().isEmpty()) { %>
+                    <div class="ad-description">
+                        <%= ad.getDescription() %>
+                    </div>
+                    <% } else { %>
+                    <div class="ad-description" style="color: #999; font-style: italic;">
+                        Описание отсутствует
+                    </div>
                     <% } %>
-                    <% if (ad.getCreatedAt() != null) { %>
-                    <span>Дата: <%= formatDate(ad.getCreatedAt()) %></span>
-                    <% } %>
-                </div>
 
-                <% if (ad.getDescription() != null && !ad.getDescription().isEmpty()) { %>
-                <div class="ad-description">
-                    <%= ad.getDescription() %>
-                </div>
-                <% } %>
+                    <div class="ad-footer">
+                        <div class="ad-views">
+                            <span style="font-size: 1.1rem;">👁️</span> <%= ad.getViewCount() != null ? ad.getViewCount() : 0 %> просмотров
+                        </div>
+                        <div class="ad-date">
+                            <span style="font-size: 1.1rem;">📅</span> <%= formatDate(ad.getCreatedAt()) %>
+                        </div>
+                    </div>
 
-                <div class="moderation-actions">
-                    <button type="button" class="btn btn-approve" data-action="approve" data-ad-id="<%= adId %>" data-ad-title="<%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>">
-                        Одобрить
-                    </button>
+                    <div class="moderation-actions">
+                        <button type="button" class="btn btn-approve" data-action="approve" data-ad-id="<%= adId %>" data-ad-title="<%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>">
+                            Одобрить
+                        </button>
 
-                    <button type="button" class="btn btn-reject" data-action="reject" data-ad-id="<%= adId %>" data-ad-title="<%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>">
-                        Отозвать на доработку
-                    </button>
+                        <button type="button" class="btn btn-reject" data-action="reject" data-ad-id="<%= adId %>" data-ad-title="<%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>">
+                            Отозвать на доработку
+                        </button>
 
-                    <button type="button" class="btn btn-delete" data-action="delete" data-ad-id="<%= adId %>" data-ad-title="<%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>">
-                        Удалить
-                    </button>
+                        <button type="button" class="btn btn-delete" data-action="delete" data-ad-id="<%= adId %>" data-ad-title="<%= ad.getTitle() != null ? ad.getTitle() : "Без названия" %>">
+                            Удалить
+                        </button>
+                    </div>
                 </div>
             </div>
             <% } %>
@@ -684,7 +897,7 @@
     <div class="modal-content">
         <div class="modal-icon" id="modalIcon">❓</div>
         <h3 class="modal-title" id="modalTitle">Подтверждение действия</h3>
-        <p class="modal-message" id="modalMessage">Вы уверены, что хотите выполнить это действие?</p>
+        <p class="modal-message" id="modalMessage">Вы уверены, что хотите выполнить это действия?</p>
         <div class="modal-actions">
             <button type="button" class="modal-btn modal-btn-cancel" id="modalCancel">Отменить</button>
             <button type="button" class="modal-btn modal-btn-confirm" id="modalConfirm">Подтвердить</button>
@@ -1033,6 +1246,21 @@
         setTimeout(() => {
             notification.style.display = 'none';
         }, 3000);
+    }
+
+    // Обработка ошибок загрузки фото
+    function handlePhotoError(img) {
+        console.error('Error loading photo');
+        img.style.display = 'none';
+        const placeholder = img.nextElementSibling;
+        if (placeholder && placeholder.classList.contains('photo-placeholder')) {
+            placeholder.style.display = 'flex';
+            placeholder.style.alignItems = 'center';
+            placeholder.style.justifyContent = 'center';
+            placeholder.style.flexDirection = 'column';
+            placeholder.style.fontSize = '1.5rem';
+            placeholder.innerHTML = '<span style="font-size: 3rem;"></span><span style="font-size: 0.9rem; margin-top: 10px;">Ошибка загрузки</span>';
+        }
     }
 
     // Авто-обновление страницы каждые 30 секунд для проверки новых объявлений

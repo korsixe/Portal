@@ -531,7 +531,7 @@
         .photo-item img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 8px;
             border: 2px solid var(--border);
         }
@@ -794,7 +794,7 @@
                             System.out.println("currentSubcategory: '" + currentSubcategory + "'");
 
                             if (currentCategoryValue == null || currentCategoryValue.isEmpty()) {
-                                System.out.println("❌ currentCategoryValue is null or empty");
+                                System.out.println(" currentCategoryValue is null or empty");
                         %>
                         <option value="">Сначала выберите категорию</option>
                         <%
@@ -865,7 +865,7 @@
                         <%
                             }
                         } else {
-                            System.out.println("❌ Категория не найдена в БД: '" + currentCategoryValue + "'");
+                            System.out.println(" Категория не найдена в БД: '" + currentCategoryValue + "'");
 
                             // ДЕБАГ: Проверим, что есть в enum Category
                             System.out.println("🔍 Проверяем enum Category:");
@@ -877,7 +877,7 @@
                         <%
                             }
                         } catch (Exception e) {
-                            System.err.println("❌ ERROR loading subcategories: " + e.getMessage());
+                            System.err.println(" ERROR loading subcategories: " + e.getMessage());
                             e.printStackTrace();
                         %>
                         <option value="">Ошибка загрузки подкатегорий</option>
@@ -979,7 +979,7 @@
                         <div class="photo-item" id="photo-<%= i %>" style="position: relative; display: inline-block; margin: 10px;">
                             <img src="ad-photo?adId=<%= announcement.getId() %>&photoIndex=<%= i %>"
                                  alt="Фото <%= i + 1 %>"
-                                 style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; pointer-events: none;">
+                                 style="width: 120px; height: 120px; object-fit: contain; border-radius: 8px; pointer-events: none;">
 
                             <!-- Кнопка удаления - кликабельна -->
                             <button type="button"

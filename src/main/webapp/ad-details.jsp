@@ -107,7 +107,7 @@
                         photoCount = photos != null ? photos.size() : 0;
                         System.out.println("✅ Loaded " + photoCount + " photos for ad " + adId);
                     } catch (Exception e) {
-                        System.err.println("❌ Error loading photos: " + e.getMessage());
+                        System.err.println(" Error loading photos: " + e.getMessage());
                         photoCount = 0;
                     }
 
@@ -489,7 +489,7 @@
         .thumbnail img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         /* Описание */
@@ -978,7 +978,7 @@
 
                     <% if (request.getAttribute("error") != null) { %>
                     <div style="color: red; margin-bottom: 10px; font-weight: 500;">
-                        ❌ <%= request.getAttribute("error") %>
+                         <%= request.getAttribute("error") %>
                     </div>
                     <% } %>
 
@@ -1095,7 +1095,7 @@
         if (placeholder) {
             placeholder.style.display = 'flex';
             placeholder.style.flexDirection = 'column';
-            placeholder.innerHTML = '❌<div style="text-align: center; margin-top: 10px; font-size: 1rem; color: #666;">Ошибка загрузки фото</div>';
+            placeholder.innerHTML = '<div style="text-align: center; margin-top: 10px; font-size: 1rem; color: #666;">Ошибка загрузки фото</div>';
         }
     }
 
@@ -1103,7 +1103,7 @@
         console.error('Error loading thumbnail');
         img.style.display = 'none';
         const thumbnail = img.parentElement;
-        thumbnail.innerHTML = '❌';
+        thumbnail.innerHTML = '';
         thumbnail.style.alignItems = 'center';
         thumbnail.style.justifyContent = 'center';
         thumbnail.style.fontSize = '1.2rem';
