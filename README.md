@@ -87,6 +87,7 @@ mvn compile exec:java -Dexec.mainClass="com.mipt.portal.database.TestData"
 mvn jetty:run
 ```
 5. Доступ к приложению
+   
 После успешного запуска приложение будет доступно по следующим адресам:
 
   Для пользователей: ```http://localhost:8080/portal/```
