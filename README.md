@@ -73,7 +73,7 @@ URL: ```jdbc:postgresql://localhost:5433/myproject```
 Рекомендуемая ОС: Linux, macOS
 
 ## Запуск проекта
-1. 1. Клонирование репозитория
+1. Клонирование репозитория
 ```
 git clone <repository-url>
 cd portal
