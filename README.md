@@ -10,7 +10,7 @@ docker-compose up -d
 ```
 mvn compile exec:java -Dexec.mainClass="com.mipt.portal.database.TestData"
 ```
-3. Запустите весб проект
+3. Запустите весь проект
 ```
 mvn jetty:run
 ```
