@@ -1164,7 +1164,7 @@
     // Метод для получения соединения с БД
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5433/myproject",
+                "jdbc:postgresql://localhost:5432/myproject",
                 "myuser",
                 "mypassword"
         );

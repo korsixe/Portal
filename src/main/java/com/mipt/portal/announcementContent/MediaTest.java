@@ -11,7 +11,7 @@ public class MediaTest {
 
   public static void main(String[] args) throws SQLException, IOException {
     Connection connection = DriverManager.getConnection(
-        "jdbc:postgresql://localhost:5433/myproject",
+        "jdbc:postgresql://localhost:5432/myproject",
         "myuser",
         "mypassword"
     );

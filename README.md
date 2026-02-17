@@ -39,7 +39,7 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: myproject
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -48,7 +48,7 @@ volumes:
   postgres_data:
 ```
 ### Настройки подключения к БД
-URL: ```jdbc:postgresql://localhost:5433/myproject```
+URL: ```jdbc:postgresql://localhost:5432/myproject```
 
 Пользователь: ```myuser```
 

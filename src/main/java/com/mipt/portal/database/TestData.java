@@ -108,7 +108,7 @@ public class TestData {
   }
 
   public static void uploadAllPhotos() {
-    try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5433/myproject",
+    try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/myproject",
       "myuser",
       "mypassword")) {
 
