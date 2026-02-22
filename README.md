@@ -1,4 +1,5 @@
 # Portal
+(Продолжение проекта реализуется тут https://github.com/korsixe/Portal2)
 Portal — это единая цифровая экосистема, созданная для решения ключевых бытовых проблем студентов МФТИ. Проект содержит один функциональный блок:
 
 1. **Маркетплейс** — безопасная платформа для покупки и продажи б/у вещей исключительно среди студентов
@@ -39,7 +40,7 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: myproject
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -48,7 +49,7 @@ volumes:
   postgres_data:
 ```
 ### Настройки подключения к БД
-URL: ```jdbc:postgresql://localhost:5433/myproject```
+URL: ```jdbc:postgresql://localhost:5432/myproject```
 
 Пользователь: ```myuser```
 

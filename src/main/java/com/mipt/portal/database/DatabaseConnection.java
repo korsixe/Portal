@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 public class DatabaseConnection {
-  private static final String URL = "jdbc:postgresql://localhost:5433/myproject";
+  private static final String URL = "jdbc:postgresql://localhost:5432/myproject";
   private static final String USER = "myuser";
   private static final String PASSWORD = "mypassword";
 
